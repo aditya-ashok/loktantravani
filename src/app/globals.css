@@ -1,26 +1,258 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: 0 0% 100%;
+  --foreground: 0 0% 0%;
+  --card: 0 0% 100%;
+  --card-foreground: 0 0% 0%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 0 0% 0%;
+  --primary: 33 100% 50%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 0 0% 10%;
+  --secondary-foreground: 0 0% 100%;
+  --muted: 0 0% 96%;
+  --muted-foreground: 0 0% 40%;
+  --accent: 33 100% 95%;
+  --accent-foreground: 33 100% 10%;
+  --destructive: 0 84% 60%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 0 0% 90%;
+  --input: 0 0% 90%;
+  --ring: 33 100% 50%;
+  --radius: 0px;
+}
+
+.dark {
+  --background: 0 0% 4%;
+  --foreground: 0 0% 95%;
+  --card: 0 0% 7%;
+  --card-foreground: 0 0% 95%;
+  --popover: 0 0% 7%;
+  --popover-foreground: 0 0% 95%;
+  --primary: 33 100% 50%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 0 0% 90%;
+  --secondary-foreground: 0 0% 5%;
+  --muted: 0 0% 15%;
+  --muted-foreground: 0 0% 60%;
+  --accent: 33 100% 10%;
+  --accent-foreground: 33 100% 90%;
+  --border: 0 0% 20%;
+  --input: 0 0% 20%;
+  --ring: 33 100% 50%;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --radius-lg: var(--radius);
+  --radius-md: var(--radius);
+  --radius-sm: var(--radius);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: hsl(var(--background));
+  color: hsl(var(--foreground));
+  font-family: var(--font-inter), ui-sans-serif, system-ui;
+}
+
+/* Typography */
+.font-newsreader {
+  font-family: var(--font-newsreader), Georgia, serif;
+}
+
+.font-inter {
+  font-family: var(--font-inter), ui-sans-serif, system-ui;
+}
+
+.hindi {
+  font-family: var(--font-hindi), serif;
+}
+
+.nyt-border {
+  border-bottom: 4px double #000;
+}
+.dark .nyt-border {
+  border-bottom-color: rgba(255, 255, 255, 0.3);
+}
+
+.ndtv-headline {
+  text-shadow: 0.5px 0 0 rgba(0, 0, 0, 0.4);
+}
+.dark .ndtv-headline {
+  text-shadow: 0.5px 0 0 rgba(255, 255, 255, 0.4);
+}
+
+.saffron-gradient {
+  background: linear-gradient(135deg, #ff9933 0%, #e68a00 100%);
+}
+
+.newspaper-text {
+  line-height: 1.7;
+  letter-spacing: -0.01em;
+}
+
+/* Newspaper broadsheet styles */
+.broadsheet-columns {
+  column-count: 3;
+  column-gap: 2rem;
+  column-rule: 1px solid rgba(0, 0, 0, 0.15);
+}
+.dark .broadsheet-columns {
+  column-rule-color: rgba(255, 255, 255, 0.15);
+}
+
+@media (max-width: 1024px) {
+  .broadsheet-columns {
+    column-count: 2;
+  }
+}
+@media (max-width: 640px) {
+  .broadsheet-columns {
+    column-count: 1;
+  }
+}
+
+.dropcap::first-letter {
+  font-family: var(--font-newsreader), Georgia, serif;
+  float: left;
+  font-size: 4.5em;
+  line-height: 0.8;
+  padding-right: 0.1em;
+  font-weight: 900;
+  color: #ff9933;
+}
+
+.column-rule-vertical {
+  border-right: 1px solid rgba(0, 0, 0, 0.15);
+}
+.dark .column-rule-vertical {
+  border-right-color: rgba(255, 255, 255, 0.15);
+}
+
+/* Selection */
+::selection {
+  background-color: #ff9933;
+  color: #fff;
+}
+
+/* Post content styling */
+.post-content h2 {
+  font-family: var(--font-newsreader), Georgia, serif;
+  font-size: 1.75rem;
+  font-weight: 900;
+  margin-top: 2.5rem;
+  margin-bottom: 1rem;
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+  border-bottom: 2px solid rgba(0, 0, 0, 0.1);
+  padding-bottom: 0.5rem;
+}
+.dark .post-content h2 {
+  border-bottom-color: rgba(255, 255, 255, 0.1);
+}
+
+.post-content h3 {
+  font-family: var(--font-newsreader), Georgia, serif;
+  font-size: 1.35rem;
+  font-weight: 700;
+  margin-top: 2rem;
+  margin-bottom: 0.75rem;
+}
+
+.post-content p {
+  font-family: var(--font-inter), ui-sans-serif, system-ui;
+  line-height: 1.8;
+  margin-bottom: 1.25rem;
+  font-size: 1.05rem;
+}
+
+.post-content blockquote {
+  border-left: 6px solid #ff9933;
+  padding: 1.5rem 2rem;
+  margin: 2rem 0;
+  font-family: var(--font-newsreader), Georgia, serif;
+  font-style: italic;
+  font-size: 1.25rem;
+  background: rgba(255, 153, 51, 0.05);
+}
+
+.post-content ul,
+.post-content ol {
+  padding-left: 1.5rem;
+  margin-bottom: 1.25rem;
+}
+
+.post-content li {
+  margin-bottom: 0.5rem;
+  line-height: 1.7;
+}
+
+/* Print styles for Daily Edition */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  body {
+    background: white !important;
+    color: black !important;
+    font-size: 10pt;
+  }
+  .broadsheet-columns {
+    column-count: 3;
+    column-gap: 1.5rem;
+    column-rule: 0.5pt solid #000;
+  }
+  h1,
+  h2,
+  h3 {
+    page-break-after: avoid;
+  }
+  img {
+    max-width: 100% !important;
+    filter: grayscale(100%);
+  }
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #ff9933;
+  border-radius: 0;
+}
+
+/* Marquee animation */
+@keyframes marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
 }
