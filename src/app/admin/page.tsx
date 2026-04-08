@@ -5338,6 +5338,8 @@ function PodcastStudio() {
   const [voiceId, setVoiceId] = useState("");
   const [error, setError] = useState("");
   const [step, setStep] = useState<"select" | "script" | "generate" | "done">("select");
+  const [podcastLang, setPodcastLang] = useState<"en" | "hi">("en");
+  const [anchorName, setAnchorName] = useState("");
 
   // Voice cloning state
   const [clonedVoices, setClonedVoices] = useState<Array<{ id: string; name: string; referenceUrl: string; createdAt: string; language: string }>>([]);
@@ -5372,7 +5374,7 @@ function PodcastStudio() {
       const res = await fetch("/api/podcast", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "generate-script-only", title: selectedPost.title, content: selectedPost.content, category: selectedPost.category }),
+        body: JSON.stringify({ action: "generate-script-only", title: selectedPost.title, content: selectedPost.content, category: selectedPost.category, language: podcastLang, anchorName: anchorName || selectedPost.author || "" }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
@@ -5392,7 +5394,7 @@ function PodcastStudio() {
       const res = await fetch("/api/podcast", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title: selectedPost?.title, content: selectedPost?.content, category: selectedPost?.category, postId: selectedPost?.id }),
+        body: JSON.stringify({ title: selectedPost?.title, content: selectedPost?.content, category: selectedPost?.category, postId: selectedPost?.id, language: podcastLang, anchorName: anchorName || selectedPost?.author || "" }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
@@ -5684,14 +5686,43 @@ function PodcastStudio() {
         </select>
 
         {selectedPost && step === "select" && (
-          <button
-            onClick={generateScript}
-            disabled={generating}
-            className="mt-3 px-6 py-3 bg-black text-white font-inter font-bold text-xs uppercase tracking-widest flex items-center gap-2 disabled:opacity-50"
-          >
-            {generating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
-            Generate Podcast Script
-          </button>
+          <div className="mt-4 space-y-3">
+            {/* Language & Anchor Name */}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-[9px] font-inter font-black uppercase opacity-50 dark:text-white/50">Podcast Language</label>
+                <select
+                  value={podcastLang}
+                  onChange={(e) => setPodcastLang(e.target.value as "en" | "hi")}
+                  className="w-full p-2 border border-gray-300 dark:border-white/20 dark:bg-[#111] dark:text-white text-sm font-inter mt-1"
+                >
+                  <option value="en">🇬🇧 English</option>
+                  <option value="hi">🇮🇳 Hindi (Roman Script)</option>
+                </select>
+              </div>
+              <div>
+                <label className="text-[9px] font-inter font-black uppercase opacity-50 dark:text-white/50">Anchor Name</label>
+                <input
+                  value={anchorName}
+                  onChange={(e) => setAnchorName(e.target.value)}
+                  placeholder={selectedPost?.author || "e.g. Aditya Ashok"}
+                  className="w-full p-2 border border-gray-300 dark:border-white/20 dark:bg-[#111] dark:text-white text-sm font-inter mt-1"
+                />
+                <p className="text-[9px] font-inter opacity-30 mt-0.5 dark:text-white/30">
+                  Defaults to article author: {selectedPost?.author || "—"}
+                </p>
+              </div>
+            </div>
+
+            <button
+              onClick={generateScript}
+              disabled={generating}
+              className="px-6 py-3 bg-black text-white font-inter font-bold text-xs uppercase tracking-widest flex items-center gap-2 disabled:opacity-50"
+            >
+              {generating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+              Generate {podcastLang === "hi" ? "Hindi" : "English"} Podcast Script
+            </button>
+          </div>
         )}
       </div>
 

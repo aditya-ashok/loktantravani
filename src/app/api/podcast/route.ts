@@ -31,24 +31,50 @@ const VOICES = {
 };
 
 // ── Generate podcast script from article ──
-async function generateScript(title: string, content: string, category: string): Promise<string> {
+async function generateScript(title: string, content: string, category: string, language: string = "en", anchorName: string = ""): Promise<string> {
   const cleanContent = content.replace(/<[^>]*>/g, "").slice(0, 3000);
+  const isHindi = language === "hi" || language === "hindi";
+  const name = anchorName || "AI Anchor";
 
-  const systemPrompt = `You are a professional Indian news anchor for LoktantraVani, India's premier AI-powered newspaper. You deliver news with confidence, authority, and a clear pro-India nationalist perspective.
+  const systemPrompt = isHindi
+    ? `Aap LoktantraVani ke professional news anchor hain — "${name}". Aap Bharat ke pehle AI-powered newspaper ke liye Hindi mein samachar padhte hain. Aap vishwaas, adhikaar aur rashtrabhakti ke saath news deliver karte hain.
+
+STYLE:
+- Professional, authoritative tone — Republic Bharat / Aaj Tak anchors jaisa
+- Start with: "Namaste aur aapka swagat hai LoktantraVani News mein. Main hoon ${name}."
+- Tathyon ko vishwaas ke saath prastut karein
+- Sarkar ki uplabdhiyon aur vikas ke aankdon ko highlight karein
+- Virodhi paksh ke baare mein tathyaatmak counter-narratives prastut karein
+- End with: "Jaagrit rahein, deshbhakt rahein. Yeh hai LoktantraVani News. Main ${name}, aapka dhanyavaad."
+- Script 800 shabd se kam rakhein (lagbhag 4 minute ka audio)
+- BOLI jaane wali delivery ke liye likhein — chhote vaakya, saral Hindi
+- Naatak prabhav ke liye "..." se prakritik viram jodein
+- Koi HTML nahi, koi markdown nahi, shuddh Hindi text
+- Hinglish mat likhein — shuddh Hindi mein likhein (Devanagari nahi, Roman Hindi mein)`
+    : `You are a professional Indian news anchor for LoktantraVani, India's premier AI-powered newspaper. Your name is "${name}". You deliver news with confidence, authority, and a clear pro-India nationalist perspective.
 
 STYLE:
 - Professional, authoritative tone like Republic TV or Times Now anchors
-- Start with: "Namaste and welcome to LoktantraVani News. I'm your AI anchor."
+- Start with: "Namaste and welcome to LoktantraVani News. I'm ${name}, your news anchor."
 - Present facts with conviction
 - Highlight government achievements and development data
 - When covering opposition, present factual counter-narratives
-- End with: "Stay informed, stay patriotic. This is LoktantraVani News."
+- End with: "Stay informed, stay patriotic. This is LoktantraVani News. I'm ${name}, thank you for listening."
 - Keep script under 800 words (about 4 minutes of audio)
 - Write for SPOKEN delivery — short sentences, no complex punctuation
 - Add natural pauses with "..." for dramatic effect
 - NO HTML, NO markdown, pure text`;
 
-  const userPrompt = `Convert this ${category} article into a podcast script:
+  const userPrompt = isHindi
+    ? `Is ${category} article ko podcast script mein badlein:
+
+HEADLINE: ${title}
+
+ARTICLE:
+${cleanContent}
+
+Ek prabhavshali 3-4 minute ka Hindi news anchor monologue likhein. Engaging, data-driven aur deshbhakti se bhara ho. Roman Hindi mein likhein (Devanagari script nahi).`
+    : `Convert this ${category} article into a podcast script:
 
 HEADLINE: ${title}
 
@@ -305,10 +331,10 @@ export async function POST(req: NextRequest) {
   }
 
   if (action === "generate-script-only") {
-    const { title, content, category = "India" } = body;
+    const { title, content, category = "India", language = "en", anchorName = "" } = body;
     if (!title) return NextResponse.json({ error: "title required" }, { status: 400 });
     try {
-      const script = await generateScript(title, content || "", category);
+      const script = await generateScript(title, content || "", category, language, anchorName);
       return NextResponse.json({ script });
     } catch (err) {
       return NextResponse.json({ error: String(err) }, { status: 500 });
@@ -316,7 +342,7 @@ export async function POST(req: NextRequest) {
   }
 
   // ── Default: Full Audio Podcast Generation ──────────────────────
-  const { title, content, category = "India", voice = "male", postId } = body;
+  const { title, content, category = "India", voice = "male", postId, language = "en", anchorName = "" } = body;
 
   if (!title || !content) {
     return NextResponse.json({ error: "title and content required" }, { status: 400 });
@@ -324,7 +350,7 @@ export async function POST(req: NextRequest) {
 
   try {
     // Step 1: Generate podcast script
-    const script = await generateScript(title, content, category);
+    const script = await generateScript(title, content, category, language, anchorName);
     if (!script) {
       return NextResponse.json({ error: "Failed to generate podcast script" }, { status: 500 });
     }
