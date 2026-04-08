@@ -30,8 +30,10 @@ const FIRESTORE_BASE = `https://firestore.googleapis.com/v1/projects/${PROJECT_I
 
 // HuggingFace Space endpoints (Gradio API)
 const HF_SPACES = {
+  // Nymbo/Voice-Clone-Multilingual — uses Coqui XTTS v2, Gradio 5.x, /call/predict
+  voiceClone: "https://nymbo-voice-clone-multilingual.hf.space",
+  // OpenVoice V2 fallback (Gradio 3.x, often broken)
   openvoice: "https://myshell-ai-openvoicev2.hf.space",
-  fishSpeech: "https://fishaudio-fish-speech-1.hf.space",
 };
 
 // ── Upload to Firebase Storage ──
@@ -54,89 +56,89 @@ async function downloadAudio(url: string): Promise<Buffer> {
   return Buffer.from(await res.arrayBuffer());
 }
 
-// ── HuggingFace Gradio API: OpenVoice V2 ──
-async function openVoiceTTS(text: string, referenceAudioUrl: string, language = "English"): Promise<Buffer> {
+// ── Voice Clone TTS via HuggingFace (Nymbo/Voice-Clone-Multilingual — XTTS v2) ──
+// Gradio 5.x /call/predict API
+// Params: [text, speaker_wav (FileData), language]
+// Returns: [output audio FileData with url]
+async function voiceCloneTTS(text: string, referenceAudioUrl: string, language = "english"): Promise<Buffer> {
   // Step 1: Download reference audio
   const refAudio = await downloadAudio(referenceAudioUrl);
   const refBase64 = refAudio.toString("base64");
 
-  // Step 2: Call OpenVoice V2 Gradio API
-  // Gradio API format: /api/predict with data array
+  // Step 2: Map language
   const langMap: Record<string, string> = {
-    english: "EN_NEWEST", hindi: "EN_NEWEST", // OpenVoice uses EN for Indian English
-    en: "EN_NEWEST", hi: "EN_NEWEST",
+    english: "en", hindi: "en", en: "en", hi: "en", // XTTS doesn't support Hindi, use English
+    spanish: "es", french: "fr", german: "de", japanese: "ja", chinese: "zh-cn",
+    korean: "ko", italian: "it", portuguese: "pt", russian: "ru", arabic: "ar",
   };
-  const langCode = langMap[language.toLowerCase()] || "EN_NEWEST";
+  const lang = langMap[language.toLowerCase()] || "en";
 
-  // Try the queue-based Gradio API
-  const res = await fetch(`${HF_SPACES.openvoice}/run/predict`, {
+  console.log("[VoiceClone] Calling XTTS v2, lang:", lang, "textLen:", text.length, "refSize:", refAudio.length);
+
+  // Step 3: Call /call/predict (Gradio 5.x async API)
+  const callRes = await fetch(`${HF_SPACES.voiceClone}/call/predict`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       data: [
         text.slice(0, 3000),
-        langCode,
-        1.0, // speed
-        { data: `data:audio/wav;base64,${refBase64}`, name: "reference.wav" },
+        {
+          path: "reference.wav",
+          url: `data:audio/wav;base64,${refBase64}`,
+          orig_name: "reference.wav",
+          meta: { _type: "gradio.FileData" },
+        },
+        lang,
       ],
     }),
   });
 
-  if (!res.ok) {
-    // Try alternative endpoint format
-    const res2 = await fetch(`${HF_SPACES.openvoice}/api/predict`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        fn_index: 0,
-        data: [
-          text.slice(0, 3000),
-          langCode,
-          1.0,
-          { data: `data:audio/wav;base64,${refBase64}`, name: "reference.wav" },
-        ],
-      }),
-    });
-    if (!res2.ok) throw new Error(`OpenVoice API error: ${res2.status}`);
-    const data2 = await res2.json();
-    return extractAudioFromGradioResponse(data2);
+  if (!callRes.ok) {
+    const errText = await callRes.text();
+    throw new Error(`Voice Clone API call failed ${callRes.status}: ${errText.slice(0, 200)}`);
   }
 
-  const data = await res.json();
-  return extractAudioFromGradioResponse(data);
-}
+  const callData = await callRes.json();
+  const eventId = callData.event_id;
+  if (!eventId) throw new Error("No event_id from Voice Clone API");
 
-// ── Extract audio from Gradio response ──
-function extractAudioFromGradioResponse(data: Record<string, unknown>): Buffer {
-  // Gradio returns audio as base64 in data array or as file path
-  const result = (data.data as unknown[]) || [];
+  console.log("[VoiceClone] Queued, eventId:", eventId, "— waiting for result...");
 
-  for (const item of result) {
-    if (typeof item === "string") {
-      // Could be a base64 data URL or a file URL
-      if (item.startsWith("data:audio")) {
-        const base64 = item.split(",")[1];
-        return Buffer.from(base64, "base64");
+  // Step 4: Poll for result via SSE
+  const resultRes = await fetch(`${HF_SPACES.voiceClone}/call/predict/${eventId}`);
+  if (!resultRes.ok) throw new Error(`Voice Clone result fetch failed: ${resultRes.status}`);
+
+  const resultText = await resultRes.text();
+  const lines = resultText.split("\n");
+
+  // Find the last data line with actual content
+  let audioUrl = "";
+  for (const line of lines) {
+    if (!line.startsWith("data:")) continue;
+    const payload = line.slice(5).trim();
+    if (payload === "null" || !payload) continue;
+
+    try {
+      const parsed = JSON.parse(payload);
+      // Response is an array — first element is the output audio FileData
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        const audioFile = parsed[0];
+        if (audioFile?.url) {
+          audioUrl = audioFile.url;
+          console.log("[VoiceClone] Got audio URL:", audioUrl.slice(0, 100));
+        }
       }
-      if (item.startsWith("http") || item.startsWith("/")) {
-        // It's a URL to the generated file on the HF Space
-        // We'll need to download it
-        throw new Error(`REDIRECT:${item}`);
-      }
-    }
-    if (item && typeof item === "object") {
-      const obj = item as Record<string, unknown>;
-      if (obj.data && typeof obj.data === "string" && (obj.data as string).startsWith("data:audio")) {
-        const base64 = (obj.data as string).split(",")[1];
-        return Buffer.from(base64, "base64");
-      }
-      if (obj.url && typeof obj.url === "string") {
-        throw new Error(`REDIRECT:${obj.url}`);
-      }
-    }
+    } catch { continue; }
   }
 
-  throw new Error("No audio in OpenVoice response");
+  if (!audioUrl) {
+    throw new Error("No audio URL in Voice Clone response");
+  }
+
+  // Step 5: Download the generated audio from the Space
+  const audioRes = await fetch(audioUrl);
+  if (!audioRes.ok) throw new Error(`Failed to download cloned audio: ${audioRes.status}`);
+  return Buffer.from(await audioRes.arrayBuffer());
 }
 
 // ── PCM to WAV conversion ──
@@ -337,21 +339,13 @@ export async function POST(req: NextRequest) {
       if (!voice) return NextResponse.json({ error: "Voice not found" }, { status: 404 });
 
       let audioBuffer: Buffer | null = null;
-      let source = "openvoice";
+      let source = "xtts-v2";
 
-      // Try OpenVoice V2 on HuggingFace
+      // Try XTTS v2 voice cloning via HuggingFace
       try {
-        audioBuffer = await openVoiceTTS(text, voice.referenceUrl, language);
+        audioBuffer = await voiceCloneTTS(text, voice.referenceUrl, language);
       } catch (err) {
-        const errMsg = String(err);
-        // Handle redirect (file URL from Gradio)
-        if (errMsg.includes("REDIRECT:")) {
-          const fileUrl = errMsg.replace("Error: REDIRECT:", "");
-          const fullUrl = fileUrl.startsWith("http") ? fileUrl : `${HF_SPACES.openvoice}${fileUrl.startsWith("/") ? "" : "/file="}${fileUrl}`;
-          audioBuffer = await downloadAudio(fullUrl);
-        } else {
-          console.error("OpenVoice failed:", errMsg);
-        }
+        console.error("[VoiceClone] XTTS v2 failed:", String(err).slice(0, 300));
       }
 
       // Fallback: Gemini TTS (no cloning, but at least generates audio)
@@ -362,24 +356,27 @@ export async function POST(req: NextRequest) {
 
       if (!audioBuffer) {
         return NextResponse.json({
-          error: "Voice cloning services unavailable. Both OpenVoice (HuggingFace) and Gemini TTS failed.",
-          tip: "The HuggingFace Space may be sleeping. Visit https://huggingface.co/spaces/myshell-ai/OpenVoiceV2 to wake it up.",
+          error: "Voice cloning services unavailable. Both XTTS v2 (HuggingFace) and Gemini TTS failed.",
+          tip: "The HuggingFace Space may be sleeping. Visit https://huggingface.co/spaces/Nymbo/Voice-Clone-Multilingual to wake it up.",
         }, { status: 503 });
       }
 
-      // Upload generated audio
+      // Upload generated audio (detect format from buffer header)
       const slug = `cloned-${Date.now()}`;
-      const filename = `voice-clones/${voiceId}/output/${slug}.mp3`;
-      const audioUrl = await uploadToStorage(audioBuffer, filename, "audio/mpeg");
+      const isWav = audioBuffer.length > 4 && audioBuffer.slice(0, 4).toString() === "RIFF";
+      const ext = isWav ? "wav" : "mp3";
+      const mime = isWav ? "audio/wav" : "audio/mpeg";
+      const filename = `voice-clones/${voiceId}/output/${slug}.${ext}`;
+      const audioUrl = await uploadToStorage(audioBuffer, filename, mime);
 
       return NextResponse.json({
         success: true,
         audioUrl,
         source,
         size: audioBuffer.length,
-        message: source === "openvoice"
-          ? "Audio generated with your cloned voice!"
-          : "Generated with Gemini TTS (OpenVoice was unavailable). Try again later for cloned voice.",
+        message: source === "xtts-v2"
+          ? "Audio generated with your cloned voice via XTTS v2!"
+          : "Generated with Gemini TTS (XTTS was unavailable). Try again later for cloned voice.",
       });
     } catch (err) {
       return NextResponse.json({ error: String(err) }, { status: 500 });
