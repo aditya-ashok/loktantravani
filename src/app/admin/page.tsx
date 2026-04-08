@@ -5398,7 +5398,12 @@ function PodcastStudio() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
-      setAudioUrl(data.audioUrl || "");
+      if (!data.audioUrl) {
+        setScript(data.script || script);
+        setStep("script");
+        throw new Error(data.message || "Audio generation failed — no audio URL returned. Check TTS API keys.");
+      }
+      setAudioUrl(data.audioUrl);
       setScript(data.script || script);
       setStep("done");
     } catch (err) {

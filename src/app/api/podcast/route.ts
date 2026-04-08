@@ -158,12 +158,13 @@ async function textToSpeech(text: string, voiceId: string): Promise<Buffer | nul
 }
 
 // ── Fallback: Gemini TTS (free) ──
-async function geminiTTS(text: string): Promise<Buffer | null> {
+async function geminiTTS(text: string): Promise<{ buffer: Buffer; mimeType: string } | null> {
   const key = GEMINI_KEY();
-  if (!key) return null;
+  if (!key) { console.log("[Podcast] No GEMINI_API_KEY"); return null; }
 
   try {
     const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${key}`;
+    console.log("[Podcast] Calling Gemini TTS with", text.slice(0, 50), "...");
     const res = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -178,11 +179,22 @@ async function geminiTTS(text: string): Promise<Buffer | null> {
       }),
     });
 
-    if (!res.ok) return null;
+    if (!res.ok) {
+      const errText = await res.text();
+      console.error("[Podcast] Gemini TTS error:", res.status, errText.slice(0, 300));
+      return null;
+    }
     const data = await res.json();
-    const audioData = data.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
-    if (audioData) return Buffer.from(audioData, "base64");
-  } catch { /* */ }
+    const inlineData = data.candidates?.[0]?.content?.parts?.[0]?.inlineData;
+    if (inlineData?.data) {
+      const mimeType = inlineData.mimeType || "audio/wav";
+      console.log("[Podcast] Gemini TTS success, mimeType:", mimeType, "size:", inlineData.data.length);
+      return { buffer: Buffer.from(inlineData.data, "base64"), mimeType };
+    }
+    console.error("[Podcast] Gemini TTS no audio data in response:", JSON.stringify(data).slice(0, 500));
+  } catch (err) {
+    console.error("[Podcast] Gemini TTS exception:", err);
+  }
   return null;
 }
 
@@ -358,29 +370,53 @@ export async function POST(req: NextRequest) {
     // Step 2: Convert to audio (ElevenLabs primary, Gemini fallback)
     let audioBuffer: Buffer | null = null;
     let audioSource = "elevenlabs";
+    let audioMimeType = "audio/mpeg";
 
     const voiceId = VOICES[voice as keyof typeof VOICES] || VOICES.male;
     try {
       audioBuffer = await textToSpeech(script, voiceId);
-    } catch {
+      console.log("[Podcast] ElevenLabs success, size:", audioBuffer?.length);
+    } catch (elevenErr) {
+      console.log("[Podcast] ElevenLabs failed:", String(elevenErr).slice(0, 200), "— trying Gemini TTS");
       // Fallback to Gemini TTS (free)
       audioSource = "gemini";
-      audioBuffer = await geminiTTS(script);
+      const geminiResult = await geminiTTS(script);
+      if (geminiResult) {
+        audioBuffer = geminiResult.buffer;
+        audioMimeType = geminiResult.mimeType;
+      }
     }
 
-    if (!audioBuffer) {
+    if (!audioBuffer || audioBuffer.length < 100) {
+      console.error("[Podcast] No audio generated. Buffer:", audioBuffer?.length);
       return NextResponse.json({
         success: true,
         script,
         audioUrl: null,
-        message: "Script generated but no TTS API available. Set ELEVENLABS_API_KEY for audio.",
+        message: "Script generated but TTS failed. Check ELEVENLABS_API_KEY or GEMINI_API_KEY.",
       });
     }
 
     // Step 3: Upload audio
     const slug = title.slice(0, 30).replace(/[^a-z0-9]/gi, "-").toLowerCase();
-    const filename = `podcasts/${Date.now()}-${slug}.mp3`;
-    const audioUrl = await uploadAudio(audioBuffer, filename);
+    const ext = audioMimeType.includes("wav") ? "wav" : audioMimeType.includes("ogg") ? "ogg" : "mp3";
+    const filename = `podcasts/${Date.now()}-${slug}.${ext}`;
+    const uploadContentType = audioMimeType.includes("wav") ? "audio/wav" : audioMimeType.includes("ogg") ? "audio/ogg" : "audio/mpeg";
+
+    // Upload with correct content type
+    const uploadUrl = `https://firebasestorage.googleapis.com/v0/b/${STORAGE_BUCKET}/o/${encodeURIComponent(filename)}?uploadType=media`;
+    const uploadRes = await fetch(uploadUrl, {
+      method: "POST",
+      headers: { "Content-Type": uploadContentType },
+      body: new Uint8Array(audioBuffer),
+    });
+    if (!uploadRes.ok) {
+      const uploadErr = await uploadRes.text();
+      console.error("[Podcast] Upload failed:", uploadErr.slice(0, 300));
+      return NextResponse.json({ error: "Audio upload failed: " + uploadErr.slice(0, 100) }, { status: 500 });
+    }
+    const uploadData = await uploadRes.json();
+    const audioUrl = `https://firebasestorage.googleapis.com/v0/b/${STORAGE_BUCKET}/o/${encodeURIComponent(uploadData.name)}?alt=media&token=${uploadData.downloadTokens || ""}`;
 
     // Step 4: Save podcast episode to Firestore
     const PROJECT_ID = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || "loktantravani-2d159";
