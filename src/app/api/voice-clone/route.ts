@@ -139,6 +139,29 @@ function extractAudioFromGradioResponse(data: Record<string, unknown>): Buffer {
   throw new Error("No audio in OpenVoice response");
 }
 
+// ── PCM to WAV conversion ──
+function pcmToWav(pcmData: Buffer, sampleRate = 24000, numChannels = 1, bitsPerSample = 16): Buffer {
+  const byteRate = sampleRate * numChannels * (bitsPerSample / 8);
+  const blockAlign = numChannels * (bitsPerSample / 8);
+  const dataSize = pcmData.length;
+  const wav = Buffer.alloc(44 + dataSize);
+  wav.write("RIFF", 0);
+  wav.writeUInt32LE(36 + dataSize, 4);
+  wav.write("WAVE", 8);
+  wav.write("fmt ", 12);
+  wav.writeUInt32LE(16, 16);
+  wav.writeUInt16LE(1, 20);
+  wav.writeUInt16LE(numChannels, 22);
+  wav.writeUInt32LE(sampleRate, 24);
+  wav.writeUInt32LE(byteRate, 28);
+  wav.writeUInt16LE(blockAlign, 32);
+  wav.writeUInt16LE(bitsPerSample, 34);
+  wav.write("data", 36);
+  wav.writeUInt32LE(dataSize, 40);
+  pcmData.copy(wav, 44);
+  return wav;
+}
+
 // ── Fallback: Gemini TTS with style transfer ──
 async function geminiCloneTTS(text: string): Promise<Buffer | null> {
   const key = (process.env.GEMINI_API_KEY || "").trim();
@@ -161,8 +184,16 @@ async function geminiCloneTTS(text: string): Promise<Buffer | null> {
     });
     if (!res.ok) return null;
     const data = await res.json();
-    const audioData = data.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
-    if (audioData) return Buffer.from(audioData, "base64");
+    const inlineData = data.candidates?.[0]?.content?.parts?.[0]?.inlineData;
+    if (inlineData?.data) {
+      const rawBuf = Buffer.from(inlineData.data, "base64");
+      const mime = inlineData.mimeType || "";
+      if (mime.includes("L16") || mime.includes("pcm")) {
+        const rateMatch = mime.match(/rate=(\d+)/);
+        return pcmToWav(rawBuf, rateMatch ? parseInt(rateMatch[1]) : 24000);
+      }
+      return rawBuf;
+    }
   } catch { /* */ }
   return null;
 }

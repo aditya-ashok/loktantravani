@@ -157,6 +157,37 @@ async function textToSpeech(text: string, voiceId: string): Promise<Buffer | nul
   return Buffer.from(arrayBuffer);
 }
 
+// ── PCM to WAV conversion ──
+function pcmToWav(pcmData: Buffer, sampleRate = 24000, numChannels = 1, bitsPerSample = 16): Buffer {
+  const byteRate = sampleRate * numChannels * (bitsPerSample / 8);
+  const blockAlign = numChannels * (bitsPerSample / 8);
+  const dataSize = pcmData.length;
+  const headerSize = 44;
+  const wav = Buffer.alloc(headerSize + dataSize);
+
+  // RIFF header
+  wav.write("RIFF", 0);
+  wav.writeUInt32LE(36 + dataSize, 4);
+  wav.write("WAVE", 8);
+
+  // fmt sub-chunk
+  wav.write("fmt ", 12);
+  wav.writeUInt32LE(16, 16);           // sub-chunk size
+  wav.writeUInt16LE(1, 20);            // PCM format
+  wav.writeUInt16LE(numChannels, 22);
+  wav.writeUInt32LE(sampleRate, 24);
+  wav.writeUInt32LE(byteRate, 28);
+  wav.writeUInt16LE(blockAlign, 32);
+  wav.writeUInt16LE(bitsPerSample, 34);
+
+  // data sub-chunk
+  wav.write("data", 36);
+  wav.writeUInt32LE(dataSize, 40);
+  pcmData.copy(wav, headerSize);
+
+  return wav;
+}
+
 // ── Fallback: Gemini TTS (free) ──
 async function geminiTTS(text: string): Promise<{ buffer: Buffer; mimeType: string } | null> {
   const key = GEMINI_KEY();
@@ -187,9 +218,21 @@ async function geminiTTS(text: string): Promise<{ buffer: Buffer; mimeType: stri
     const data = await res.json();
     const inlineData = data.candidates?.[0]?.content?.parts?.[0]?.inlineData;
     if (inlineData?.data) {
-      const mimeType = inlineData.mimeType || "audio/wav";
-      console.log("[Podcast] Gemini TTS success, mimeType:", mimeType, "size:", inlineData.data.length);
-      return { buffer: Buffer.from(inlineData.data, "base64"), mimeType };
+      const rawMime = inlineData.mimeType || "";
+      console.log("[Podcast] Gemini TTS success, rawMime:", rawMime, "base64Len:", inlineData.data.length);
+
+      let audioBuffer = Buffer.from(inlineData.data, "base64");
+
+      // Gemini returns raw PCM (audio/L16;codec=pcm;rate=24000) — convert to WAV
+      if (rawMime.includes("L16") || rawMime.includes("pcm")) {
+        const rateMatch = rawMime.match(/rate=(\d+)/);
+        const sampleRate = rateMatch ? parseInt(rateMatch[1]) : 24000;
+        console.log("[Podcast] Converting PCM to WAV, sampleRate:", sampleRate, "pcmSize:", audioBuffer.length);
+        const wavBuffer = pcmToWav(audioBuffer, sampleRate);
+        return { buffer: wavBuffer, mimeType: "audio/wav" };
+      }
+
+      return { buffer: audioBuffer, mimeType: rawMime || "audio/wav" };
     }
     console.error("[Podcast] Gemini TTS no audio data in response:", JSON.stringify(data).slice(0, 500));
   } catch (err) {
