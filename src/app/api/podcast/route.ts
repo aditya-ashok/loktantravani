@@ -396,6 +396,76 @@ export async function POST(req: NextRequest) {
     }
   }
 
+  // ── Audio from pre-generated script (fast — no script gen step) ──
+  if (action === "generate-audio-from-script") {
+    const { script: preScript, title: audioTitle, category: audioCat = "India", voice: audioVoice = "male", postId: audioPid } = body;
+    if (!preScript) return NextResponse.json({ error: "script required" }, { status: 400 });
+
+    try {
+      let audioBuffer: Buffer | null = null;
+      let audioSource = "elevenlabs";
+      let audioMimeType = "audio/mpeg";
+
+      const vid = VOICES[audioVoice as keyof typeof VOICES] || VOICES.male;
+      try {
+        audioBuffer = await textToSpeech(preScript, vid);
+      } catch {
+        audioSource = "gemini";
+        const geminiResult = await geminiTTS(preScript);
+        if (geminiResult) {
+          audioBuffer = geminiResult.buffer;
+          audioMimeType = geminiResult.mimeType;
+        }
+      }
+
+      if (!audioBuffer || audioBuffer.length < 100) {
+        return NextResponse.json({ success: true, script: preScript, audioUrl: null, message: "TTS failed. Check API keys." });
+      }
+
+      const slug = (audioTitle || "podcast").slice(0, 30).replace(/[^a-z0-9]/gi, "-").toLowerCase();
+      const ext = audioMimeType.includes("wav") ? "wav" : "mp3";
+      const filename = `podcasts/${Date.now()}-${slug}.${ext}`;
+      const uploadContentType = audioMimeType.includes("wav") ? "audio/wav" : "audio/mpeg";
+
+      const uploadUrl = `https://firebasestorage.googleapis.com/v0/b/${STORAGE_BUCKET}/o/${encodeURIComponent(filename)}?uploadType=media`;
+      const uploadRes = await fetch(uploadUrl, {
+        method: "POST",
+        headers: { "Content-Type": uploadContentType },
+        body: new Uint8Array(audioBuffer),
+      });
+      if (!uploadRes.ok) throw new Error("Audio upload failed");
+      const uploadData = await uploadRes.json();
+      const audioUrl = `https://firebasestorage.googleapis.com/v0/b/${STORAGE_BUCKET}/o/${encodeURIComponent(uploadData.name)}?alt=media&token=${uploadData.downloadTokens || ""}`;
+
+      // Save to Firestore
+      const PROJECT_ID = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || "loktantravani-2d159";
+      const docId = `pod_${Date.now()}`;
+      await fetch(
+        `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents/podcasts/${docId}`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            fields: {
+              title: { stringValue: audioTitle || "Podcast" },
+              script: { stringValue: preScript.slice(0, 5000) },
+              audioUrl: { stringValue: audioUrl },
+              category: { stringValue: audioCat },
+              postId: { stringValue: audioPid || "" },
+              source: { stringValue: audioSource },
+              createdAt: { stringValue: new Date().toISOString() },
+              duration: { integerValue: String(Math.ceil(preScript.split(/\s+/).length / 150 * 60)) },
+            },
+          }),
+        }
+      );
+
+      return NextResponse.json({ success: true, audioUrl, source: audioSource, episodeId: docId });
+    } catch (err) {
+      return NextResponse.json({ error: String(err) }, { status: 500 });
+    }
+  }
+
   // ── Default: Full Audio Podcast Generation ──────────────────────
   const { title, content, category = "India", voice = "male", postId, language = "en", anchorName = "" } = body;
 

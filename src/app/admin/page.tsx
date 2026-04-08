@@ -5391,20 +5391,33 @@ function PodcastStudio() {
     setGenerating(true);
     setError("");
     try {
-      const res = await fetch("/api/podcast", {
+      // Step 1: Generate script if not already done
+      let podScript = script;
+      if (!podScript) {
+        const scriptRes = await fetch("/api/podcast", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "generate-script-only", title: selectedPost?.title, content: selectedPost?.content, category: selectedPost?.category, language: podcastLang, anchorName: anchorName || selectedPost?.author || "" }),
+        });
+        const scriptData = await scriptRes.json();
+        if (!scriptRes.ok || !scriptData.script) throw new Error(scriptData.error || "Script generation failed");
+        podScript = scriptData.script;
+        setScript(podScript);
+      }
+
+      // Step 2: Generate audio from script (separate call to avoid timeout)
+      const audioRes = await fetch("/api/podcast", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title: selectedPost?.title, content: selectedPost?.content, category: selectedPost?.category, postId: selectedPost?.id, language: podcastLang, anchorName: anchorName || selectedPost?.author || "" }),
+        body: JSON.stringify({ action: "generate-audio-from-script", script: podScript, title: selectedPost?.title, category: selectedPost?.category, postId: selectedPost?.id }),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
-      if (!data.audioUrl) {
-        setScript(data.script || script);
+      const audioData = await audioRes.json();
+      if (!audioRes.ok) throw new Error(audioData.error);
+      if (!audioData.audioUrl) {
         setStep("script");
-        throw new Error(data.message || "Audio generation failed — no audio URL returned. Check TTS API keys.");
+        throw new Error(audioData.message || "Audio generation failed — no audio URL returned.");
       }
-      setAudioUrl(data.audioUrl);
-      setScript(data.script || script);
+      setAudioUrl(audioData.audioUrl);
       setStep("done");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Audio generation failed");
