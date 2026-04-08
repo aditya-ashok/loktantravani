@@ -33,10 +33,13 @@ export default function Reactions({ postId, reactions }: ReactionsProps) {
     localStorage.setItem(`reactions-${postId}`, JSON.stringify([...newReacted]));
 
     try {
-      const { addReaction } = await import("@/lib/firebase-service");
-      await addReaction(postId, type);
+      await fetch("/api/react", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ postId, reaction: type }),
+      });
     } catch {
-      // Firebase not configured — keep local state
+      // keep local state
     }
   };
 

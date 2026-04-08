@@ -1,32 +1,36 @@
 "use client";
 
-import { Suspense, useMemo } from "react";
+import { Suspense, useMemo, useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
-import { Search } from "lucide-react";
+import { Search, Loader2 } from "lucide-react";
 import BlogCard from "@/components/BlogCard";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import SearchBar from "@/components/SearchBar";
 import { useLanguage } from "@/lib/language-context";
-import { SEED_POSTS } from "@/lib/seed-data";
 import type { Post } from "@/lib/types";
 
 function SearchResults() {
   const searchParams = useSearchParams();
   const q = searchParams?.get("q") || "";
   const { lang, t } = useLanguage();
+  const [allPosts, setAllPosts] = useState<Post[]>([]);
+  const [loading, setLoading] = useState(false);
 
-  const allPosts: Post[] = useMemo(
-    () =>
-      SEED_POSTS.map((p, i) => ({
+  useEffect(() => {
+    if (!q.trim()) { setAllPosts([]); return; }
+    setLoading(true);
+    fetch("/api/admin/list-posts?status=published&limit=500")
+      .then(r => r.json())
+      .then(data => setAllPosts((data.posts || []).map((p: any) => ({
         ...p,
-        id: `seed-s-${i}`,
-        createdAt: new Date(Date.now() - i * 3600000),
-        updatedAt: new Date(),
-      })),
-    []
-  );
+        createdAt: p.createdAt ? new Date(p.createdAt) : new Date(),
+        updatedAt: p.updatedAt ? new Date(p.updatedAt) : new Date(),
+      }))))
+      .catch(() => setAllPosts([]))
+      .finally(() => setLoading(false));
+  }, [q]);
 
   const results = useMemo(() => {
     if (!q.trim()) return [];
@@ -37,7 +41,7 @@ function SearchResults() {
         p.summary.toLowerCase().includes(lower) ||
         (p.titleHi && p.titleHi.includes(q)) ||
         (p.summaryHi && p.summaryHi.includes(q)) ||
-        p.tags.some((tag) => tag.toLowerCase().includes(lower)) ||
+        (p.tags || []).some((tag: string) => tag.toLowerCase().includes(lower)) ||
         p.category.toLowerCase().includes(lower) ||
         p.author.toLowerCase().includes(lower)
     );
@@ -67,7 +71,14 @@ function SearchResults() {
         ))}
       </div>
 
-      {q && results.length === 0 && (
+      {loading && (
+        <div className="text-center py-24">
+          <Loader2 className="w-8 h-8 animate-spin mx-auto text-primary mb-4" />
+          <p className="text-sm font-inter opacity-40">{t("Searching...", "खोज रहे हैं...")}</p>
+        </div>
+      )}
+
+      {q && !loading && results.length === 0 && (
         <div className="text-center py-24">
           <p className="text-2xl font-newsreader font-bold italic opacity-40 dark:text-white/40">
             {t("No articles found. Try a different search.", "कोई लेख नहीं मिला। कोई अन्य खोज आज़माएं।")}

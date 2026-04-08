@@ -1,0 +1,2312 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>लोकतंत्र वाणी — AI News Card Studio</title>
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#f59e0b">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="apple-touch-icon" href="/icons/icon-192.png">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;700;900&family=Playfair+Display:wght@700;900&family=Source+Sans+3:wght@400;600&display=swap" rel="stylesheet">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+:root { --brown:#7d6144;--cream:#e8d9c0;--dark:#1a1a2e;--gold:#f59e0b;--lb:#c4a882;--db:#5c4433; }
+
+/* Bihar — saffron/ochre */
+body.ed-bihar { --brown:#8B4513;--cream:#fdf0d5;--dark:#2d1a0a;--gold:#e8820c;--lb:#d4a055;--db:#6b3010; background:#f5e8ca; }
+/* Kerala — green/teal */
+body.ed-kerala { --brown:#1a5c3a;--cream:#e8f5ee;--dark:#0d2e1c;--gold:#2ecc71;--lb:#7dbb99;--db:#0f3d24; background:#d4edda; }
+/* Tamil Nadu — deep red/temple */
+body.ed-tamilnadu { --brown:#7b1c1c;--cream:#fdf0f0;--dark:#2d0a0a;--gold:#e63946;--lb:#c97a7a;--db:#5c1010; background:#f5d5d5; }
+/* Bengal — blue/white */
+body.ed-bengal { --brown:#1a3a6b;--cream:#e8eef8;--dark:#0a1a3d;--gold:#3a7bd5;--lb:#7a9fd4;--db:#0f2558; background:#d5e0f5; }
+/* North East — purple/forest */
+body.ed-northeast { --brown:#3d1a5c;--cream:#f0e8f8;--dark:#1a0a2e;--gold:#9b59b6;--lb:#b07dd4;--db:#280a45; background:#e5d5f5; }
+/* Middle East — deep sand/war olive */
+body.ed-middleeast { --brown:#5c4a1e;--cream:#f5edd0;--dark:#1a1200;--gold:#c8960c;--lb:#b09040;--db:#3d2e08; background:#ede0b0; }
+body { background:#f0e8d8; min-height:100vh; font-family:'Source Sans 3',sans-serif; }
+.app { display:grid; grid-template-columns:370px 1fr; min-height:100vh; }
+
+/* LEFT — Light sidebar */
+.left { background:#f8f6f1; border-right:2px solid var(--gold); display:flex; flex-direction:column; height:100vh; position:sticky; top:0; overflow:hidden; }
+.left::-webkit-scrollbar { width:3px; }
+.left::-webkit-scrollbar-thumb { background:#c4b89a; }
+.nav-tabs { display:flex; background:#ede8dc; border-bottom:1px solid #d4c9b4; flex-shrink:0; }
+.nav-tabs a { flex:1; text-align:center; padding:8px 4px; color:#8b7d6b; font-size:10px; font-weight:700; text-decoration:none; letter-spacing:.5px; transition:all .15s; border-bottom:2px solid transparent; }
+.nav-tabs a:hover { color:#5c4433; background:rgba(0,0,0,.03); }
+.nav-tabs a.active { color:#b8860b; border-bottom-color:#b8860b; background:rgba(184,134,11,.06); }
+.lhead { background:#ede8dc; padding:16px 18px 12px; border-bottom:2px solid #d4c9b4; flex-shrink:0; }
+.lhead h2 { font-family:'Playfair Display',serif; color:#5c4433; font-size:19px; margin-bottom:3px; }
+.lhead p { color:#8b7d6b; font-size:10px; letter-spacing:0.8px; text-transform:uppercase; }
+
+/* sections */
+.sec { padding:12px 16px; border-bottom:1px solid #e0d8c8; flex-shrink:0; }
+.slabel { color:#8b7d6b; font-size:9px; text-transform:uppercase; letter-spacing:1.5px; margin-bottom:7px; font-weight:700; }
+.row2 { display:flex; gap:6px; }
+.pvbtn,.langbtn { flex:1; padding:7px 5px; border-radius:5px; border:1.5px solid #d4c9b4; background:#fff; color:#6b5640; font-size:11px; font-weight:700; cursor:pointer; transition:all .15s; font-family:'Source Sans 3',sans-serif; }
+.pvbtn.on { border-color:#b8860b; background:rgba(184,134,11,.1); color:#b8860b; }
+.langbtn.on { border-color:#7c3aed; background:rgba(124,58,237,.08); color:#7c3aed; }
+.ainput { flex:1; background:#fff; border:1.5px solid #d4c9b4; border-radius:5px; padding:8px 10px; color:#2d2418; font-size:12px; font-family:monospace; outline:none; min-width:0; }
+.ainput:focus { border-color:#b8860b; }
+.sbtn { background:#b8860b; color:#fff; border:none; border-radius:5px; padding:8px 13px; font-weight:700; cursor:pointer; font-size:11px; white-space:nowrap; }
+.keyok { color:#16a34a; font-size:10px; margin-top:5px; display:none; }
+
+/* feed */
+.feed { flex:1; overflow:hidden; display:flex; flex-direction:column; }
+.fhead { padding:9px 16px; border-bottom:1px solid #d4c9b4; flex-shrink:0; display:flex; align-items:center; justify-content:space-between; }
+.ftitle { color:#8b7d6b; font-size:9px; text-transform:uppercase; letter-spacing:1.5px; font-weight:700; }
+.badge { background:#b8860b; color:#fff; font-size:9px; font-weight:900; padding:2px 7px; border-radius:20px; margin-left:7px; }
+.rbtn { background:#fff; border:1px solid #d4c9b4; color:#8b7d6b; border-radius:5px; padding:5px 10px; font-size:10px; cursor:pointer; font-family:'Source Sans 3',sans-serif; font-weight:600; transition:all .15s; }
+.rbtn:hover { border-color:#b8860b; color:#b8860b; }
+.eselect { background:#fff; border:1.5px solid #d4c9b4; border-radius:5px; color:#7c3aed; font-size:10px; font-weight:700; padding:5px 8px; cursor:pointer; font-family:'Source Sans 3',sans-serif; outline:none; }
+.eselect:focus { border-color:#7c3aed; }
+.flist { flex:1; overflow-y:auto; padding:6px; }
+.flist::-webkit-scrollbar { width:3px; }
+.flist::-webkit-scrollbar-thumb { background:#c4b89a; border-radius:2px; }
+.nitem { display:flex; align-items:flex-start; gap:9px; padding:9px; border-radius:6px; cursor:pointer; margin-bottom:3px; border:1.5px solid transparent; transition:all .15s; }
+.nitem:hover { background:#ede8dc; }
+.nitem.on { background:rgba(184,134,11,.07); border-color:rgba(184,134,11,.25); }
+.ncheck { width:17px; height:17px; border-radius:4px; border:2px solid #d4c9b4; flex-shrink:0; display:flex; align-items:center; justify-content:center; margin-top:2px; transition:all .15s; }
+.nitem.on .ncheck { background:#b8860b; border-color:#b8860b; }
+.ncheck svg { display:none; }
+.nitem.on .ncheck svg { display:block; }
+.ntxt { flex:1; min-width:0; }
+.nhl { color:#2d2418; font-size:12px; line-height:1.4; font-weight:600; margin-bottom:3px; }
+.nmeta { display:flex; gap:6px; }
+.ncat { font-size:9px; text-transform:uppercase; letter-spacing:.8px; color:#8b7d6b; font-weight:700; }
+.nitem.on .ncat { color:#b8860b; }
+.nsrc { font-size:9px; color:#8b7d6b; }
+
+/* custom */
+.csec { padding:9px 16px; border-top:1px solid #d4c9b4; flex-shrink:0; }
+.cinput { flex:1; background:#fff; border:1.5px solid #d4c9b4; border-radius:5px; padding:8px 10px; color:#2d2418; font-size:12px; outline:none; font-family:'Source Sans 3',sans-serif; min-width:0; }
+.cinput:focus { border-color:#b8860b; }
+.abtn { background:#1e3a8a; color:#fff; border:none; border-radius:5px; padding:8px 12px; font-weight:700; cursor:pointer; font-size:11px; white-space:nowrap; }
+
+/* gen */
+.gsec { padding:12px 16px; border-top:2px solid #d4c9b4; flex-shrink:0; background:#ede8dc; }
+.gbtn { width:100%; background:linear-gradient(135deg,#b8860b,#996e08); color:#fff; border:none; border-radius:7px; padding:13px; font-weight:900; cursor:pointer; font-size:14px; font-family:'Playfair Display',serif; box-shadow:0 4px 16px rgba(184,134,11,.3); transition:all .2s; }
+.gbtn:hover:not(:disabled) { transform:translateY(-1px); box-shadow:0 6px 24px rgba(184,134,11,.45); }
+.gbtn:disabled { background:#d4c9b4; color:#8b7d6b; box-shadow:none; transform:none; cursor:not-allowed; }
+.gnote { color:#8b7d6b; font-size:10px; text-align:center; margin-top:6px; }
+
+/* History */
+.hist-card { display:flex; gap:8px; padding:6px; border-radius:5px; border:1px solid #d4c9b4; cursor:pointer; transition:all .15s; align-items:center; background:#fff; }
+.hist-card:hover { background:#ede8dc; border-color:#b8860b; }
+.hist-thumb { width:48px; height:27px; border-radius:3px; object-fit:cover; background:#ede8dc; flex-shrink:0; }
+.hist-info { flex:1; min-width:0; }
+.hist-title { font-size:10px; color:#2d2418; font-weight:600; line-height:1.3; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.hist-date { font-size:8px; color:#8b7d6b; margin-top:1px; }
+.hist-del { background:none; border:none; color:#8b7d6b; font-size:12px; cursor:pointer; padding:2px 4px; flex-shrink:0; }
+.hist-del:hover { color:#ef4444; }
+#historyList::-webkit-scrollbar { width:2px; }
+#historyList::-webkit-scrollbar-thumb { background:#c4b89a; }
+
+/* RIGHT */
+.right { padding:28px 24px; display:flex; flex-direction:column; align-items:center; gap:18px; overflow-y:auto; }
+
+/* Newspaper */
+.np { width:100%; max-width:680px; background:var(--cream); border:3px solid var(--dark); box-shadow:0 0 0 6px var(--cream),0 0 0 8px var(--dark),0 20px 60px rgba(0,0,0,.4); }
+.mast { background:var(--cream); text-align:center; padding:14px 14px 10px; border-bottom:4px solid var(--dark); }
+.mast h1 { font-size:clamp(28px,5vw,48px); font-weight:900; color:var(--dark); line-height:1; letter-spacing:-1px; font-family:'Noto Sans Devanagari','Mangal',sans-serif; text-align:center; width:100%; display:block; }
+.ibar { display:flex; justify-content:space-between; align-items:center; padding:5px 12px; border-bottom:3px solid var(--dark); background:var(--dark); }
+.ibar span { font-size:clamp(9px,1.6vw,11px); font-weight:700; color:var(--cream); font-family:'Source Sans 3',sans-serif; letter-spacing:.3px; }
+.ibar .it { font-style:normal; font-weight:800; color:var(--gold); letter-spacing:.8px; font-family:'Playfair Display',serif; font-size:clamp(9px,1.7vw,12px); display:flex; align-items:center; gap:4px; }
+.ibar .it::before { content:'🪷'; font-style:normal; font-size:11px; }
+.sgrid { display:grid; grid-template-columns:1fr 1fr; }
+.pan { display:flex; flex-direction:column; overflow:hidden; }
+.pan.dk { background:var(--brown); border:2px solid var(--lb); }
+.pan.lt { background:var(--cream); border:2px solid var(--dark); }
+.phl { padding:8px 10px 6px; font-size:clamp(11px,1.9vw,14px); font-weight:900; line-height:1.35; font-family:'Noto Sans Devanagari',serif; }
+.pan.dk .phl { color:#f5f0e8; border-bottom:1.5px solid var(--lb); }
+.pan.lt .phl { color:var(--dark); border-bottom:1.5px solid var(--dark); }
+.pimg { height:155px; position:relative; overflow:hidden; display:flex; align-items:center; justify-content:center; cursor:default; clip-path:inset(0); }
+.pan.dk .pimg { background:var(--db); border-bottom:1.5px solid var(--lb); }
+.pan.lt .pimg { background:#d4c9b4; border-bottom:1.5px solid var(--dark); }
+.pimg img { position:absolute; top:0; left:0; width:100%; height:100%; object-fit:cover; transform-origin:center center; transition:none; display:block; }
+.ph { text-align:center; opacity:.35; }
+.ph .ico { font-size:24px; }
+.ph .hint { font-size:9px; font-family:'Source Sans 3',sans-serif; margin-top:4px; color:#e8d9c0; }
+.pan.lt .hint { color:var(--dark); }
+/* rgbtn moved to new styles */
+.lwrap { display:flex; flex-direction:column; align-items:center; gap:6px; }
+.spin { width:28px; height:28px; border-radius:50%; border:3px solid rgba(255,255,255,.1); border-top-color:var(--cream); animation:spin .8s linear infinite; }
+.spin.d { border-top-color:var(--brown); border-color:rgba(100,60,30,.15); }
+.llbl { font-size:9px; font-family:'Source Sans 3',sans-serif; color:#e8d9c0; opacity:.6; }
+.pan.lt .llbl { color:var(--dark); }
+.emsg { font-size:9px; font-family:'Source Sans 3',sans-serif; text-align:center; padding:8px; line-height:1.5; opacity:.7; color:#f5f0e8; }
+.pan.lt .emsg { color:var(--dark); }
+.psm { padding:7px 10px 9px; font-size:clamp(8px,1.3vw,10px); line-height:1.65; font-family:'Noto Sans Devanagari',Georgia,serif; }
+.pan.dk .psm { color:#e8d9c0; }
+.pan.lt .psm { color:#2d2418; }
+.npfoot { display:grid; grid-template-columns:1fr 1fr 1fr; border-top:3px solid var(--dark); }
+.fc { padding:9px 8px; display:flex; align-items:center; justify-content:center; gap:5px; font-size:clamp(8px,1.3vw,10px); font-weight:700; font-family:'Source Sans 3',sans-serif; }
+.fc.br { background:var(--brown); color:#f5f0e8; border-right:2px solid var(--dark); }
+.fc.cr { background:var(--cream); color:var(--dark); border-right:2px solid var(--dark); }
+.fc.br2 { background:var(--brown); color:#f5f0e8; }
+
+/* Image adjustment overlay */
+.img-toolbar { position:absolute; bottom:0; left:0; right:0; background:rgba(0,0,0,.85); padding:6px 7px 5px; display:none; flex-direction:column; gap:4px; z-index:10; }
+.pimg:hover .img-toolbar { display:flex; }
+.adj-row { display:flex; align-items:center; gap:5px; }
+.adj-lbl { color:#aaa; font-size:8px; width:26px; flex-shrink:0; font-family:'Source Sans 3',sans-serif; }
+.adj-slider { flex:1; -webkit-appearance:none; height:3px; border-radius:2px; background:#555; outline:none; cursor:pointer; }
+.adj-slider::-webkit-slider-thumb { -webkit-appearance:none; width:11px; height:11px; border-radius:50%; background:var(--gold); cursor:pointer; }
+.adj-val { color:#888; font-size:8px; width:24px; text-align:right; flex-shrink:0; font-family:monospace; }
+.toolbar-btns { display:flex; gap:4px; margin-top:2px; }
+.tbtn { flex:1; background:rgba(255,255,255,.1); border:1px solid rgba(255,255,255,.15); color:#ddd; border-radius:4px; padding:3px 5px; font-size:9px; cursor:pointer; font-family:'Source Sans 3',sans-serif; font-weight:600; transition:all .15s; white-space:nowrap; }
+.tbtn:hover { background:rgba(255,255,255,.2); color:#fff; }
+.tbtn.rmbg { border-color:rgba(239,68,68,.4); color:#f87171; }
+.tbtn.rmbg:hover { background:rgba(239,68,68,.2); }
+.move-pad { display:grid; grid-template-columns:1fr 1fr 1fr; gap:2px; width:72px; flex-shrink:0; }
+.mvbtn { background:rgba(255,255,255,.1); border:1px solid rgba(255,255,255,.15); color:#ddd; border-radius:3px; padding:2px; font-size:11px; cursor:pointer; text-align:center; line-height:1; user-select:none; }
+.mvbtn:hover { background:rgba(255,255,255,.25); }
+.mvbtn:active { background:rgba(255,255,255,.4); }
+.zoom-col { display:flex; flex-direction:column; gap:2px; }
+.zbtn { background:rgba(255,255,255,.1); border:1px solid rgba(255,255,255,.15); color:var(--gold); border-radius:3px; padding:2px 5px; font-size:11px; font-weight:900; cursor:pointer; text-align:center; user-select:none; }
+.zbtn:hover { background:rgba(245,158,11,.25); }
+.zbtn:active { background:rgba(245,158,11,.4); }
+.pos-row { display:flex; align-items:center; gap:6px; margin-top:3px; }
+.rgbtn { position:absolute; top:5px; right:5px; background:rgba(0,0,0,.6); color:#fff; border:none; border-radius:50%; width:24px; height:24px; font-size:12px; cursor:pointer; display:none !important; align-items:center; justify-content:center; z-index:11; }
+
+/* DL row */
+.dlrow { width:100%; max-width:680px; display:flex; gap:10px; }
+.dlbtn { flex:1; background:var(--dark); color:var(--cream); border:2px solid var(--cream); border-radius:8px; padding:12px; font-weight:700; cursor:pointer; font-size:13px; font-family:'Playfair Display',serif; transition:background .15s; }
+.dlbtn:hover { background:#0f0f1e; }
+.dlbtn.gold { border-color:var(--gold); color:var(--gold); background:transparent; }
+.dlbtn.gold:hover { background:rgba(245,158,11,.08); }
+.dlbtn.xbtn { background:#000; color:#fff; border-color:#000; }
+.dlbtn.xbtn:hover { background:#1a1a1a; }
+
+/* Empty */
+.empty { width:100%; max-width:680px; background:rgba(13,17,23,.7); border:2px dashed #1e293b; border-radius:12px; padding:52px 32px; text-align:center; }
+.empty .ico { font-size:48px; margin-bottom:14px; }
+.empty h3 { color:#64748b; font-family:'Playfair Display',serif; font-size:22px; margin-bottom:8px; }
+.empty p { color:#334155; font-size:13px; line-height:1.7; }
+.steps { display:flex; flex-direction:column; gap:8px; margin-top:18px; text-align:left; max-width:340px; margin-left:auto; margin-right:auto; }
+.step { display:flex; align-items:center; gap:10px; color:#475569; font-size:12px; }
+.step-n { background:#1e293b; color:var(--gold); width:22px; height:22px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:900; flex-shrink:0; }
+
+@keyframes spin { to { transform:rotate(360deg); } }
+@keyframes fadein { from { opacity:0;transform:translateY(10px); } to { opacity:1;transform:translateY(0); } }
+.fadein { animation:fadein .3s ease; }
+
+/* ── RSS FEEDS ── */
+.rss-chips { display:flex; gap:5px; flex-wrap:wrap; margin-top:6px; }
+.rss-chip { background:#fff; color:#8b7d6b; border:1px solid #d4c9b4; border-radius:20px; padding:3px 9px 3px 8px; font-size:10px; display:flex; align-items:center; gap:5px; }
+.rss-chip .rss-x { cursor:pointer; color:#8b7d6b; font-size:11px; }
+.rss-chip .rss-x:hover { color:#f87171; }
+
+/* ── TEMPLATE GALLERY ── */
+.tpl-grid { display:flex; gap:6px; overflow-x:auto; padding-bottom:4px; }
+.tpl-grid::-webkit-scrollbar { height:2px; }
+.tpl-grid::-webkit-scrollbar-thumb { background:#c4b89a; }
+.tpl-card { min-width:58px; padding:6px 4px; border-radius:6px; border:1.5px solid #d4c9b4; background:#fff; color:#8b7d6b; font-size:9px; font-weight:700; cursor:pointer; transition:all .15s; text-align:center; font-family:'Source Sans 3',sans-serif; flex-shrink:0; }
+.tpl-card .tpl-ico { font-size:20px; margin-bottom:2px; }
+.tpl-card.on { border-color:#b8860b; background:rgba(184,134,11,.1); color:#b8860b; }
+
+/* ── HERO TEMPLATE ── */
+.np-hero { display:flex; flex-direction:column; }
+.np-hero .hero-main { position:relative; }
+.np-hero .hero-img { height:320px; position:relative; overflow:hidden; clip-path:inset(0); }
+.np-hero .hero-img img { position:absolute; top:0; left:0; width:100%; height:100%; object-fit:cover; }
+.np-hero .hero-overlay { position:absolute; bottom:0; left:0; right:0; background:linear-gradient(transparent,rgba(0,0,0,.85)); padding:18px 16px 14px; }
+.np-hero .hero-hl { font-family:'Noto Sans Devanagari',serif; font-size:clamp(18px,3.5vw,26px); font-weight:900; color:#fff; line-height:1.3; text-shadow:0 2px 8px rgba(0,0,0,.5); }
+.np-hero .hero-sm { padding:14px 16px; font-family:'Noto Sans Devanagari',Georgia,serif; font-size:clamp(11px,1.8vw,13px); line-height:1.7; color:var(--dark); background:var(--cream); }
+
+/* ── BREAKING TEMPLATE ── */
+.np-breaking .break-banner { background:#b91c1c; color:#fff; text-align:center; padding:6px 10px; font-family:'Playfair Display',serif; font-size:14px; font-weight:900; letter-spacing:2px; text-transform:uppercase; animation:breakpulse 1.5s ease-in-out infinite; }
+@keyframes breakpulse { 0%,100%{opacity:1} 50%{opacity:.7} }
+.np-breaking .break-stack { display:flex; flex-direction:column; }
+.np-breaking .break-item { display:flex; border-bottom:2px solid var(--dark); }
+.np-breaking .break-img { width:200px; height:160px; position:relative; overflow:hidden; flex-shrink:0; clip-path:inset(0); }
+.np-breaking .break-img img { position:absolute; top:0; left:0; width:100%; height:100%; object-fit:cover; }
+.np-breaking .break-txt { flex:1; padding:12px 14px; display:flex; flex-direction:column; justify-content:center; }
+.np-breaking .break-hl { font-family:'Noto Sans Devanagari',serif; font-size:clamp(13px,2.2vw,16px); font-weight:900; line-height:1.35; color:var(--dark); margin-bottom:6px; }
+.np-breaking .break-sm { font-family:'Noto Sans Devanagari',Georgia,serif; font-size:clamp(9px,1.4vw,11px); line-height:1.6; color:#5c4433; }
+
+/* ── SPORTS TEMPLATE ── */
+.np-sports .sport-hero { position:relative; height:220px; overflow:hidden; clip-path:inset(0); border-bottom:3px solid var(--dark); }
+.np-sports .sport-hero img { position:absolute; top:0; left:0; width:100%; height:100%; object-fit:cover; }
+.np-sports .sport-hero-overlay { position:absolute; bottom:0; left:0; right:0; background:linear-gradient(transparent,rgba(0,0,0,.9)); padding:14px; }
+.np-sports .sport-hero-hl { font-family:'Noto Sans Devanagari',serif; font-size:clamp(16px,3vw,22px); font-weight:900; color:#fff; }
+.np-sports .sport-row { display:grid; grid-template-columns:1fr 1fr; }
+.np-sports .sport-card { padding:10px 12px; border:1px solid var(--dark); }
+.np-sports .sport-card:first-child { border-right:2px solid var(--dark); }
+.np-sports .sport-hl { font-family:'Noto Sans Devanagari',serif; font-size:clamp(11px,1.8vw,13px); font-weight:900; line-height:1.35; color:var(--dark); margin-bottom:4px; }
+.np-sports .sport-sm { font-size:clamp(8px,1.2vw,10px); line-height:1.5; color:#5c4433; font-family:'Noto Sans Devanagari',Georgia,serif; }
+
+/* ── OPINION TEMPLATE ── */
+.np-opinion .oped-main { padding:20px; background:var(--cream); }
+.np-opinion .oped-label { font-family:'Playfair Display',serif; font-size:11px; color:var(--gold); text-transform:uppercase; letter-spacing:2px; margin-bottom:10px; border-bottom:2px solid var(--gold); padding-bottom:4px; display:inline-block; }
+.np-opinion .oped-hl { font-family:'Noto Sans Devanagari',serif; font-size:clamp(20px,4vw,30px); font-weight:900; line-height:1.25; color:var(--dark); margin-bottom:12px; }
+.np-opinion .oped-quote { border-left:4px solid var(--gold); padding:8px 14px; margin:12px 0; font-style:italic; font-family:Georgia,serif; font-size:clamp(12px,2vw,15px); color:var(--brown); line-height:1.6; }
+.np-opinion .oped-body { font-family:'Noto Sans Devanagari',Georgia,serif; font-size:clamp(10px,1.6vw,12px); line-height:1.8; color:#2d2418; column-count:2; column-gap:16px; }
+.np-opinion .oped-img { height:180px; position:relative; overflow:hidden; clip-path:inset(0); border-top:2px solid var(--dark); }
+.np-opinion .oped-img img { position:absolute; top:0; left:0; width:100%; height:100%; object-fit:cover; }
+
+/* ── DRAG & DROP ── */
+.pan[draggable=true] { cursor:grab; }
+.pan.dragging { opacity:.4; border-style:dashed !important; }
+.pan.drag-over { border-color:var(--gold) !important; box-shadow:inset 0 0 20px rgba(245,158,11,.15); }
+.dnd-handle { position:absolute; top:3px; left:3px; color:rgba(255,255,255,.3); font-size:14px; cursor:grab; z-index:5; line-height:1; padding:2px; }
+.pan.lt .dnd-handle { color:rgba(0,0,0,.2); }
+
+/* ── VOICE NARRATION ── */
+.voice-btn { background:var(--dark); color:#e2e8f0; border:2px solid #475569; border-radius:8px; padding:10px 16px; font-weight:700; cursor:pointer; font-size:12px; font-family:'Source Sans 3',sans-serif; transition:all .15s; display:flex; align-items:center; gap:6px; }
+.voice-btn:hover { border-color:var(--gold); color:var(--gold); }
+.voice-btn.playing { border-color:#4ade80; color:#4ade80; animation:vpulse 1.2s ease-in-out infinite; }
+@keyframes vpulse { 0%,100%{box-shadow:0 0 0 0 rgba(74,222,128,.3)} 50%{box-shadow:0 0 12px 4px rgba(74,222,128,.15)} }
+.voice-controls { display:flex; align-items:center; gap:8px; }
+.voice-speed { background:#090d14; border:1px solid #1e293b; border-radius:5px; color:#94a3b8; font-size:10px; padding:4px 6px; font-family:'Source Sans 3',sans-serif; cursor:pointer; }
+
+@media (max-width:860px) {
+  .app { grid-template-columns:1fr; }
+  .left { height:auto; position:static; }
+  .feed { max-height:380px; }
+  .np-breaking .break-item { flex-direction:column; }
+  .np-breaking .break-img { width:100%; height:140px; }
+  .np-opinion .oped-body { column-count:1; }
+}
+
+/* ── SHARE MODAL ─────────────────────────── */
+.smodal-ov{position:fixed;inset:0;background:rgba(0,0,0,.82);z-index:9999;display:none;align-items:center;justify-content:center;backdrop-filter:blur(6px);}
+.smodal-ov.open{display:flex;}
+.smodal{background:#0a0f18;border:1.5px solid #1e293b;border-radius:16px;width:94%;max-width:500px;max-height:92vh;overflow-y:auto;padding:0;}
+.sm-head{padding:20px 22px 14px;border-bottom:1px solid #1e293b;display:flex;align-items:center;justify-content:space-between;}
+.sm-head h3{font-family:'Playfair Display',serif;color:var(--gold);font-size:17px;margin:0;}
+.sm-xbtn{background:none;border:none;color:#475569;font-size:22px;cursor:pointer;line-height:1;padding:0;}
+.sm-xbtn:hover{color:#e2e8f0;}
+.sm-preview{margin:14px 22px 0;border-radius:8px;overflow:hidden;border:1.5px solid #1e293b;max-height:160px;display:flex;align-items:center;justify-content:center;background:#050810;}
+.sm-preview img{width:100%;object-fit:contain;}
+.sm-tabs{display:flex;padding:14px 22px 0;gap:6px;border-bottom:1px solid #0f172a;padding-bottom:0;}
+.sm-tab{flex:1;padding:9px 4px 10px;background:none;border:none;border-bottom:2.5px solid transparent;color:#475569;font-size:11px;font-weight:700;cursor:pointer;font-family:'Source Sans 3',sans-serif;transition:all .15s;letter-spacing:.5px;}
+.sm-tab.on{border-bottom-color:var(--gold);color:var(--gold);}
+.sm-body{padding:18px 22px 22px;}
+.sf{margin-bottom:13px;}
+.sf label{display:block;color:#475569;font-size:9px;text-transform:uppercase;letter-spacing:1.3px;font-weight:700;margin-bottom:5px;}
+.sf input,.sf textarea,.sf select{width:100%;background:#050810;border:1.5px solid #1e293b;border-radius:7px;padding:9px 12px;color:#e2e8f0;font-size:12px;outline:none;font-family:'Source Sans 3',sans-serif;}
+.sf input:focus,.sf textarea:focus{border-color:var(--gold);}
+.sf textarea{resize:vertical;min-height:75px;}
+.sf select{cursor:pointer;}
+.chip-row{display:flex;gap:5px;flex-wrap:wrap;margin-top:6px;}
+.chip{background:#0f172a;color:#64748b;border:1px solid #1e293b;border-radius:20px;padding:4px 11px;font-size:10px;cursor:pointer;transition:all .12s;}
+.chip:hover,.chip.on{border-color:var(--gold);color:var(--gold);background:rgba(245,158,11,.07);}
+.contact-scroll{max-height:130px;overflow-y:auto;margin-top:6px;border:1px solid #0f172a;border-radius:6px;}
+.citem{display:flex;align-items:center;gap:8px;padding:7px 10px;border-bottom:1px solid #0a0f18;}
+.citem:last-child{border-bottom:none;}
+.citem input[type=checkbox]{accent-color:var(--gold);width:14px;height:14px;}
+.citem .cn{flex:1;color:#94a3b8;font-size:11px;}
+.citem .ct{font-size:9px;color:#334155;background:#0f172a;padding:2px 7px;border-radius:10px;}
+.citem .cdel{color:#334155;font-size:12px;cursor:pointer;padding:2px 4px;}
+.citem .cdel:hover{color:#f87171;}
+.cadd-row{display:flex;gap:6px;margin-top:8px;}
+.cadd-row input{flex:1;background:#050810;border:1.5px solid #1e293b;border-radius:6px;padding:8px 11px;color:#e2e8f0;font-size:11px;outline:none;}
+.cadd-row input:focus{border-color:#3b82f6;}
+.cadd-row button{background:#1e3a8a;color:#fff;border:none;border-radius:6px;padding:8px 14px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;}
+.cadd-row button:hover{background:#2563eb;}
+.sbtn-row{display:flex;gap:8px;margin-top:16px;}
+.sbtn{flex:1;padding:12px 8px;border-radius:9px;border:none;font-weight:700;cursor:pointer;font-size:12px;font-family:'Source Sans 3',sans-serif;display:flex;align-items:center;justify-content:center;gap:7px;transition:all .15s;}
+.sbtn:disabled{opacity:.45;cursor:not-allowed;}
+.sbtn.s-wa{background:#22c55e;color:#fff;}
+.sbtn.s-wa:hover:not(:disabled){background:#16a34a;}
+.sbtn.s-em{background:#3b82f6;color:#fff;}
+.sbtn.s-em:hover:not(:disabled){background:#2563eb;}
+.sbtn.s-cp{background:#1e293b;color:var(--gold);border:1.5px solid var(--gold);}
+.sbtn.s-cp:hover{background:rgba(245,158,11,.1);}
+.sbtn.s-dl{background:#1e293b;color:#94a3b8;border:1.5px solid #334155;}
+.snotice{margin-top:11px;padding:9px 12px;border-radius:7px;font-size:11px;line-height:1.5;display:none;}
+.snotice.ok{display:block;background:rgba(34,197,94,.08);color:#4ade80;border:1px solid rgba(34,197,94,.18);}
+.snotice.warn{display:block;background:rgba(251,191,36,.08);color:#fbbf24;border:1px solid rgba(251,191,36,.18);}
+.snotice.err{display:block;background:rgba(239,68,68,.08);color:#f87171;border:1px solid rgba(239,68,68,.18);}
+.sc-item{background:#050810;border:1px solid #1e293b;border-radius:7px;padding:10px 12px;margin-bottom:7px;display:flex;align-items:center;gap:10px;}
+.sc-item .sci{flex:1;}
+.sc-item .sct{color:#e2e8f0;font-size:11px;font-weight:600;}
+.sc-item .scm{color:#475569;font-size:9px;margin-top:2px;}
+
+</style>
+</head>
+<body>
+<div class="app">
+
+<!-- ── LEFT PANEL ── -->
+<div class="left">
+  <div class="nav-tabs">
+    <a href="/" title="Home">🏠</a>
+    <a href="/column.html">✍ Column</a>
+    <a href="/v21.html">📰 Classic</a>
+    <a href="/v24.html" class="active">🪷 Pro</a>
+    <a href="/video.html">🎬 Video</a>
+  </div>
+  <div class="lhead">
+    <h2>🪷 Pro Studio</h2>
+    <p>Select · Generate · Download</p>
+  </div>
+
+  <!-- API -->
+  <div class="sec">
+    <div class="slabel">Image API</div>
+    <div class="row2" style="margin-bottom:8px">
+      <button class="pvbtn on" id="pv-gemini" onclick="setProv('gemini')">🍌 Gemini</button>
+      <button class="pvbtn" id="pv-openai" onclick="setProv('openai')">⚡ OpenAI / Sora</button>
+    </div>
+    <div class="row2">
+      <input class="ainput" type="password" id="api-key" placeholder="AIza... (aistudio.google.com/apikey)" />
+      <button class="sbtn" onclick="saveKey()">SAVE</button>
+    </div>
+    <div class="keyok" id="keyok">✓ Key saved — ready!</div>
+  </div>
+
+  <!-- Language -->
+  <div class="sec">
+    <div class="slabel">Card Language</div>
+    <div class="row2">
+      <button class="langbtn on" id="lg-hi" onclick="setLang('hi')">🇮🇳 Hindi</button>
+      <button class="langbtn" id="lg-en" onclick="setLang('en')">🇬🇧 English</button>
+      <button class="langbtn" id="lg-bi" onclick="setLang('bi')">🔀 Bilingual</button>
+    </div>
+  </div>
+
+  <!-- Template -->
+  <div class="sec">
+    <div class="slabel">Card Template</div>
+    <div class="tpl-grid" id="tplGrid"></div>
+  </div>
+
+  <!-- Edition -->
+  <div class="sec" style="padding:8px 16px;">
+    <div class="slabel">Edition</div>
+    <select class="eselect" id="edition" onchange="setEdition(this.value)" style="width:100%">
+      <option value="national">🇮🇳 Bharat Edition (National)</option>
+      <option value="bihar">🏛 Bihar Edition</option>
+      <option value="kerala">🌴 Kerala Edition</option>
+      <option value="tamilnadu">🎭 Tamil Nadu Edition</option>
+      <option value="bengal">🐯 Bengal Edition</option>
+      <option value="northeast">🏔 North East Edition</option>
+      <option value="middleeast">⚔️ Middle East War Desk</option>
+    </select>
+  </div>
+
+  <!-- Feed -->
+  <div class="feed">
+    <div class="fhead">
+      <div style="display:flex;align-items:center">
+        <span class="ftitle" id="feedtitle">Today's News</span>
+        <span class="badge" id="badge">0 / 4</span>
+      </div>
+      <button class="rbtn" id="rfbtn" onclick="refreshFeed()">↻ Live Refresh</button>
+    </div>
+    <div class="flist" id="flist"></div>
+  </div>
+
+  <!-- Custom -->
+  <div class="csec">
+    <div class="slabel" style="margin-bottom:6px">➕ Add Your Own News</div>
+    <div class="row2">
+      <input class="cinput" type="text" id="cinput" placeholder="Paste URL or type headline..." onkeydown="if(event.key==='Enter')addCustom()" />
+      <button class="abtn" onclick="addCustom()">Add</button>
+    </div>
+  </div>
+
+  <!-- RSS Feeds -->
+  <div class="csec">
+    <div class="slabel" style="margin-bottom:6px">📡 RSS Feeds</div>
+    <div class="row2">
+      <input class="cinput" type="url" id="rssInput" placeholder="https://example.com/rss.xml" onkeydown="if(event.key==='Enter')addRSSFeed()" />
+      <button class="abtn" onclick="addRSSFeed()">Add</button>
+    </div>
+    <div class="rss-chips" id="rssChips"></div>
+  </div>
+
+  <!-- History -->
+  <div class="sec" id="historySec" style="display:none">
+    <div class="slabel" style="display:flex;justify-content:space-between;align-items:center">History <span id="historyCount" style="font-size:8px;color:#334155"></span></div>
+    <div id="historyList" style="max-height:180px;overflow-y:auto;display:flex;flex-direction:column;gap:4px"></div>
+  </div>
+
+  <!-- Generate -->
+  <div class="gsec">
+    <button class="gbtn" id="gbtn" onclick="generate()" disabled>🍌 Generate Newspaper Card</button>
+    <button class="gbtn" id="saveHistBtn" style="display:none;background:#1e293b;color:#94a3b8;font-size:11px;padding:8px;margin-top:6px;box-shadow:none;font-family:'Source Sans 3',sans-serif" onclick="saveToHistory()">💾 Save to History</button>
+    <p class="gnote" id="gnote">Select up to 4 stories to begin</p>
+  </div>
+</div>
+
+<!-- ── RIGHT PANEL ── -->
+<div class="right" id="right">
+  <div class="empty">
+    <div class="ico">📰</div>
+    <h3>Your Card Appears Here</h3>
+    <p>Build your custom newspaper card in seconds.</p>
+    <div class="steps">
+      <div class="step"><div class="step-n">1</div> Add your Gemini or OpenAI API key</div>
+      <div class="step"><div class="step-n">2</div> Select up to 4 news stories from the feed</div>
+      <div class="step"><div class="step-n">3</div> Choose language: Hindi, English, or Bilingual</div>
+      <div class="step"><div class="step-n">4</div> Click Generate — images auto-create!</div>
+    </div>
+  </div>
+</div>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js">
+// ── SHARE SYSTEM ─────────────────────────────────────────────────────────────
+let _shareImg = '';
+let _scPlatforms = new Set(['wa']);
+let _scRepeat = 'once';
+
+// Load saved contacts (with fallback if localStorage blocked)
+function smLoad(key, def) {
+  try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : def; } catch(e) { return def; }
+}
+function smSave(key, val) {
+  try { localStorage.setItem(key, JSON.stringify(val)); } catch(e) {}
+}
+
+let waContacts = smLoad('lv_wa', []);
+let emContacts = smLoad('lv_em', []);
+let scList = smLoad('lv_sc', []);
+
+async function openShareModal(tab) {
+  const np = document.getElementById('np');
+  if (!np) { alert('Generate a newspaper card first!'); return; }
+
+  // Capture card as PNG
+  const overlays = np.querySelectorAll('.img-toolbar,.rgbtn');
+  overlays.forEach(el => { el.dataset.od = el.style.display; el.style.display = 'none'; });
+  try {
+    const cv = await html2canvas(np, {scale: 2, useCORS: true, backgroundColor: '#e8d9c0'});
+    _shareImg = cv.toDataURL('image/png');
+    document.getElementById('smPreviewImg').src = _shareImg;
+  } catch(e) { console.warn('capture err', e); }
+  finally { overlays.forEach(el => { el.style.display = el.dataset.od || ''; }); }
+
+  // Auto-fill defaults
+  const edNames = {national:'Bharat',bihar:'Bihar',kerala:'Kerala',tamilnadu:'Tamil Nadu',bengal:'Bengal',northeast:'North East',middleeast:'Middle East War Desk'};
+  const edName = edNames[currentEdition] || 'Bharat';
+  const today = new Date().toLocaleDateString('en-IN', {day:'numeric', month:'long', year:'numeric'});
+
+  document.getElementById('wa-msg').value =
+    `🗞 *लोकतंत्र वाणी* — ${edName} Edition\n📅 ${today}\n\n📰 आज की ताज़ा और विश्वसनीय खबर\n\n*Crafted by Kautilya World*\n🌐 kautilya.world | 𝕏 @world_kautilya\n\n#KautilyaWorld #LoktantraVaani`;
+
+  document.getElementById('em-subj').value =
+    `🗞 लोकतंत्र वाणी — ${edName} Edition | ${today}`;
+
+  document.getElementById('em-body').value =
+    `नमस्ते,\n\nआज की ताज़ा खबर — लोकतंत्र वाणी (${edName} Edition)\nदिनांक: ${today}\n\nकृपया संलग्न समाचार कार्ड देखें।\n\nआपका,\nKautilya World\n🌐 kautilya.world | 𝕏 @world_kautilya`;
+
+  document.getElementById('sc-msg').value = document.getElementById('wa-msg').value;
+
+  // Set schedule to 1h from now
+  const sch = new Date(Date.now() + 3600000);
+  document.getElementById('sc-dt').value = sch.toISOString().slice(0,16);
+
+  smRenderContacts();
+  smRenderScheduled();
+  document.getElementById('shareModalOv').classList.add('open');
+  smSwitchTab(tab || 'wa');
+}
+
+function closeShareModal() {
+  document.getElementById('shareModalOv').classList.remove('open');
+}
+
+function smSwitchTab(tab) {
+  ['wa','em','sc'].forEach(t => {
+    document.getElementById('smtab-'+t).classList.toggle('on', t === tab);
+    document.getElementById('smpanel-'+t).style.display = t === tab ? 'block' : 'none';
+  });
+}
+
+function smSetMsg(panel, txt) {
+  document.getElementById(panel === 'wa' ? 'wa-msg' : 'em-body').value = txt;
+}
+
+// ── CONTACTS ────────────────────────────────────────────────────────────────
+function smRenderContacts() {
+  const renderList = (contacts, type) => {
+    const el = document.getElementById(type + '-clist');
+    if (!contacts.length) {
+      el.innerHTML = `<div style="padding:10px 12px;color:#334155;font-size:11px">No contacts yet — add one below</div>`;
+      return;
+    }
+    el.innerHTML = contacts.map((c, i) => `
+      <div class="citem">
+        <input type="checkbox" id="${type}c${i}" checked>
+        <span class="cn"><label for="${type}c${i}" style="cursor:pointer">${c.label}</label></span>
+        <span class="ct">${type === 'wa' ? (c.isGroup ? '👥 Group' : '📱 Phone') : '✉ Email'}</span>
+        <span class="cdel" onclick="smRemoveContact('${type}',${i})">✕</span>
+      </div>`).join('');
+  };
+  renderList(waContacts, 'wa');
+  renderList(emContacts, 'em');
+}
+
+function smAddContact(type) {
+  const inp = document.getElementById(type + '-new');
+  const val = inp.value.trim();
+  if (!val) return;
+  if (type === 'wa') {
+    const isGroup = isNaN(val.replace(/[+\s]/g, ''));
+    waContacts.push({label: val, val: val, isGroup});
+    smSave('lv_wa', waContacts);
+  } else {
+    if (!val.includes('@') && !val.includes('<')) return smNotice('em', 'Please enter a valid email address.', 'err');
+    emContacts.push({label: val, val: val.match(/<(.+)>/)?.[1] || val});
+    smSave('lv_em', emContacts);
+  }
+  inp.value = '';
+  smRenderContacts();
+}
+
+function smRemoveContact(type, idx) {
+  if (type === 'wa') { waContacts.splice(idx, 1); smSave('lv_wa', waContacts); }
+  else { emContacts.splice(idx, 1); smSave('lv_em', emContacts); }
+  smRenderContacts();
+}
+
+function smGetChecked(type) {
+  const list = type === 'wa' ? waContacts : emContacts;
+  return list.filter((_, i) => {
+    const cb = document.getElementById(type + 'c' + i);
+    return cb && cb.checked;
+  });
+}
+
+// ── WHATSAPP ─────────────────────────────────────────────────────────────────
+async function smShareWA() {
+  const msg = document.getElementById('wa-msg').value;
+  const checked = smGetChecked('wa');
+
+  // Copy image to clipboard first for easy paste
+  await smCopyImgSilent();
+
+  if (checked.length === 0) {
+    // Open generic WhatsApp share
+    window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
+    smNotice('wa', '✅ WhatsApp opened! Image copied — paste it (Ctrl+V) before sending.', 'ok');
+    return;
+  }
+
+  // Open WhatsApp for each checked contact with 1.2s delay between
+  let opened = 0;
+  for (const c of checked) {
+    await new Promise(r => setTimeout(r, opened === 0 ? 0 : 1200));
+    if (c.isGroup) {
+      window.open('https://web.whatsapp.com/', '_blank');
+    } else {
+      const num = c.val.replace(/[^\d+]/g, '');
+      window.open(`https://wa.me/${num}?text=${encodeURIComponent(msg)}`, '_blank');
+    }
+    opened++;
+  }
+  smNotice('wa', `✅ Opened ${opened} WhatsApp window(s). Image is in clipboard — paste & send!`, 'ok');
+}
+
+// ── EMAIL ─────────────────────────────────────────────────────────────────────
+async function smShareEmail() {
+  const subj = document.getElementById('em-subj').value;
+  const body = document.getElementById('em-body').value;
+  const checked = smGetChecked('em');
+  const to = checked.map(c => c.val).join(',');
+
+  // Download image for attachment
+  smDownload();
+
+  const bodyWithNote = body + '\n\n---\n[Please attach the downloaded लोकतंत्र-वाणी image to this email]';
+
+  // Try Gmail web compose first, fallback to mailto
+  if (to) {
+    const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(to)}&su=${encodeURIComponent(subj)}&body=${encodeURIComponent(bodyWithNote)}`;
+    window.open(gmailUrl, '_blank');
+    smNotice('em', `✅ Gmail opened for ${checked.length} recipient(s). Image downloaded — attach it!`, 'ok');
+  } else {
+    const mailtoUrl = `mailto:?subject=${encodeURIComponent(subj)}&body=${encodeURIComponent(bodyWithNote)}`;
+    window.open(mailtoUrl);
+    smNotice('em', '✅ Mail app opened. Image downloaded to Downloads folder — attach it!', 'ok');
+  }
+}
+
+// ── COPY / DOWNLOAD ───────────────────────────────────────────────────────────
+async function smCopyImg() {
+  const copied = await smCopyImgSilent();
+  if (copied) smNotice('wa', '✅ Image copied! Now paste it (Ctrl+V / Cmd+V) directly in WhatsApp or Email.', 'ok');
+  else { smDownload(); smNotice('wa', '📥 Image downloaded. Attach it manually (clipboard copy not supported on this device).', 'warn'); }
+}
+
+async function smCopyImgSilent() {
+  if (!_shareImg) return false;
+  try {
+    const res = await fetch(_shareImg);
+    const blob = await res.blob();
+    await navigator.clipboard.write([new ClipboardItem({'image/png': blob})]);
+    return true;
+  } catch(e) { return false; }
+}
+
+function smDownload() {
+  if (!_shareImg) return;
+  const a = document.createElement('a');
+  a.download = `loktantra-vaani-${new Date().toISOString().slice(0,10)}.png`;
+  a.href = _shareImg;
+  a.click();
+}
+
+// ── SCHEDULE ──────────────────────────────────────────────────────────────────
+function smToggleScPlatform(p) {
+  const el = document.getElementById('scchip-' + p);
+  if (_scPlatforms.has(p)) { _scPlatforms.delete(p); el.classList.remove('on'); }
+  else { _scPlatforms.add(p); el.classList.add('on'); }
+}
+
+function smSetRepeat(r) {
+  _scRepeat = r;
+  ['once','daily','weekly'].forEach(t => document.getElementById('scr-'+t).classList.toggle('on', t === r));
+}
+
+function smSchedule() {
+  const dt = document.getElementById('sc-dt').value;
+  const msg = document.getElementById('sc-msg').value;
+  if (!dt) return smNotice('sc', '⚠ Please select a date and time.', 'err');
+  if (_scPlatforms.size === 0) return smNotice('sc', '⚠ Select at least one platform.', 'err');
+
+  const fireAt = new Date(dt).getTime();
+  const now = Date.now();
+  if (fireAt < now) return smNotice('sc', '⚠ Scheduled time is in the past. Pick a future time.', 'err');
+
+  const entry = {
+    id: now, fireAt, msg,
+    platforms: [..._scPlatforms],
+    repeat: _scRepeat,
+    edition: currentEdition,
+    imgData: _shareImg  // store snapshot of current card
+  };
+  scList.push(entry);
+  smSave('lv_sc', scList);
+
+  // Set timer if within 24h
+  const msUntil = fireAt - now;
+  if (msUntil < 86400000) {
+    setTimeout(() => smFireScheduled(entry.id), msUntil);
+    smNotice('sc', `✅ Scheduled for ${new Date(dt).toLocaleString('en-IN', {day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}. Keep this tab open!`, 'ok');
+  } else {
+    smNotice('sc', `✅ Saved! Open this app at ${new Date(dt).toLocaleString('en-IN', {day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})} to send.`, 'warn');
+  }
+  smRenderScheduled();
+}
+
+function smFireScheduled(id) {
+  const entry = scList.find(s => s.id === id);
+  if (!entry) return;
+  _shareImg = entry.imgData || _shareImg;
+
+  if (entry.platforms.includes('wa')) {
+    const msg = entry.msg;
+    window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
+  }
+  if (entry.platforms.includes('em')) {
+    smShareEmail();
+  }
+
+  // Handle repeat
+  if (entry.repeat !== 'once') {
+    const next = new Date(entry.fireAt);
+    if (entry.repeat === 'daily') next.setDate(next.getDate() + 1);
+    if (entry.repeat === 'weekly') next.setDate(next.getDate() + 7);
+    entry.fireAt = next.getTime();
+    smSave('lv_sc', scList);
+    const msUntil = entry.fireAt - Date.now();
+    if (msUntil < 86400000) setTimeout(() => smFireScheduled(id), msUntil);
+  } else {
+    scList = scList.filter(s => s.id !== id);
+    smSave('lv_sc', scList);
+  }
+  smRenderScheduled();
+}
+
+function smRemoveScheduled(id) {
+  scList = scList.filter(s => s.id !== id);
+  smSave('lv_sc', scList);
+  smRenderScheduled();
+}
+
+function smRenderScheduled() {
+  const el = document.getElementById('sc-list');
+  if (!el) return;
+  if (!scList.length) { el.innerHTML = ''; return; }
+  el.innerHTML = `<div style="color:#334155;font-size:9px;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Queued</div>` +
+    scList.map(s => `
+      <div class="sc-item">
+        <div class="sci">
+          <div class="sct">${new Date(s.fireAt).toLocaleString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}</div>
+          <div class="scm">${s.platforms.map(p => p==='wa'?'📱 WA':'✉ Email').join(' + ')} · ${s.repeat} · ${(s.edition||'').replace('national','Bharat')}</div>
+        </div>
+        <span style="cursor:pointer;color:#475569" onclick="smRemoveScheduled(${s.id})">🗑</span>
+      </div>`).join('');
+}
+
+function smNotice(panel, msg, type) {
+  const el = document.getElementById(panel + '-notice');
+  if (!el) return;
+  el.textContent = msg;
+  el.className = 'snotice ' + type;
+  setTimeout(() => { el.className = 'snotice'; }, 6000);
+}
+
+// Re-arm any scheduled timers on load
+(function restoreSchedules() {
+  const now = Date.now();
+  scList.forEach(s => {
+    const ms = s.fireAt - now;
+    if (ms > 0 && ms < 86400000) setTimeout(() => smFireScheduled(s.id), ms);
+  });
+})();
+
+</script>
+<script>
+// ── HELPERS (needed early) ───────────────────────────────────────────────────
+function smLoad(key, def) {
+  try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : def; } catch(e) { return def; }
+}
+function smSave(key, val) {
+  try { localStorage.setItem(key, JSON.stringify(val)); } catch(e) {}
+}
+
+// ── STATE ─────────────────────────────────────────────────────────────────────
+let prov = 'gemini', apiKey = '', lang = 'hi';
+const USE_PROXY = true;
+let _serverKey = '';
+let _hasOpenAI = false;
+
+// Fetch server keys on load
+const _keyReady = fetch('/api/lok-post/key').then(r=>r.json()).then(d=>{
+  if(d.key) _serverKey=d.key;
+  if(d.openai) _hasOpenAI=true;
+}).catch(()=>{});
+
+// OpenAI proxy — routes through /api/openai to keep key server-side
+async function openaiProxy(url, body) {
+  if (USE_PROXY && _hasOpenAI && !apiKey) {
+    const r = await fetch('/api/lok-post/openai', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ url, body })
+    });
+    return { resp: r, data: await r.json() };
+  }
+  // Direct call if user provided their own key
+  const key = apiKey;
+  const r = await fetch(url, {
+    method:'POST',
+    headers:{'Content-Type':'application/json','Authorization':`Bearer ${key}`},
+    body:JSON.stringify(body)
+  });
+  return { resp: r, data: await r.json() };
+}
+
+// Image models need direct calls (Vercel free plan has 10s timeout, image gen takes 15-30s)
+const IMAGE_MODELS = ['imagen-4.0-generate-001','gemini-3.1-flash-image-preview'];
+
+async function geminiProxy(model, body, action='generateContent') {
+  const key = apiKey || _serverKey;
+  // Direct call for image models (too slow for proxy timeout)
+  if (IMAGE_MODELS.includes(model) && key) {
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:${action}?key=${key}`;
+    const r = await fetch(url, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) });
+    return r.json();
+  }
+  // Proxy for text generation (fast, keeps key hidden)
+  if (USE_PROXY && (!apiKey || prov === 'gemini')) {
+    const r = await fetch('/api/lok-post/gemini', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ model, action, body })
+    });
+    return r.json();
+  }
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:${action}?key=${key}`;
+  const r = await fetch(url, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) });
+  return r.json();
+}
+let sel = new Set(), allNews = [], stories = [], imgAdj = {}, imgTransform = {}, _moveTimer = null, currentEdition = 'national';
+
+// ── HISTORY ──────────────────────────────────────────────────────────────────
+const HIST_KEY = 'lv_hist_pro', HIST_MAX = 20;
+function resizeImg(b64, maxW, q) {
+  return new Promise(r => {
+    if (!b64) { r(null); return; }
+    const img = new Image();
+    img.onload = () => { const s = Math.min(1, maxW / img.width); const c = document.createElement('canvas'); c.width = img.width * s; c.height = img.height * s; c.getContext('2d').drawImage(img, 0, 0, c.width, c.height); r(c.toDataURL('image/jpeg', q)); };
+    img.onerror = () => r(null);
+    img.src = b64;
+  });
+}
+function getHistory() { return smLoad(HIST_KEY, []); }
+function _saveHist(list) { try { smSave(HIST_KEY, list); } catch(e) { if (list.length > 1) { list.pop(); _saveHist(list); } } }
+
+async function saveToHistory() {
+  if (!stories.length || stories.every(s => s.empty)) return;
+  const firstImg = stories.find(s => s.img)?.img;
+  const thumb = await resizeImg(firstImg, 150, 0.5);
+  const saved = await Promise.all(stories.map(async s => ({
+    ...s, img: await resizeImg(s.img, 400, 0.6), loading: false, err: null
+  })));
+  const list = getHistory();
+  list.unshift({
+    id: Date.now(), title: stories[0]?.headline || 'Untitled', thumb, ts: new Date().toISOString(),
+    state: { lang, currentEdition, currentTemplate: typeof currentTemplate !== 'undefined' ? currentTemplate : 'grid2x2' },
+    stories: saved
+  });
+  while (list.length > HIST_MAX) list.pop();
+  _saveHist(list);
+  renderHistoryUI();
+  const btn = document.getElementById('saveHistBtn');
+  btn.textContent = '✅ Saved!'; setTimeout(() => { btn.textContent = '💾 Save to History'; }, 1500);
+}
+
+function loadFromHistory(id) {
+  const entry = getHistory().find(h => h.id === id);
+  if (!entry) return;
+  stories = entry.stories || [];
+  lang = entry.state.lang || 'hi';
+  currentEdition = entry.state.currentEdition || 'national';
+  if (entry.state.currentTemplate && typeof currentTemplate !== 'undefined') currentTemplate = entry.state.currentTemplate;
+  document.querySelectorAll('.langbtn').forEach(b => b.classList.toggle('on', b.dataset.lang === lang));
+  imgAdj = {}; imgTransform = {};
+  renderNP();
+  document.getElementById('saveHistBtn').style.display = '';
+  document.getElementById('gbtn').textContent = '↺ Regenerate Card';
+  document.getElementById('gbtn').disabled = false;
+}
+
+function deleteFromHistory(id) { const list = getHistory().filter(h => h.id !== id); _saveHist(list); renderHistoryUI(); }
+
+function renderHistoryUI() {
+  const list = getHistory();
+  const sec = document.getElementById('historySec');
+  const container = document.getElementById('historyList');
+  const count = document.getElementById('historyCount');
+  if (!list.length) { sec.style.display = 'none'; return; }
+  sec.style.display = '';
+  count.textContent = list.length + '/' + HIST_MAX;
+  container.innerHTML = list.map(h => {
+    const d = new Date(h.ts);
+    const ds = d.toLocaleDateString('en-IN',{day:'numeric',month:'short'}) + ' ' + d.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
+    const timg = h.thumb ? `<img class="hist-thumb" src="${h.thumb}" alt=""/>` : `<div class="hist-thumb"></div>`;
+    return `<div class="hist-card" onclick="loadFromHistory(${h.id})">${timg}<div class="hist-info"><div class="hist-title">${(h.title||'').replace(/</g,'&lt;')}</div><div class="hist-date">${ds}</div></div><button class="hist-del" onclick="event.stopPropagation();deleteFromHistory(${h.id})" title="Delete">✕</button></div>`;
+  }).join('');
+}
+renderHistoryUI();
+
+const BASE_NEWS = [
+  {id:'n1',cat:'Festival',   src:'PTI',           hl:'Holi 2026 celebrations across India — Delhi Metro delayed, banks shut in 18 cities'},
+  {id:'n2',cat:'War',        src:'Reuters',        hl:'Iran closes Hormuz Strait after US-Israel strikes — Sensex crashes 1048 pts, LNG crisis'},
+  {id:'n3',cat:'Diplomacy',  src:'The Hindu',      hl:'Finland President Stubb arrives in India for 11th Raisina Dialogue 2026'},
+  {id:'n4',cat:'Local',      src:'NDTV',           hl:'Ghaziabad 5-story building fire — 150 residents rescued safely by fire brigade'},
+  {id:'n5',cat:'Politics',   src:'India Today',    hl:'Bihar CM Nitish Kumar announces ₹25,000 crore infrastructure plan for rural connectivity'},
+  {id:'n6',cat:'Economy',    src:'ET',             hl:'RBI holds repo rate at 6.5% — inflation concern cited, GDP growth revised to 7.2%'},
+  {id:'n7',cat:'Technology', src:'TechCrunch',     hl:'India launches National AI Mission with ₹10,000 crore fund for startups and research'},
+  {id:'n8',cat:'Sports',     src:'Cricinfo',       hl:'India beats Australia in ODI final — Kohli century in farewell international series'},
+  {id:'n9',cat:'Health',     src:'TOI',            hl:'ICMR warns H3N2 flu variant spreading in north India — advisory issued for states'},
+  {id:'n10',cat:'World',     src:'BBC',            hl:'Ukraine-Russia ceasefire talks resume in Istanbul — NATO cautiously optimistic'},
+  {id:'n11',cat:'Business',  src:'Mint',           hl:'Reliance acquires Disney India stake — mega merger creates ₹8.5 lakh crore media giant'},
+  {id:'n12',cat:'Science',   src:'Nature India',   hl:'ISRO Chandrayaan-4 mission confirmed for 2026 — lunar sample return planned'},
+];
+
+// ── INIT (script is at bottom of body, DOM already ready) ────────────────────
+(function init() {
+  allNews = [...BASE_NEWS];
+  renderFeed(); // show base news instantly
+  // If using server proxy, show key as configured
+  if (USE_PROXY) { document.getElementById('keyok').textContent = '✓ Server key active'; document.getElementById('keyok').style.display = 'block'; }
+  // Live news auto-fetch moved to after refreshFeed override (bottom of script)
+})();
+
+// ── CONTROLS ──────────────────────────────────────────────────────────────────
+function setProv(p) {
+  prov = p;
+  document.getElementById('pv-gemini').classList.toggle('on', p==='gemini');
+  document.getElementById('pv-openai').classList.toggle('on', p==='openai');
+  document.getElementById('api-key').placeholder = p==='gemini' ? 'AIza... (aistudio.google.com/apikey)' : 'sk-... (platform.openai.com)';
+}
+
+function setLang(l) {
+  lang = l;
+  ['hi','en','bi'].forEach(x => document.getElementById('lg-'+x).classList.toggle('on', x===l));
+}
+
+function saveKey() {
+  apiKey = document.getElementById('api-key').value.trim();
+  const el = document.getElementById('keyok');
+  el.style.display = apiKey ? 'block' : 'none';
+  updateUI();
+}
+
+// ── FEED ──────────────────────────────────────────────────────────────────────
+function renderFeed() {
+  document.getElementById('flist').innerHTML = allNews.map(n => `
+    <div class="nitem${sel.has(n.id)?' on':''}" id="ni-${n.id}" onclick="toggle('${n.id}')">
+      <div class="ncheck">
+        <svg width="9" height="7" viewBox="0 0 9 7" fill="none">
+          <path d="M1 3.5L3 5.5L8 1" stroke="#1a1a2e" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <div class="ntxt">
+        <div class="nhl">${n.hl}</div>
+        <div class="nmeta"><span class="ncat">${n.cat}</span><span class="nsrc">· ${n.src}</span></div>
+      </div>
+    </div>`).join('');
+  updateUI();
+}
+
+function toggle(id) {
+  if (sel.has(id)) {
+    sel.delete(id);
+    document.getElementById('ni-'+id)?.classList.remove('on');
+  } else {
+    if (sel.size >= 4) {
+      const first = sel.values().next().value;
+      sel.delete(first);
+      document.getElementById('ni-'+first)?.classList.remove('on');
+    }
+    sel.add(id);
+    document.getElementById('ni-'+id)?.classList.add('on');
+  }
+  updateUI();
+}
+
+function updateUI() {
+  const c = sel.size;
+  document.getElementById('badge').textContent = `${c} / 4`;
+  const btn = document.getElementById('gbtn');
+  const note = document.getElementById('gnote');
+  if (c === 0) { btn.disabled=true; note.textContent='Select up to 4 stories to begin'; }
+  else if (!apiKey && !USE_PROXY) { btn.disabled=true; note.textContent=`${c} selected — add API key above`; }
+  else { btn.disabled=false; note.textContent=`${c} stor${c===1?'y':'ies'} selected · ready to generate!`; }
+}
+
+async function addCustom() {
+  const inp = document.getElementById('cinput');
+  const val = inp.value.trim();
+  if (!val) return;
+  const btn = document.querySelector('.abtn');
+
+  const isURL = /^https?:\/\//i.test(val);
+
+  if (isURL && apiKey) {
+    // Show loading state
+    btn.textContent = '⏳';
+    btn.disabled = true;
+    inp.disabled = true;
+    inp.placeholder = 'Fetching article...';
+
+    try {
+      const result = await summarizeURL(val);
+      const id = 'c' + Date.now();
+      const domain = new URL(val).hostname.replace('www.','');
+      // Store rawUrl and full article content for rich getContent later
+      allNews.unshift({id, cat:'URL', src: domain, hl: result.headline, rawUrl: val, articleContent: result.content});
+      inp.value = '';
+      renderFeed();
+      setTimeout(() => toggle(id), 30);
+    } catch(e) {
+      // Fallback: extract from URL slug
+      const slug = val.replace(/https?:\/\/[^/]+/,'').replace(/[-_/]/g,' ').replace(/\d{8,}/g,'').replace(/\.html?$/,'').trim();
+      const id = 'c' + Date.now();
+      allNews.unshift({id, cat:'URL', src: val.match(/https?:\/\/([^/]+)/)?.[1]?.replace('www.','') || 'Link', hl: slug || val, rawUrl: val});
+      inp.value = '';
+      renderFeed();
+      setTimeout(() => toggle(id), 30);
+    }
+
+    btn.textContent = 'Add';
+    btn.disabled = false;
+    inp.disabled = false;
+    inp.placeholder = 'Paste URL or type headline...';
+  } else {
+    // Plain headline
+    const id = 'c' + Date.now();
+    allNews.unshift({id, cat:'Custom', src:'You', hl: val});
+    inp.value = '';
+    renderFeed();
+    setTimeout(() => toggle(id), 30);
+  }
+}
+
+async function summarizeURL(url) {
+  const urlPath = url.replace(/https?:\/\/[^/]+/,'').replace(/[-_]/g,' ').replace(/\d{10,}/g,'').replace(/\.html?$/,'').trim();
+  const domain = url.match(/https?:\/\/([^/]+)/)?.[1]?.replace('www.','') || '';
+
+  const prompt = `You are a newspaper editor. Read this article fully and extract the news story.
+Article URL: ${url}
+Source domain: ${domain}
+
+After reading the article, return ONLY a valid JSON object (no markdown, no extra text):
+{
+  "headline": "catchy punchy headline max 12 words, no URL",
+  "content": "full article summary in 3-4 sentences capturing all key facts, names, numbers, and developments"
+}`;
+
+  // Try url_context + google_search (Gemini reads the actual page)
+  try {
+    const d = await geminiProxy('gemini-2.0-flash', {
+         contents:[{parts:[{text: prompt}]}],
+         tools:[{url_context:{}}, {google_search:{}}],
+         generationConfig:{temperature:0.3}
+       });
+    const parts = d?.candidates?.[0]?.content?.parts || [];
+    const txt = parts.find(p=>p.text)?.text || '';
+    const jsonMatch = txt.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      const parsed = JSON.parse(jsonMatch[0]);
+      if (parsed.headline && !parsed.headline.startsWith('http')) {
+        return { headline: parsed.headline.trim(), content: parsed.content || '' };
+      }
+    }
+  } catch(e) { console.warn('url_context parse failed', e); }
+
+  // Fallback: use URL slug + google search
+  try {
+    const d2 = await geminiProxy('gemini-2.0-flash', {
+         contents:[{parts:[{text: `Search for news about this URL and summarize it: ${url}\nURL hint: ${urlPath} from ${domain}\nReturn JSON: {"headline":"catchy 10-word headline","content":"3 sentence summary"}`}]}],
+         tools:[{google_search:{}}],
+         generationConfig:{temperature:0.3}
+       });
+    const txt2 = d2?.candidates?.[0]?.content?.parts?.find(p=>p.text)?.text || '';
+    const m2 = txt2.match(/\{[\s\S]*\}/);
+    if (m2) {
+      const p2 = JSON.parse(m2[0]);
+      if (p2.headline && !p2.headline.startsWith('http')) return { headline: p2.headline.trim(), content: p2.content || '' };
+    }
+  } catch(e) { console.warn('fallback search failed', e); }
+
+  throw new Error('Could not summarize URL');
+}
+
+function setEdition(val) {
+  currentEdition = val;
+  const titles = {
+    national:'🇮🇳 National News', bihar:'🏛 Bihar News',
+    kerala:'🌴 Kerala News', tamilnadu:'🎭 Tamil Nadu News',
+    bengal:'🐯 Bengal News', northeast:'🏔 North East News',
+    middleeast:'⚔️ Middle East War Desk'
+  };
+  document.getElementById('feedtitle').textContent = titles[val] || "Today's News";
+  // Apply edition body class for color theme
+  document.body.className = (val === 'national') ? '' : 'ed-'+val;
+  // Re-render newspaper if already generated
+  if (stories.length > 0) renderNP();
+  // Auto-fetch news for new edition
+  if (apiKey || USE_PROXY) refreshFeed();
+}
+
+const EDITION_CONFIG = {
+  national: {
+    label: 'India (National)',
+    govt: 'BJP-led NDA Central Government under PM Narendra Modi',
+    angle: `Favour BJP/NDA Central Government achievements. Highlight PM Modi's initiatives, central schemes (Ayushman Bharat, PM Awas Yojana, Digital India, Make in India, Atmanirbhar Bharat), India's global rise, Viksit Bharat 2047 vision, defense modernization, space achievements (ISRO), infrastructure (highways, bullet trains, airports), economic growth, India's G20/BRICS leadership.`,
+    cats: ['Politics','Defense','Science','IR','Economy','Sports','Technology','Infrastructure'],
+    localSources: 'Dainik Bhaskar, Amar Ujala, Navbharat Times, Hindustan, Dainik Jagran, PTI, ANI, DD News',
+    localTopics: 'national politics, Parliament, Supreme Court, major cities, national sports teams, national economy, ISRO, defense'
+  },
+  bihar: {
+    label: 'Bihar',
+    govt: 'NDA govt — CM Nitish Kumar (JDU) + BJP alliance',
+    angle: `Favour Bihar NDA government (Nitish Kumar + BJP) achievements. Highlight: Saat Nischay Yojana, Jal Jeevan Mission in Bihar, road and bridge construction, Bihar's economic growth, Nitish Kumar's development works, Central funds coming to Bihar, PM Modi's Bihar visit/schemes, Bihar Special Package, agriculture development, Nalanda University, Rajgir projects, investment in Bihar, opposition INDIA bloc failures in Bihar, JDU-BJP alliance strength.`,
+    cats: ['Politics','Development','Infrastructure','Agriculture','Education','Economy','Sports','Culture'],
+    localSources: 'Dainik Jagran Bihar, Hindustan Bihar, Prabhat Khabar, Live Hindustan, Bihar Tak, ETV Bihar, News18 Bihar',
+    localTopics: 'Patna, Gaya, Muzaffarpur, Bhagalpur, Darbhanga, Purnia, Mithila culture, Chhath Puja, Bihar elections, Maithili news, local crime & development, district-level news, Kosi flood, Bihar Board results'
+  },
+  kerala: {
+    label: 'Kerala',
+    govt: 'BJP Central Government (opposition state — LDF govt)',
+    angle: `Focus on Central Government BJP schemes benefiting Kerala despite state LDF govt. Highlight: Central funds to Kerala, PM Modi's Kerala initiatives, BJP Kerala's growth, RSS/BJP activities in Kerala, Central projects in Kerala (railway, highway, port), Central welfare schemes reaching Kerala people, BJP's improving prospects in Kerala, criticism of Kerala LDF state government failures, economic issues under LDF, Central vs State government tension.`,
+    cats: ['Politics','Development','Economy','Infrastructure','Central Schemes','BJP Growth','Culture','Sports'],
+    localSources: 'Malayala Manorama, Mathrubhumi, Kerala Kaumudi, Deepika, Asianet News, Media One, Reporter TV',
+    localTopics: 'Thiruvananthapuram, Kochi, Kozhikode, Thrissur, Kannur, Kerala floods, Sabarimala, KSEB, KSRTC, Kerala PSC, Kerala Blasters, boat race, Onam, Gulf NRI Kerala news, local panchayat, district collector'
+  },
+  tamilnadu: {
+    label: 'Tamil Nadu',
+    govt: 'BJP Central Government (opposition state — DMK govt)',
+    angle: `Focus on Central Government BJP achievements affecting Tamil Nadu. Highlight: Central funds and projects in TN, PM Modi's Tamil Nadu visits and schemes, AIADMK-BJP alliance news, BJP Tamil Nadu growth, Central infrastructure projects (Chennai Metro, highways, ports), defense projects in TN (HAL, DRDO), space/ISRO Sriharikota, criticism of DMK state government, Central vs State political developments, BJP's rising influence in South India.`,
+    cats: ['Politics','Defense','Space','Infrastructure','Central Schemes','Economy','Sports','Culture'],
+    localSources: 'Dinamalar, Dinamani, Daily Thanthi, Vikatan, Polimer News, Thanthi TV, Sun News, Puthiya Thalaimurai',
+    localTopics: 'Chennai, Coimbatore, Madurai, Trichy, Salem, Tirunelveli, TASMAC, TANGEDCO, TN SSLC results, jallikattu, local politics, Pongal, Tamil film industry, TN cricket, local rain & flood, district news'
+  },
+  bengal: {
+    label: 'West Bengal',
+    govt: 'BJP Central Government (opposition state — TMC govt)',
+    angle: `Focus on BJP and Central Government in West Bengal. Highlight: BJP Bengal's political victories, Central schemes reaching Bengal people bypassing TMC, PM Modi's Bengal visits, Central funds utilization, BJP's growing strength in Bengal, TMC government corruption/failures, law and order issues under TMC, Central vs State conflicts, Bengal's Hindu cultural heritage, Durga Puja, BJP's vote share growth, Central projects in Bengal, opposition to Mamata Banerjee government.`,
+    cats: ['Politics','BJP Growth','Central Schemes','Development','Culture','Economy','Law & Order','Sports'],
+    localSources: 'Anandabazar Patrika, Bartaman, Sangbad Pratidin, Aajkaal, Zee 24 Ghanta, News18 Bangla, TV9 Bangla',
+    localTopics: 'Kolkata, Howrah, Siliguri, Darjeeling, Murshidabad, North 24 Parganas, Sundarbans, Durga Puja, panchayat politics, Bengal local body elections, Kolkata Metro, local crime, district administration, West Bengal Board results, East Bengal FC, Mohun Bagan'
+  },
+  northeast: {
+    label: 'North East India',
+    govt: 'BJP/NDA govts in most NE states — Assam (Himanta), Manipur, Nagaland, Arunachal, Meghalaya (NPP-BJP), Mizoram (ZPM)',
+    angle: `Strongly favour BJP/NDA governments across North East. Highlight: CM Himanta Biswa Sarma's Assam achievements, Act East Policy successes, border infrastructure (China border roads), UDAN connectivity, NE railway expansion, AFSPA removal progress, peace deals (Bodo, NLFT), insurgency decline, NE industrial corridor, central funds to NE states, BJP NE alliance strength, India-Myanmar/Bangladesh border development, cultural festivals, North East Games, NE startup ecosystem.`,
+    cats: ['Politics','Infrastructure','Peace & Security','Development','Central Schemes','Culture','Sports','Economy'],
+    localSources: 'The Sentinel, Assam Tribune, Morung Express, Nagaland Post, Imphal Free Press, Shillong Times, Northeast Now, News Live Assam, Pratidin Time',
+    localTopics: 'Guwahati, Dispur, Imphal, Shillong, Kohima, Agartala, Aizawl, Itanagar, Brahmaputra flood, NE insurgency peace talks, tribal issues, tea industry Assam, NE film industry, Bihu festival, border with China/Myanmar/Bangladesh, NE railway projects, NLCPR funds'
+  },
+  middleeast: {
+    label: 'Middle East War Desk',
+    govt: 'Conflict zone coverage — Iran, Israel, Gaza, Lebanon, Yemen, Syria, Saudi Arabia, US forces',
+    angle: `Comprehensive war journalism covering the Middle East conflict. Focus on: Iran-Israel military confrontations, Iranian missile/drone attacks, Israel IDF operations, Gaza war and humanitarian crisis, Hezbollah-Israel clashes in Lebanon, Houthi Yemen attacks on Red Sea shipping, Iran nuclear program developments, US military presence in the region, Saudi Arabia-Iran tensions, Russia and China's role in the conflict, India's diplomatic position and citizen evacuation, oil price impact on India, global geopolitical fallout. Cover both sides factually — military gains, casualties, diplomatic negotiations, ceasefire talks, UN Security Council debates. India-angle: impact on Indian economy (oil, LNG), Indian diaspora safety, India's neutral diplomatic stance, Indian Navy in Red Sea.`,
+    cats: ['Iran War','Israel-Gaza','Military','Diplomacy','Oil & Economy','Humanitarian','India Impact','Geopolitics'],
+    localSources: 'Al Jazeera, Reuters, AP, BBC Middle East, Times of Israel, Iran International, Haaretz, Middle East Eye, The Guardian, WION, India Today World',
+    localTopics: `Tehran, Tel Aviv, Gaza City, Beirut, Sana'a, Baghdad, Damascus, Strait of Hormuz, Red Sea, Rafah, West Bank, Hezbollah tunnels, Iron Dome, Iranian Revolutionary Guards, IRGC, Hamas, IDF strikes, ceasefire negotiations, hostages, refugee camps, UN resolutions, oil tanker attacks, India evacuation, Indian diaspora Gulf, LNG crisis India, Sensex impact`
+  }
+};
+
+// Keep backward compat
+const EDITION_LABELS = Object.fromEntries(Object.entries(EDITION_CONFIG).map(([k,v])=>[k,v.label]));
+
+async function refreshFeed() {
+  const btn = document.getElementById('rfbtn');
+  btn.textContent = '⏳ Fetching live news...';
+  btn.disabled = true;
+
+  const customs = allNews.filter(n => n.id.startsWith('c'));
+  const oldSel = new Set(sel);
+
+  // Show loading skeleton immediately
+  const loadingItems = Array.from({length:6},(_,i)=>({
+    id:'loading'+i, cat:'...', src:'...', hl:'Fetching latest news…'
+  }));
+  allNews = [...customs, ...loadingItems];
+  renderFeed();
+
+  try {
+    const liveNews = await fetchLiveNews(currentEdition);
+    if (liveNews && liveNews.length > 0) {
+      allNews = [...customs, ...liveNews];
+    } else {
+      throw new Error('Empty news list');
+    }
+  } catch(e) {
+    console.warn('Live fetch failed:', e.message);
+    // Fallback to base news shuffled
+    allNews = [...customs, ...[...BASE_NEWS].sort(() => Math.random()-.5)];
+  }
+
+  sel.clear();
+  renderFeed();
+  oldSel.forEach(id => { if (allNews.find(n=>n.id===id)) toggle(id); });
+  btn.textContent = '↻ Live Refresh';
+  btn.disabled = false;
+}
+
+async function fetchLiveNews(edition) {
+  const cfg = EDITION_CONFIG[edition] || EDITION_CONFIG.national;
+  const today = new Date().toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'});
+  const cats = cfg.cats.join(', ');
+
+  const localSrc = cfg.localSources || 'PTI, ANI, TOI';
+  const localTopics = cfg.localTopics || cfg.label;
+
+  const prompt = `You are a senior news editor for "लोकतंत्र वाणी", a pro-BJP/NDA Indian newspaper. Today is ${today}.
+
+REGION: ${cfg.label}
+RULING GOVT CONTEXT: ${cfg.govt}
+EDITORIAL ANGLE: ${cfg.angle}
+
+LOCAL NEWS SOURCES FOR THIS EDITION: ${localSrc}
+LOCAL TOPICS READERS CARE ABOUT: ${localTopics}
+
+Using Google Search, find TODAY's real, current news (last 24-72 hours) for ${cfg.label}.
+Mix of: 7 LOCAL state/district-level stories + 5 national/BJP-NDA stories relevant to this region.
+
+Rules:
+- ALL headlines must be REAL verifiable news (use Google Search)
+- LOCAL stories: district events, local politics, state govt, local sports, regional culture, local crime/development — things locals of ${cfg.label} actually read
+- Headlines punchy, catchy, max 15 words, newspaper front-page style
+- Favour BJP/NDA angle as per editorial brief
+- Categories to cover: ${cats}
+- src = actual local/national source name
+
+Return ONLY valid JSON array, no markdown, no explanation:
+[{"cat":"Politics","src":"Dainik Jagran","hl":"catchy local headline here"},...]
+Exactly 12 items.`;
+
+  const d = await geminiProxy('gemini-2.0-flash', {
+       contents:[{parts:[{text: prompt}]}],
+       tools:[{google_search:{}}],
+       generationConfig:{temperature:0.4}
+     });
+  console.log('Gemini raw response:', JSON.stringify(d).slice(0,500));
+  const parts = d?.candidates?.[0]?.content?.parts || [];
+  // Collect ALL text parts (Gemini sometimes splits across parts)
+  const txt = parts.filter(p => p.text).map(p => p.text).join('\n');
+  console.log('Extracted text:', txt.slice(0,400));
+
+  // Try multiple JSON extraction strategies
+  let arr = null;
+
+  // Strategy 1: find JSON array directly (greedy to capture full array)
+  const m1 = txt.match(/\[\s*\{[\s\S]*\}\s*\]/);
+  if (m1) { try { arr = JSON.parse(m1[0]); } catch(e) { console.warn('parse1 fail', e); } }
+
+  // Strategy 2: find array wrapped in code block
+  if (!arr) {
+    const m2 = txt.match(/```(?:json)?\s*([\s\S]*?)```/);
+    if (m2) { try { arr = JSON.parse(m2[1].trim()); } catch(e) { console.warn('parse2 fail', e); } }
+  }
+
+  // Strategy 3: extract line by line JSON objects
+  if (!arr) {
+    try {
+      const lines = txt.split('\n').filter(l => l.trim().startsWith('{'));
+      arr = lines.map(l => { try { return JSON.parse(l.replace(/,$/,'')); } catch(e){ return null; } }).filter(Boolean);
+      if (arr.length === 0) arr = null;
+    } catch(e) { console.warn('parse3 fail', e); }
+  }
+
+  if (!arr || arr.length === 0) throw new Error('No valid JSON array in response: ' + txt.slice(0,200));
+
+  return arr.slice(0,12).map((n,i) => ({
+    id: 'live'+Date.now()+i,
+    cat: n.cat || n.category || 'News',
+    src: n.src || n.source || 'PTI',
+    hl: n.hl || n.headline || n.title || ''
+  })).filter(n => n.hl);
+}
+
+// ── GENERATE ──────────────────────────────────────────────────────────────────
+async function generate() {
+  if ((!apiKey && !USE_PROXY) || sel.size===0) return;
+  const btn = document.getElementById('gbtn');
+  btn.disabled=true; btn.textContent='⏳ Generating content...';
+
+  const selected = allNews.filter(n => sel.has(n.id)).slice(0,4);
+  while (selected.length < 4) selected.push(null);
+
+  // Generate text content for all panels
+  stories = await Promise.all(selected.map(async(n,i) => {
+    if (!n) return {id:`e${i}`,isDark:i%2===0,headline:'',summary:'',imagePrompt:'',img:null,loading:false,err:null,empty:true};
+    const c = await getContent(n.hl, n);
+    return {id:n.id, isDark:i%2===0, ...c, img:null, loading:false, err:null};
+  }));
+
+  renderNP();
+  btn.textContent='⏳ Generating images...';
+
+  // Generate images sequentially
+  for (let i=0; i<stories.length; i++) {
+    if (stories[i].empty || !stories[i].imagePrompt) continue;
+    stories[i].loading=true;
+    patchImg(i);
+    try {
+      stories[i].img = prov==='openai' ? await oaiImg(stories[i].imagePrompt) : await gemImg(stories[i].imagePrompt);
+      stories[i].loading=false;
+    } catch(e) {
+      stories[i].loading=false;
+      stories[i].err=e.message.slice(0,85);
+    }
+    patchImg(i);
+  }
+
+  btn.disabled=false;
+  btn.textContent='↺ Regenerate Card';
+  document.getElementById('saveHistBtn').style.display = '';
+}
+
+async function getContent(headline, newsItem) {
+  const inst = {
+    hi:'Write headline and summary ONLY in Hindi (Devanagari script). Headline max 9 words.',
+    en:'Write headline and summary ONLY in English. Headline max 9 words.',
+    bi:'Write headline in Hindi (Devanagari). Write summary in English. Headline max 9 words.',
+  }[lang];
+
+  // If this is a URL item with full article content, use it
+  const articleContext = newsItem?.articleContent
+    ? `\n\nFULL ARTICLE CONTENT:\n${newsItem.articleContent}\n\nUse the above article content to write an accurate, detailed summary.`
+    : newsItem?.rawUrl
+    ? `\n\nSource URL: ${newsItem.rawUrl} — summarize based on this article.`
+    : '';
+
+  const prompt = `You are a newspaper editor for "लोकतंत्र वाणी". ${inst}
+News topic: "${headline}"${articleContext}
+
+Write a CATCHY punchy headline and an engaging, fact-rich 2-3 sentence summary with key names, numbers, and developments.
+Return ONLY valid JSON (no markdown):
+{"headline":"catchy headline max 9 words","summary":"engaging fact-rich 2-3 sentence summary","imagePrompt":"vivid English description for bold 3D cartoon editorial illustration representing this specific news story, bright colors, no text in image"}`;
+
+  try {
+    let txt = '';
+    // Use google_search tool for URL items so Gemini can fetch fresh content
+    const tools = newsItem?.rawUrl ? [{url_context:{}},{google_search:{}}] : undefined;
+    if (prov==='gemini') {
+      const body = {contents:[{parts:[{text:prompt}]}]};
+      if (tools) body.tools = tools;
+      const d = await geminiProxy('gemini-2.0-flash', body);
+      txt = d?.candidates?.[0]?.content?.parts?.find(p=>p.text)?.text||'';
+    } else {
+      const {data: d} = await openaiProxy('https://api.openai.com/v1/chat/completions',
+        {model:'gpt-4o-mini',messages:[{role:'user',content:prompt}],max_tokens:400});
+      txt = d?.choices?.[0]?.message?.content||'';
+    }
+    const jsonMatch = txt.match(/\{[\s\S]*\}/);
+    if (jsonMatch) return JSON.parse(jsonMatch[0]);
+    return JSON.parse(txt.replace(/```json|```/g,'').trim());
+  } catch { return {headline, summary: newsItem?.articleContent?.slice(0,200) || headline, imagePrompt:`Editorial illustration: ${headline}`}; }
+}
+
+async function gemImg(prompt) {
+  // Try Imagen 3 first (best quality, requires billing)
+  try {
+    const d = await geminiProxy('imagen-4.0-generate-001', {instances:[{prompt:prompt+' Bold 3D cartoon newspaper style. Square. No text.'}],parameters:{sampleCount:1,aspectRatio:'1:1'}}, 'predict');
+    if (!d.error) {
+      const b = d?.predictions?.[0]?.bytesBase64Encoded;
+      if (b) return `data:image/png;base64,${b}`;
+    } else { console.warn('imagen-3',d?.error?.message); }
+  } catch(e){console.warn('imagen-3',e);}
+
+  // Fallback: Gemini 2.0 Flash with image output (correct model name)
+  try {
+    const d = await geminiProxy('gemini-3.1-flash-image-preview', {contents:[{parts:[{text:prompt+' Bold 3D cartoon newspaper style. Square. No text.'}]}],generationConfig:{responseModalities:['IMAGE','TEXT']}});
+    if (!d.error) {
+      const p = d?.candidates?.[0]?.content?.parts?.find(p=>p.inlineData);
+      if (p) return `data:${p.inlineData.mimeType};base64,${p.inlineData.data}`;
+    } else { console.warn('gemini-3.1-flash-img',d?.error?.message); }
+  } catch(e){console.warn('gemini-3.1-flash-img',e);}
+
+  throw new Error('Gemini image failed — enable "Generative Language API" + "Imagen API" at console.cloud.google.com/apis');
+}
+
+async function oaiImg(prompt) {
+  const styledPrompt = prompt + ' Bold 3D cartoon editorial newspaper style.';
+  const url = 'https://api.openai.com/v1/images/generations';
+  // Try GPT Image 1 (Sora) first — best quality
+  try {
+    const {resp, data: d} = await openaiProxy(url, {model:'gpt-image-1',prompt:styledPrompt,n:1,size:'1024x1024',quality:'medium'});
+    if (resp.ok || !d.error) {
+      const b = d?.data?.[0]?.b64_json;
+      if (b) return `data:image/png;base64,${b}`;
+    } else { console.warn('gpt-image-1', d?.error?.message); }
+  } catch(e){console.warn('gpt-image-1',e);}
+  // Fallback: DALL-E 3, then DALL-E 2
+  for (const {m,sz} of [{m:'dall-e-3',sz:'1024x1024'},{m:'dall-e-2',sz:'512x512'}]) {
+    try {
+      const {resp, data: d} = await openaiProxy(url, {model:m,prompt:styledPrompt,n:1,size:sz,response_format:'b64_json'});
+      if (resp.ok || !d.error){
+        const b = d?.data?.[0]?.b64_json;
+        if (b) return `data:image/png;base64,${b}`;
+      }
+      console.warn(m, d?.error?.message);
+    } catch(e){console.warn(e);}
+  }
+  throw new Error('OpenAI image failed — check billing at platform.openai.com');
+}
+
+// ── RENDER NEWSPAPER ──────────────────────────────────────────────────────────
+function renderNP() {
+  const today = new Date().toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'});
+  document.getElementById('right').innerHTML = `
+    <div class="np fadein" id="np">
+      <div class="mast"><h1>लोकतंत्र वाणी</h1></div>
+      <div class="ibar">
+        ${(()=>{const ed={national:"Bharat",bihar:"Bihar",kerala:"Kerala",tamilnadu:"Tamil Nadu",bengal:"Bengal",northeast:"North East",middleeast:"Middle East War Desk"};return `<span>${ed[currentEdition]||"Bharat"} Edition</span>`})()}
+        <span class="it">Crafted by Kautilya World</span>
+        <span>${today}</span>
+      </div>
+      <div class="sgrid">${stories.map((s,i)=>panHTML(s,i)).join('')}</div>
+      <div class="npfoot">
+        <div class="fc br">✉ enquiry@kautilya.world</div>
+        <div class="fc cr" style="font-family:'Source Sans 3';font-weight:900;letter-spacing:.5px">🪷 Kautilya World</div>
+        <div class="fc br2">🌐 kautilya.world</div>
+      </div>
+    </div>
+    <div class="dlrow">
+      <button class="dlbtn" onclick="dlPNG()">⬇ Download PNG</button>
+      <button class="dlbtn gold" onclick="generate()">↺ Regenerate</button>
+    </div>
+    <div class="dlrow" style="margin-top:8px">
+      <button class="dlbtn" style="background:#16a34a;border-color:#16a34a;color:#fff;font-size:12px" onclick="openShareModal('wa')">📱 WhatsApp Share</button>
+      <button class="dlbtn xbtn" style="font-size:12px" onclick="shareOnX()">𝕏 Share</button>
+      <button class="dlbtn" style="background:#1d4ed8;border-color:#1d4ed8;color:#fff;font-size:12px" onclick="openShareModal('em')">✉ Email Share</button>
+    </div>`;
+}
+
+function stretchImg(i, imgEl) {
+  // Force image to always fill its container regardless of natural size
+  const box = imgEl.closest('.pimg');
+  if (!box) return;
+  const bw = box.offsetWidth, bh = box.offsetHeight;
+  const iw = imgEl.naturalWidth || bw, ih = imgEl.naturalHeight || bh;
+  const scaleW = bw / iw, scaleH = bh / ih;
+  const fillScale = Math.max(scaleW, scaleH);
+  if (!imgTransform[i]) imgTransform[i] = {x:0,y:0,z:100};
+  // Only auto-set zoom if it's at default (100%) - don't override user's zoom
+  if (imgTransform[i].z === 100) {
+    imgTransform[i].z = Math.round(fillScale * 100);
+  }
+  applyTransform(i);
+}
+
+function getFilter(i) {
+  const a = imgAdj[i] || {b:100,c:100,s:100};
+  const t = imgTransform[i] || {x:0,y:0,z:100};
+  return `position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;display:block;transform-origin:center center;filter:brightness(${a.b}%) contrast(${a.c}%) saturate(${a.s}%);transform:translate(${t.x}px,${t.y}px) scale(${t.z/100})`;
+}
+
+function toolbarHTML(i) {
+  const a = imgAdj[i] || {b:100,c:100,s:100};
+  const t = imgTransform[i] || {x:0,y:0,z:100};
+  return `<div class="img-toolbar">
+    <div class="adj-row"><span class="adj-lbl">Bright</span><input class="adj-slider" type="range" min="30" max="200" value="${a.b}" oninput="adjImg(${i},'b',this.value)"/><span class="adj-val" id="bv${i}">${a.b}</span></div>
+    <div class="adj-row"><span class="adj-lbl">Cont</span><input class="adj-slider" type="range" min="30" max="200" value="${a.c}" oninput="adjImg(${i},'c',this.value)"/><span class="adj-val" id="cv${i}">${a.c}</span></div>
+    <div class="adj-row"><span class="adj-lbl">Sat</span><input class="adj-slider" type="range" min="0" max="200" value="${a.s}" oninput="adjImg(${i},'s',this.value)"/><span class="adj-val" id="sv${i}">${a.s}</span></div>
+    <div class="pos-row">
+      <div class="move-pad">
+        <div></div><button class="mvbtn" onmousedown="startMove(event,${i},0,-6)" onmouseup="stopMove()" ontouchstart="startMove(event,${i},0,-6)" ontouchend="stopMove()">▲</button><div></div>
+        <button class="mvbtn" onmousedown="startMove(event,${i},-6,0)" onmouseup="stopMove()" ontouchstart="startMove(event,${i},-6,0)" ontouchend="stopMove()">◀</button>
+        <button class="mvbtn" style="font-size:8px;color:#aaa" onclick="resetTransform(${i})">●</button>
+        <button class="mvbtn" onmousedown="startMove(event,${i},6,0)" onmouseup="stopMove()" ontouchstart="startMove(event,${i},6,0)" ontouchend="stopMove()">▶</button>
+        <div></div><button class="mvbtn" onmousedown="startMove(event,${i},0,6)" onmouseup="stopMove()" ontouchstart="startMove(event,${i},0,6)" ontouchend="stopMove()">▼</button><div></div>
+      </div>
+      <div class="zoom-col">
+        <button class="zbtn" onmousedown="startZoom(event,${i},5)" onmouseup="stopMove()" ontouchstart="startZoom(event,${i},5)" ontouchend="stopMove()">＋</button>
+        <span style="color:#666;font-size:8px;text-align:center" id="zv${i}">${t.z}%</span>
+        <button class="zbtn" onmousedown="startZoom(event,${i},-5)" onmouseup="stopMove()" ontouchstart="startZoom(event,${i},-5)" ontouchend="stopMove()">－</button>
+      </div>
+      <div class="toolbar-btns" style="flex-direction:column;gap:3px;flex:1">
+        <button class="tbtn" onclick="resetAdj(${i})">↺ Reset All</button>
+        <button class="tbtn rmbg" id="rmbg${i}" onclick="removeBg(${i})">✂ Remove BG</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function panHTML(s, i) {
+  const dk = s.isDark;
+  let img = '';
+  if (s.empty) img = `<div class="ph"><div class="ico">—</div></div>`;
+  else if (s.img) img = `<img id="img${i}" src="${s.img}" alt="" style="${getFilter(i)}" onload="stretchImg(${i},this)"/><button class="rgbtn" onclick="regenImg(${i})">↺</button>${toolbarHTML(i)}`;
+  else if (s.loading) img = `<div class="lwrap"><div class="spin${dk?'':' d'}"></div><span class="llbl">Generating…</span></div>`;
+  else if (s.err) img = `<div class="emsg">⚠️ ${s.err}</div><button class="rgbtn" onclick="regenImg(${i})">↺</button>`;
+  else img = `<div class="ph"><div class="ico">🍌</div><div class="hint">Loading…</div></div>`;
+  return `<div class="pan ${dk?'dk':'lt'}" id="p${i}">
+    <div class="phl">${s.headline}</div>
+    <div class="pimg">${img}</div>
+    <div class="psm">${s.summary}</div>
+  </div>`;
+}
+
+function patchImg(i) {
+  const el = document.getElementById('p'+i);
+  if (!el) return;
+  const s = stories[i];
+  const dk = s.isDark;
+  let html = '';
+  if (s.img) html = `<img id="img${i}" src="${s.img}" alt="" style="${getFilter(i)}" onload="stretchImg(${i},this)"/><button class="rgbtn" onclick="regenImg(${i})">↺</button>${toolbarHTML(i)}`;
+  else if (s.loading) html = `<div class="lwrap"><div class="spin${dk?'':' d'}"></div><span class="llbl">Generating…</span></div>`;
+  else if (s.err) html = `<div class="emsg">⚠️ ${s.err}</div><button class="rgbtn" onclick="regenImg(${i})">↺</button>`;
+  else html = `<div class="ph"><div class="ico">🍌</div></div>`;
+  el.querySelector('.pimg').innerHTML = html;
+}
+
+async function regenImg(i) {
+  const s = stories[i];
+  if (!s || (!apiKey && !USE_PROXY)) return;
+  s.loading=true; s.img=null; s.err=null;
+  patchImg(i);
+  try {
+    s.img = prov==='openai' ? await oaiImg(s.imagePrompt) : await gemImg(s.imagePrompt);
+    s.loading=false;
+  } catch(e) { s.loading=false; s.err=e.message.slice(0,85); }
+  patchImg(i);
+}
+
+async function dlPNG() {
+  const np = document.getElementById('np');
+  if (!np) return;
+  // Hide all UI overlays before capture
+  const hide = np.querySelectorAll('.img-toolbar,.rgbtn');
+  hide.forEach(el => { el.dataset.prevDisplay = el.style.display; el.style.display='none'; });
+  try {
+    const canvas = await html2canvas(np,{scale:2,useCORS:true,backgroundColor:'#e8d9c0'});
+    const a = document.createElement('a');
+    a.download = `loktantra-vaani-${new Date().toISOString().slice(0,10)}.png`;
+    a.href = canvas.toDataURL('image/png');
+    a.click();
+  } catch(e) { alert('Download error: '+e.message); }
+  finally {
+    hide.forEach(el => { el.style.display = el.dataset.prevDisplay || ''; });
+  }
+}
+
+function shareOnX() {
+  if (!stories.length) return;
+  const headline = stories[0]?.headline || 'Breaking News';
+  const text = encodeURIComponent(`${headline}\n\nLoktantra Vaani | Kautilya World\nloktantra-vaani.vercel.app`);
+  window.open(`https://twitter.com/intent/tweet?text=${text}`, '_blank');
+}
+
+function adjImg(i, key, val) {
+  if (!imgAdj[i]) imgAdj[i] = {b:100,c:100,s:100};
+  imgAdj[i][key] = parseInt(val);
+  const img = document.getElementById('img'+i);
+  if (img) img.style.filter = `brightness(${imgAdj[i].b}%) contrast(${imgAdj[i].c}%) saturate(${imgAdj[i].s}%)`;
+  const map = {b:'bv',c:'cv',s:'sv'};
+  const lbl = document.getElementById(map[key]+i);
+  if (lbl) lbl.textContent = val;
+}
+
+function resetAdj(i) {
+  imgAdj[i] = {b:100,c:100,s:100};
+  imgTransform[i] = {x:0,y:0,z:100};
+  patchImg(i);
+}
+
+function resetTransform(i) {
+  imgTransform[i] = {x:0,y:0,z:100};
+  applyTransform(i);
+}
+
+function applyTransform(i) {
+  const img = document.getElementById('img'+i);
+  if (!img) return;
+  const a = imgAdj[i] || {b:100,c:100,s:100};
+  const t = imgTransform[i] || {x:0,y:0,z:100};
+  img.style.cssText = `position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;display:block;transform-origin:center center;filter:brightness(${a.b}%) contrast(${a.c}%) saturate(${a.s}%);transform:translate(${t.x}px,${t.y}px) scale(${t.z/100})`;
+  const zv = document.getElementById('zv'+i);
+  if (zv) zv.textContent = t.z+'%';
+}
+
+function startMove(e, i, dx, dy) {
+  e.preventDefault();
+  if (!imgTransform[i]) imgTransform[i] = {x:0,y:0,z:100};
+  const doMove = () => {
+    imgTransform[i].x += dx;
+    imgTransform[i].y += dy;
+    applyTransform(i);
+  };
+  doMove();
+  _moveTimer = setInterval(doMove, 80);
+}
+
+function startZoom(e, i, dz) {
+  e.preventDefault();
+  if (!imgTransform[i]) imgTransform[i] = {x:0,y:0,z:100};
+  const doZoom = () => {
+    imgTransform[i].z = Math.max(30, Math.min(300, imgTransform[i].z + dz));
+    applyTransform(i);
+  };
+  doZoom();
+  _moveTimer = setInterval(doZoom, 80);
+}
+
+function stopMove() {
+  clearInterval(_moveTimer);
+  _moveTimer = null;
+}
+
+async function removeBg(i) {
+  const s = stories[i];
+  if (!s || !s.img) return;
+  const btn = document.getElementById('rmbg'+i);
+  if (btn) { btn.textContent='⏳ Processing…'; btn.disabled=true; btn.classList.add('loading'); }
+  try {
+    // Draw image on canvas and use threshold-based alpha removal
+    const img = document.getElementById('img'+i);
+    const cvs = document.createElement('canvas');
+    const ctx = cvs.getContext('2d');
+    // Load image into canvas
+    const tempImg = new Image();
+    tempImg.crossOrigin = 'anonymous';
+    await new Promise((res, rej) => {
+      tempImg.onload = res; tempImg.onerror = rej;
+      tempImg.src = s.img;
+    });
+    cvs.width = tempImg.naturalWidth || 512;
+    cvs.height = tempImg.naturalHeight || 512;
+    ctx.drawImage(tempImg, 0, 0);
+    const imgData = ctx.getImageData(0, 0, cvs.width, cvs.height);
+    const data = imgData.data;
+    // Sample corners to determine background color
+    const corners = [
+      [data[0],data[1],data[2]],
+      [data[(cvs.width-1)*4], data[(cvs.width-1)*4+1], data[(cvs.width-1)*4+2]],
+      [data[(cvs.height-1)*cvs.width*4], data[(cvs.height-1)*cvs.width*4+1], data[(cvs.height-1)*cvs.width*4+2]],
+    ];
+    const bgR = Math.round(corners.reduce((a,c)=>a+c[0],0)/corners.length);
+    const bgG = Math.round(corners.reduce((a,c)=>a+c[1],0)/corners.length);
+    const bgB = Math.round(corners.reduce((a,c)=>a+c[2],0)/corners.length);
+    // Remove pixels similar to background color
+    for (let p=0; p<data.length; p+=4) {
+      const dr=data[p]-bgR, dg=data[p+1]-bgG, db=data[p+2]-bgB;
+      const dist = Math.sqrt(dr*dr+dg*dg+db*db);
+      if (dist < 60) data[p+3] = 0;
+      else if (dist < 90) data[p+3] = Math.round(((dist-60)/30)*255);
+    }
+    ctx.putImageData(imgData, 0, 0);
+    const newSrc = cvs.toDataURL('image/png');
+    s.img = newSrc;
+    if (img) img.src = newSrc;
+  } catch(e) { console.warn('removeBg error',e); }
+  if (btn) { btn.textContent='✂ Remove BG'; btn.disabled=false; btn.classList.remove('loading'); }
+}
+
+// ── TEMPLATE GALLERY ─────────────────────────────────────────────────────────
+const TEMPLATES = {
+  grid2x2: { label:'2x2 Grid', icon:'📰', maxStories:4 },
+  hero:    { label:'Hero',     icon:'📋', maxStories:1 },
+  breaking:{ label:'Breaking', icon:'🔴', maxStories:2 },
+  sports:  { label:'Sports',   icon:'🏏', maxStories:3 },
+  opinion: { label:'Opinion',  icon:'✍',  maxStories:2 },
+};
+let currentTemplate = 'grid2x2';
+
+function renderTemplateGallery() {
+  document.getElementById('tplGrid').innerHTML = Object.entries(TEMPLATES).map(([k,t]) =>
+    `<button class="tpl-card${k===currentTemplate?' on':''}" onclick="setTemplate('${k}')"><div class="tpl-ico">${t.icon}</div>${t.label}</button>`
+  ).join('');
+}
+
+function setTemplate(key) {
+  currentTemplate = key;
+  const max = TEMPLATES[key].maxStories;
+  // Trim selection if needed
+  while (sel.size > max) { const first = sel.values().next().value; sel.delete(first); document.getElementById('ni-'+first)?.classList.remove('on'); }
+  renderTemplateGallery();
+  updateUI();
+  if (stories.length > 0) renderNP();
+}
+
+// Override updateUI to use template max
+const _origUpdateUI = updateUI;
+updateUI = function() {
+  const max = TEMPLATES[currentTemplate].maxStories;
+  const c = sel.size;
+  document.getElementById('badge').textContent = `${c} / ${max}`;
+  const btn = document.getElementById('gbtn');
+  const note = document.getElementById('gnote');
+  if (c === 0) { btn.disabled=true; note.textContent=`Select up to ${max} stor${max===1?'y':'ies'} to begin`; }
+  else if (!apiKey && !USE_PROXY) { btn.disabled=true; note.textContent=`${c} selected — add API key above`; }
+  else { btn.disabled=false; note.textContent=`${c} stor${c===1?'y':'ies'} selected · ready to generate!`; }
+};
+
+// Override toggle to use template max
+toggle = function(id) {
+  const max = TEMPLATES[currentTemplate].maxStories;
+  if (sel.has(id)) {
+    sel.delete(id);
+    document.getElementById('ni-'+id)?.classList.remove('on');
+  } else {
+    if (sel.size >= max) {
+      const first = sel.values().next().value;
+      sel.delete(first);
+      document.getElementById('ni-'+first)?.classList.remove('on');
+    }
+    sel.add(id);
+    document.getElementById('ni-'+id)?.classList.add('on');
+  }
+  updateUI();
+};
+
+// Override generate to use template max
+const _origGenerate = generate;
+generate = async function() {
+  if ((!apiKey && !USE_PROXY) || sel.size===0) return;
+  const max = TEMPLATES[currentTemplate].maxStories;
+  const btn = document.getElementById('gbtn');
+  btn.disabled=true; btn.textContent='⏳ Generating content...';
+
+  const selected = allNews.filter(n => sel.has(n.id)).slice(0,max);
+  while (selected.length < max) selected.push(null);
+
+  stories = await Promise.all(selected.map(async(n,i) => {
+    if (!n) return {id:`e${i}`,isDark:i%2===0,headline:'',summary:'',imagePrompt:'',img:null,loading:false,err:null,empty:true};
+    const c = await getContent(n.hl, n);
+    return {id:n.id, isDark:i%2===0, ...c, img:null, loading:false, err:null};
+  }));
+
+  renderNP();
+  btn.textContent='⏳ Generating images...';
+
+  for (let i=0; i<stories.length; i++) {
+    if (stories[i].empty || !stories[i].imagePrompt) continue;
+    stories[i].loading=true;
+    patchImg(i);
+    try {
+      stories[i].img = prov==='openai' ? await oaiImg(stories[i].imagePrompt) : await gemImg(stories[i].imagePrompt);
+      stories[i].loading=false;
+    } catch(e) {
+      stories[i].loading=false;
+      stories[i].err=e.message.slice(0,85);
+    }
+    patchImg(i);
+  }
+
+  btn.disabled=false;
+  btn.textContent='↺ Regenerate Card';
+  document.getElementById('saveHistBtn').style.display = '';
+};
+
+// Template-specific renderers
+function npWrapper(innerContent, extraClass) {
+  const today = new Date().toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'});
+  const edNames = {national:"Bharat",bihar:"Bihar",kerala:"Kerala",tamilnadu:"Tamil Nadu",bengal:"Bengal",northeast:"North East",middleeast:"Middle East War Desk"};
+  return `<div class="np fadein${extraClass?' '+extraClass:''}" id="np">
+    <div class="mast"><h1>लोकतंत्र वाणी</h1></div>
+    <div class="ibar">
+      <span>${edNames[currentEdition]||"Bharat"} Edition</span>
+      <span class="it">Crafted by Kautilya World</span>
+      <span>${today}</span>
+    </div>
+    ${innerContent}
+    <div class="npfoot">
+      <div class="fc br">✉ enquiry@kautilya.world</div>
+      <div class="fc cr" style="font-family:'Source Sans 3';font-weight:900;letter-spacing:.5px">🪷 Kautilya World</div>
+      <div class="fc br2">🌐 kautilya.world</div>
+    </div>
+  </div>`;
+}
+
+function renderGrid2x2() {
+  return `<div class="sgrid">${stories.map((s,i)=>panHTML(s,i)).join('')}</div>`;
+}
+
+function renderHero() {
+  const s = stories[0];
+  if (!s || s.empty) return `<div style="padding:40px;text-align:center;color:#999">Select a story to generate</div>`;
+  let imgHTML = '';
+  if (s.img) imgHTML = `<img id="img0" src="${s.img}" alt="" style="${getFilter(0)}" onload="stretchImg(0,this)"/>${toolbarHTML(0)}`;
+  else if (s.loading) imgHTML = `<div class="lwrap" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center"><div class="spin"></div><span class="llbl">Generating…</span></div>`;
+  else if (s.err) imgHTML = `<div class="emsg" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center">⚠️ ${s.err}</div>`;
+  else imgHTML = `<div class="ph" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center"><div class="ico">🍌</div></div>`;
+  return `<div class="np-hero">
+    <div class="hero-main">
+      <div class="hero-img">${imgHTML}</div>
+      <div class="hero-overlay"><div class="hero-hl">${s.headline}</div></div>
+    </div>
+    <div class="hero-sm">${s.summary}</div>
+  </div>`;
+}
+
+function renderBreaking() {
+  return `<div class="np-breaking">
+    <div class="break-banner">⚡ BREAKING NEWS ⚡</div>
+    <div class="break-stack">${stories.slice(0,2).map((s,i) => {
+      if (s.empty) return '';
+      let imgHTML = '';
+      if (s.img) imgHTML = `<img id="img${i}" src="${s.img}" alt="" style="${getFilter(i)}" onload="stretchImg(${i},this)"/>${toolbarHTML(i)}`;
+      else if (s.loading) imgHTML = `<div class="lwrap"><div class="spin"></div><span class="llbl">Generating…</span></div>`;
+      else if (s.err) imgHTML = `<div class="emsg">⚠️ ${s.err}</div>`;
+      else imgHTML = `<div class="ph"><div class="ico">🍌</div></div>`;
+      return `<div class="break-item" style="background:var(--cream)">
+        <div class="break-img">${imgHTML}</div>
+        <div class="break-txt">
+          <div class="break-hl">${s.headline}</div>
+          <div class="break-sm">${s.summary}</div>
+        </div>
+      </div>`;
+    }).join('')}</div>
+  </div>`;
+}
+
+function renderSports() {
+  const hero = stories[0];
+  let heroImg = '';
+  if (hero && !hero.empty) {
+    if (hero.img) heroImg = `<img id="img0" src="${hero.img}" alt="" style="${getFilter(0)}" onload="stretchImg(0,this)"/>${toolbarHTML(0)}`;
+    else if (hero.loading) heroImg = `<div class="lwrap" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center"><div class="spin"></div></div>`;
+    else if (hero.err) heroImg = `<div class="emsg" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center">⚠️ ${hero.err}</div>`;
+  }
+  return `<div class="np-sports">
+    <div class="sport-hero">${heroImg}<div class="sport-hero-overlay"><div class="sport-hero-hl">${hero?.headline||''}</div></div></div>
+    <div style="padding:6px 10px;font-size:10px;color:var(--brown);background:var(--cream);border-bottom:2px solid var(--dark);font-family:'Source Sans 3';font-weight:700">${hero?.summary||''}</div>
+    <div class="sport-row">${stories.slice(1,3).map((s,idx) => {
+      const i = idx+1;
+      if (s.empty) return `<div class="sport-card" style="background:var(--cream)"></div>`;
+      return `<div class="sport-card" style="background:var(--cream)">
+        <div class="sport-hl">${s.headline}</div>
+        <div class="sport-sm">${s.summary}</div>
+      </div>`;
+    }).join('')}</div>
+  </div>`;
+}
+
+function renderOpinion() {
+  const main = stories[0];
+  const second = stories[1];
+  let imgHTML = '';
+  if (second && !second.empty && second.img) imgHTML = `<img id="img1" src="${second.img}" alt="" style="${getFilter(1)}" onload="stretchImg(1,this)"/>${toolbarHTML(1)}`;
+  else if (second && second.loading) imgHTML = `<div class="lwrap" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center"><div class="spin"></div></div>`;
+  return `<div class="np-opinion">
+    <div class="oped-main">
+      <div class="oped-label">Opinion / Editorial</div>
+      <div class="oped-hl">${main?.headline||''}</div>
+      <div class="oped-quote">${main?.summary||''}</div>
+      ${second && !second.empty ? `<div class="oped-body">${second.headline}. ${second.summary}</div>` : ''}
+    </div>
+    ${second && !second.empty ? `<div class="oped-img">${imgHTML}</div>` : ''}
+  </div>`;
+}
+
+// Override renderNP to dispatch by template
+renderNP = function() {
+  let inner = '';
+  switch(currentTemplate) {
+    case 'hero': inner = renderHero(); break;
+    case 'breaking': inner = renderBreaking(); break;
+    case 'sports': inner = renderSports(); break;
+    case 'opinion': inner = renderOpinion(); break;
+    default: inner = renderGrid2x2(); break;
+  }
+  document.getElementById('right').innerHTML = `
+    ${npWrapper(inner, currentTemplate !== 'grid2x2' ? 'np-tpl-'+currentTemplate : '')}
+    <div class="dlrow">
+      <button class="dlbtn" onclick="dlPNG()">⬇ Download PNG</button>
+      <button class="dlbtn gold" onclick="generate()">↺ Regenerate</button>
+    </div>
+    <div class="dlrow" style="margin-top:8px">
+      <button class="dlbtn" style="background:#16a34a;border-color:#16a34a;color:#fff;font-size:12px" onclick="openShareModal('wa')">📱 WhatsApp Share</button>
+      <button class="dlbtn xbtn" style="font-size:12px" onclick="shareOnX()">𝕏 Share</button>
+      <button class="dlbtn" style="background:#1d4ed8;border-color:#1d4ed8;color:#fff;font-size:12px" onclick="openShareModal('em')">✉ Email Share</button>
+    </div>
+    <div class="dlrow" style="margin-top:8px">
+      <div class="voice-controls">
+        <button class="voice-btn" id="voiceBtn" onclick="toggleNarration()">🔊 Narrate</button>
+        <select class="voice-speed" id="voiceSpeed" onchange="setNarrationSpeed(this.value)">
+          <option value="0.7">0.7x</option>
+          <option value="1" selected>1x</option>
+          <option value="1.3">1.3x</option>
+          <option value="1.5">1.5x</option>
+          <option value="2">2x</option>
+        </select>
+      </div>
+    </div>`;
+};
+
+// Override patchImg to work with all templates
+const _origPatchImg = patchImg;
+patchImg = function(i) {
+  // For non-grid templates, just re-render the whole thing
+  if (currentTemplate !== 'grid2x2') {
+    renderNP();
+    return;
+  }
+  _origPatchImg(i);
+};
+
+// ── DRAG & DROP ─────────────────────────────────────────────────────────────
+let _dragSrcIdx = null;
+
+// Override panHTML to add drag support for grid2x2
+const _origPanHTML = panHTML;
+panHTML = function(s, i) {
+  const dk = s.isDark;
+  const draggable = currentTemplate === 'grid2x2' && !s.empty;
+  let img = '';
+  if (s.empty) img = `<div class="ph"><div class="ico">—</div></div>`;
+  else if (s.img) img = `<img id="img${i}" src="${s.img}" alt="" style="${getFilter(i)}" onload="stretchImg(${i},this)"/><button class="rgbtn" onclick="regenImg(${i})">↺</button>${toolbarHTML(i)}`;
+  else if (s.loading) img = `<div class="lwrap"><div class="spin${dk?'':' d'}"></div><span class="llbl">Generating…</span></div>`;
+  else if (s.err) img = `<div class="emsg">⚠️ ${s.err}</div><button class="rgbtn" onclick="regenImg(${i})">↺</button>`;
+  else img = `<div class="ph"><div class="ico">🍌</div><div class="hint">Loading…</div></div>`;
+  return `<div class="pan ${dk?'dk':'lt'}" id="p${i}" ${draggable?`draggable="true" ondragstart="onDragStart(event,${i})" ondragover="onDragOver(event,${i})" ondragleave="onDragLeave(event)" ondrop="onDrop(event,${i})" ondragend="onDragEnd(event)" ontouchstart="onTouchDragStart(event,${i})" ontouchmove="onTouchDragMove(event)" ontouchend="onTouchDragEnd(event,${i})"`:''}style="position:relative">
+    ${draggable?'<div class="dnd-handle">⠿</div>':''}
+    <div class="phl">${s.headline}</div>
+    <div class="pimg">${img}</div>
+    <div class="psm">${s.summary}</div>
+  </div>`;
+};
+
+function onDragStart(e, i) {
+  _dragSrcIdx = i;
+  e.dataTransfer.effectAllowed = 'move';
+  e.target.closest('.pan')?.classList.add('dragging');
+}
+function onDragOver(e, i) {
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+  document.querySelectorAll('.pan').forEach(p => p.classList.remove('drag-over'));
+  e.target.closest('.pan')?.classList.add('drag-over');
+}
+function onDragLeave(e) {
+  e.target.closest('.pan')?.classList.remove('drag-over');
+}
+function onDrop(e, i) {
+  e.preventDefault();
+  document.querySelectorAll('.pan').forEach(p => p.classList.remove('drag-over','dragging'));
+  if (_dragSrcIdx === null || _dragSrcIdx === i) return;
+  // Swap stories
+  [stories[_dragSrcIdx], stories[i]] = [stories[i], stories[_dragSrcIdx]];
+  // Swap isDark
+  stories[_dragSrcIdx].isDark = _dragSrcIdx%2===0;
+  stories[i].isDark = i%2===0;
+  // Swap adjustments
+  [imgAdj[_dragSrcIdx], imgAdj[i]] = [imgAdj[i], imgAdj[_dragSrcIdx]];
+  [imgTransform[_dragSrcIdx], imgTransform[i]] = [imgTransform[i], imgTransform[_dragSrcIdx]];
+  _dragSrcIdx = null;
+  renderNP();
+}
+function onDragEnd(e) {
+  document.querySelectorAll('.pan').forEach(p => p.classList.remove('drag-over','dragging'));
+  _dragSrcIdx = null;
+}
+
+// Touch drag support for mobile
+let _touchDragIdx = null;
+function onTouchDragStart(e, i) { _touchDragIdx = i; }
+function onTouchDragMove(e) { /* visual feedback could go here */ }
+function onTouchDragEnd(e, i) {
+  if (_touchDragIdx === null || _touchDragIdx === i) { _touchDragIdx = null; return; }
+  const touch = e.changedTouches[0];
+  const target = document.elementFromPoint(touch.clientX, touch.clientY)?.closest('.pan');
+  if (target) {
+    const targetIdx = parseInt(target.id.replace('p',''));
+    if (!isNaN(targetIdx) && targetIdx !== _touchDragIdx) {
+      [stories[_touchDragIdx], stories[targetIdx]] = [stories[targetIdx], stories[_touchDragIdx]];
+      stories[_touchDragIdx].isDark = _touchDragIdx%2===0;
+      stories[targetIdx].isDark = targetIdx%2===0;
+      [imgAdj[_touchDragIdx], imgAdj[targetIdx]] = [imgAdj[targetIdx], imgAdj[_touchDragIdx]];
+      [imgTransform[_touchDragIdx], imgTransform[targetIdx]] = [imgTransform[targetIdx], imgTransform[_touchDragIdx]];
+      renderNP();
+    }
+  }
+  _touchDragIdx = null;
+}
+
+// ── VOICE NARRATION ─────────────────────────────────────────────────────────
+let _speechPlaying = false;
+let _speechRate = 1;
+
+function buildNarrationText() {
+  const edNames = {national:"Bharat",bihar:"Bihar",kerala:"Kerala",tamilnadu:"Tamil Nadu",bengal:"Bengal",northeast:"North East",middleeast:"Middle East War Desk"};
+  const ed = edNames[currentEdition] || 'Bharat';
+  let intro, transition;
+  if (lang === 'en') {
+    intro = `Loktantra Vaani, ${ed} Edition. Today's headlines.`;
+    transition = 'Next story.';
+  } else {
+    intro = `लोकतंत्र वाणी, ${ed} संस्करण। आज की मुख्य खबरें।`;
+    transition = 'अगली खबर।';
+  }
+  let parts = [intro];
+  stories.forEach((s,i) => {
+    if (s.empty) return;
+    if (i > 0) parts.push(transition);
+    parts.push(s.headline + '. ' + s.summary);
+  });
+  return parts.join(' ');
+}
+
+function toggleNarration() {
+  if (_speechPlaying) { stopNarration(); return; }
+  startNarration();
+}
+
+function startNarration() {
+  if (!window.speechSynthesis) { alert('Speech synthesis not supported in this browser'); return; }
+  speechSynthesis.cancel();
+
+  if (lang === 'bi') {
+    // Bilingual: chain Hindi headlines then English summaries
+    const utterances = [];
+    stories.forEach(s => {
+      if (s.empty) return;
+      const uHi = new SpeechSynthesisUtterance(s.headline);
+      uHi.lang = 'hi-IN'; uHi.rate = _speechRate;
+      const uEn = new SpeechSynthesisUtterance(s.summary);
+      uEn.lang = 'en-IN'; uEn.rate = _speechRate;
+      utterances.push(uHi, uEn);
+    });
+    if (utterances.length === 0) return;
+    utterances[utterances.length-1].onend = () => { _speechPlaying = false; updateVoiceBtn(); };
+    utterances.forEach(u => speechSynthesis.speak(u));
+  } else {
+    const text = buildNarrationText();
+    const utter = new SpeechSynthesisUtterance(text);
+    utter.lang = lang === 'en' ? 'en-IN' : 'hi-IN';
+    utter.rate = _speechRate;
+    utter.onend = () => { _speechPlaying = false; updateVoiceBtn(); };
+    speechSynthesis.speak(utter);
+  }
+  _speechPlaying = true;
+  updateVoiceBtn();
+}
+
+function stopNarration() {
+  speechSynthesis.cancel();
+  _speechPlaying = false;
+  updateVoiceBtn();
+}
+
+function setNarrationSpeed(rate) {
+  _speechRate = parseFloat(rate);
+}
+
+function updateVoiceBtn() {
+  const btn = document.getElementById('voiceBtn');
+  if (!btn) return;
+  if (_speechPlaying) {
+    btn.textContent = '⏹ Stop';
+    btn.classList.add('playing');
+  } else {
+    btn.textContent = '🔊 Narrate';
+    btn.classList.remove('playing');
+  }
+}
+
+// ── RSS FEED INGESTION ──────────────────────────────────────────────────────
+let rssFeeds = smLoad('lv_rss', []);
+
+function renderRSSChips() {
+  const el = document.getElementById('rssChips');
+  if (!el) return;
+  el.innerHTML = rssFeeds.map((f,i) => `<span class="rss-chip">${f.label || new URL(f.url).hostname}<span class="rss-x" onclick="removeRSSFeed(${i})">✕</span></span>`).join('');
+}
+
+async function addRSSFeed() {
+  const inp = document.getElementById('rssInput');
+  const url = inp.value.trim();
+  if (!url || !/^https?:\/\//i.test(url)) return;
+  if (rssFeeds.find(f => f.url === url)) return; // duplicate
+
+  const btn = inp.nextElementSibling;
+  btn.textContent = '⏳'; btn.disabled = true;
+
+  try {
+    const r = await fetch('/api/lok-post/rss', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({url}) });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error || 'Failed');
+
+    const label = d.feedTitle || new URL(url).hostname;
+    rssFeeds.push({url, label});
+    smSave('lv_rss', rssFeeds);
+    inp.value = '';
+    renderRSSChips();
+
+    // Add RSS items to feed
+    if (d.items?.length) {
+      const customs = allNews.filter(n => n.id.startsWith('c') || n.id.startsWith('rss'));
+      const rssItems = d.items.map((item,i) => ({
+        id: 'rss' + Date.now() + i,
+        cat: item.category || 'RSS',
+        src: label,
+        hl: item.title,
+        rawUrl: item.link || ''
+      }));
+      allNews = [...customs, ...rssItems, ...allNews.filter(n => !n.id.startsWith('c') && !n.id.startsWith('rss'))];
+      renderFeed();
+    }
+  } catch(e) { console.warn('RSS add failed:', e); }
+
+  btn.textContent = 'Add'; btn.disabled = false;
+}
+
+function removeRSSFeed(idx) {
+  rssFeeds.splice(idx, 1);
+  smSave('lv_rss', rssFeeds);
+  renderRSSChips();
+}
+
+async function loadAllRSS() {
+  if (rssFeeds.length === 0) return [];
+  const allItems = [];
+  for (const feed of rssFeeds) {
+    try {
+      const r = await fetch('/api/lok-post/rss', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({url:feed.url}) });
+      const d = await r.json();
+      if (d.items) {
+        d.items.forEach((item,i) => allItems.push({
+          id: 'rss' + Date.now() + Math.random().toString(36).slice(2,6) + i,
+          cat: item.category || 'RSS',
+          src: feed.label || new URL(feed.url).hostname,
+          hl: item.title,
+          rawUrl: item.link || ''
+        }));
+      }
+    } catch(e) { console.warn('RSS load fail:', feed.url, e); }
+  }
+  return allItems;
+}
+
+// Override refreshFeed to include RSS items
+const _origRefreshFeed = refreshFeed;
+refreshFeed = async function() {
+  const btn = document.getElementById('rfbtn');
+  btn.textContent = '⏳ Fetching live news...';
+  btn.disabled = true;
+
+  const customs = allNews.filter(n => n.id.startsWith('c'));
+  const oldSel = new Set(sel);
+
+  const loadingItems = Array.from({length:6},(_,i)=>({id:'loading'+i, cat:'...', src:'...', hl:'Fetching latest news…'}));
+  allNews = [...customs, ...loadingItems];
+  renderFeed();
+
+  try {
+    // Fetch RSS and Gemini in parallel
+    const [rssItems, liveNews] = await Promise.all([
+      loadAllRSS().catch(()=>[]),
+      fetchLiveNews(currentEdition).catch(e => { console.warn('Live fetch failed:', e.message); return null; })
+    ]);
+
+    if (liveNews && liveNews.length > 0) {
+      console.log('Live news loaded:', liveNews.length, 'items');
+      allNews = [...customs, ...rssItems, ...liveNews];
+    } else {
+      console.warn('Using fallback BASE_NEWS');
+      allNews = [...customs, ...rssItems, ...[...BASE_NEWS].sort(()=>Math.random()-.5)];
+    }
+  } catch(e) {
+    console.error('refreshFeed error:', e);
+    allNews = [...customs, ...[...BASE_NEWS].sort(()=>Math.random()-.5)];
+  }
+
+  sel.clear();
+  renderFeed();
+  oldSel.forEach(id => { if (allNews.find(n=>n.id===id)) toggle(id); });
+  btn.textContent = '↻ Live Refresh';
+  btn.disabled = false;
+};
+
+// Auto-fetch live news now that refreshFeed is properly overridden
+_keyReady.then(() => refreshFeed());
+
+// ── PWA SERVICE WORKER ──────────────────────────────────────────────────────
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js').catch(err => console.warn('SW registration failed:', err));
+}
+
+// ── INIT NEW FEATURES ───────────────────────────────────────────────────────
+renderTemplateGallery();
+renderRSSChips();
+</script>
+
+<!-- SHARE MODAL -->
+<div class="smodal-ov" id="shareModalOv" onclick="if(event.target===this)closeShareModal()">
+  <div class="smodal">
+    <div class="sm-head">
+      <h3>📤 Share Newspaper Card</h3>
+      <button class="sm-xbtn" onclick="closeShareModal()">✕</button>
+    </div>
+    <div class="sm-preview"><img id="smPreviewImg" src="" alt="card preview"/></div>
+    <div class="sm-tabs">
+      <button class="sm-tab on" id="smtab-wa" onclick="smSwitchTab('wa')">📱 WhatsApp</button>
+      <button class="sm-tab" id="smtab-em" onclick="smSwitchTab('em')">✉ Email</button>
+      <button class="sm-tab" id="smtab-sc" onclick="smSwitchTab('sc')">⏰ Schedule</button>
+    </div>
+
+    <!-- WA PANEL -->
+    <div class="sm-body" id="smpanel-wa">
+      <div class="sf">
+        <label>Message Caption</label>
+        <textarea id="wa-msg" rows="4"></textarea>
+        <div class="chip-row">
+          <span class="chip" onclick="smSetMsg('wa','🗞 *लोकतंत्र वाणी* — आज की ताज़ा खबर 📰
+Crafted by Kautilya World
+
+#KautilyaWorld #LoktantraVaani')">Hindi</span>
+          <span class="chip" onclick="smSetMsg('wa',"📰 Today's Top Headlines\nLoktantra Vaani | Kautilya World\n\n#IndiaNews #KautilyaWorld")">English</span>
+          <span class="chip" onclick="smSetMsg('wa','⚔️ *Middle East War Update* 🌍
+Latest from the frontlines
+#MiddleEast #Iran #Israel')">War Desk</span>
+          <span class="chip" onclick="smSetMsg('wa','🏛 *Bihar की ताज़ा खबर* 📰
+NDA सरकार की उपलब्धियां 💪
+#Bihar #BJP #NDA')">Bihar</span>
+        </div>
+      </div>
+      <div class="sf">
+        <label>Contacts & Groups <span style="color:#334155">(saved for reuse)</span></label>
+        <div class="contact-scroll" id="wa-clist"></div>
+        <div class="cadd-row">
+          <input id="wa-new" type="text" placeholder="+91 98765 43210 or Group link/name"/>
+          <button onclick="smAddContact('wa')">+ Add</button>
+        </div>
+      </div>
+      <div class="sbtn-row">
+        <button class="sbtn s-wa" onclick="smShareWA()">📱 Send via WhatsApp</button>
+        <button class="sbtn s-cp" onclick="smCopyImg()">📋 Copy Image</button>
+      </div>
+      <div class="sbtn-row" style="margin-top:0">
+        <button class="sbtn s-dl" onclick="smDownload()">⬇ Download Image</button>
+      </div>
+      <div class="snotice" id="wa-notice"></div>
+      <div style="margin-top:12px;padding:10px 12px;background:#050810;border-radius:7px;border:1px solid #0f172a;">
+        <div style="color:#334155;font-size:9px;text-transform:uppercase;letter-spacing:1px;margin-bottom:5px">💡 WhatsApp Workflow</div>
+        <div style="color:#475569;font-size:10px;line-height:1.6">
+          1. Click <b style="color:#94a3b8">Copy Image</b> to copy card to clipboard<br>
+          2. Click <b style="color:#94a3b8">Send via WhatsApp</b> → opens wa.me with your message<br>
+          3. In WhatsApp, paste image (Ctrl+V / Cmd+V) and send
+        </div>
+      </div>
+    </div>
+
+    <!-- EMAIL PANEL -->
+    <div class="sm-body" id="smpanel-em" style="display:none">
+      <div class="sf">
+        <label>Subject Line</label>
+        <input type="text" id="em-subj"/>
+      </div>
+      <div class="sf">
+        <label>Email Body</label>
+        <textarea id="em-body" rows="5"></textarea>
+      </div>
+      <div class="sf">
+        <label>Recipients <span style="color:#334155">(saved for reuse)</span></label>
+        <div class="contact-scroll" id="em-clist"></div>
+        <div class="cadd-row">
+          <input id="em-new" type="email" placeholder="email@example.com or name &lt;email&gt;"/>
+          <button onclick="smAddContact('em')">+ Add</button>
+        </div>
+      </div>
+      <div class="sbtn-row">
+        <button class="sbtn s-em" onclick="smShareEmail()">✉ Send via Gmail / Mail App</button>
+        <button class="sbtn s-cp" onclick="smCopyImg()">📋 Copy Image</button>
+      </div>
+      <div class="sbtn-row" style="margin-top:0">
+        <button class="sbtn s-dl" onclick="smDownload()">⬇ Download & Attach</button>
+      </div>
+      <div class="snotice" id="em-notice"></div>
+      <div style="margin-top:12px;padding:10px 12px;background:#050810;border-radius:7px;border:1px solid #0f172a;">
+        <div style="color:#334155;font-size:9px;text-transform:uppercase;letter-spacing:1px;margin-bottom:5px">💡 Email Workflow</div>
+        <div style="color:#475569;font-size:10px;line-height:1.6">
+          1. Click <b style="color:#94a3b8">Download & Attach</b> — saves PNG to your Downloads<br>
+          2. Click <b style="color:#94a3b8">Send via Gmail</b> → opens your mail app with pre-filled subject + body<br>
+          3. Attach the downloaded PNG and send
+        </div>
+      </div>
+    </div>
+
+    <!-- SCHEDULE PANEL -->
+    <div class="sm-body" id="smpanel-sc" style="display:none">
+      <div class="sf">
+        <label>Send Via</label>
+        <div class="chip-row" style="margin-top:0">
+          <span class="chip on" id="scchip-wa" onclick="smToggleScPlatform('wa')">📱 WhatsApp</span>
+          <span class="chip" id="scchip-em" onclick="smToggleScPlatform('em')">✉ Email</span>
+        </div>
+      </div>
+      <div class="sf">
+        <label>Date & Time</label>
+        <input type="datetime-local" id="sc-dt" style="color-scheme:dark"/>
+      </div>
+      <div class="sf">
+        <label>Repeat</label>
+        <div class="chip-row" style="margin-top:0">
+          <span class="chip on" id="scr-once" onclick="smSetRepeat('once')">Once</span>
+          <span class="chip" id="scr-daily" onclick="smSetRepeat('daily')">Daily</span>
+          <span class="chip" id="scr-weekly" onclick="smSetRepeat('weekly')">Weekly</span>
+        </div>
+      </div>
+      <div class="sf">
+        <label>Message</label>
+        <textarea id="sc-msg" rows="3"></textarea>
+      </div>
+      <div class="sbtn-row">
+        <button class="sbtn s-wa" style="background:#8b5cf6;flex:2" onclick="smSchedule()">⏰ Schedule This Share</button>
+      </div>
+      <div class="snotice" id="sc-notice"></div>
+      <div id="sc-list" style="margin-top:14px"></div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

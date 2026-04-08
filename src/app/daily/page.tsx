@@ -7,6 +7,8 @@ import { Printer, Globe, Zap, Sparkles, History, Clock, MapPin, Users, Eye } fro
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import CategoryBadge from "@/components/CategoryBadge";
+import VaniLivePod from "@/components/VaniLivePod";
+import VaniBot from "@/components/VaniBot";
 import { useLanguage } from "@/lib/language-context";
 import { SEED_POSTS } from "@/lib/seed-data";
 import type { Post } from "@/lib/types";
@@ -45,6 +47,7 @@ const REGIONAL_NEWS: Record<string, { en: string; hi: string }[]> = {
 export default function DailyEditionPage() {
   const { lang, t } = useLanguage();
   const [activeRegion, setActiveRegion] = useState("national");
+  const [showPod, setShowPod] = useState(false);
 
   const allPosts: Post[] = useMemo(
     () =>
@@ -62,7 +65,7 @@ export default function DailyEditionPage() {
   const genzPosts = allPosts.filter((p) => ["GenZ", "Ancient India"].includes(p.category));
   const politicsPosts = allPosts.filter((p) => p.category === "Politics");
   const techPosts = allPosts.filter((p) => p.category === "Tech");
-  const cartoonPosts = allPosts.filter((p) => p.category === "Cartoon Mandala");
+  const cartoonPosts = allPosts.filter((p) => p.category === "Lok Post");
 
   // Edition number (days since arbitrary launch date)
   const launchDate = new Date("2026-01-01");
@@ -95,12 +98,20 @@ export default function DailyEditionPage() {
                 {t("Saturday, March 21, 2026", "शनिवार, 21 मार्च, 2026")}
               </span>
               <span className="text-primary">{t("DAILY EDITION", "दैनिक संस्करण")}</span>
-              <button
-                onClick={() => window.print()}
-                className="no-print flex items-center gap-2 opacity-40 hover:opacity-100 hover:text-primary transition-all"
-              >
-                <Printer className="w-3.5 h-3.5" /> PRINT
-              </button>
+              <div className="flex items-center gap-6 no-print">
+                <button
+                  onClick={() => setShowPod(true)}
+                  className="flex items-center gap-2 text-primary hover:scale-105 transition-transform"
+                >
+                  <Sparkles className="w-4 h-4" /> {t("LISTEN TO VANI LIVE", "वाणी लाइव सुनें")}
+                </button>
+                <button
+                  onClick={() => window.print()}
+                  className="flex items-center gap-2 opacity-40 hover:opacity-100 hover:text-primary transition-all"
+                >
+                  <Printer className="w-3.5 h-3.5" /> PRINT
+                </button>
+              </div>
             </div>
           </motion.div>
 
@@ -376,6 +387,12 @@ export default function DailyEditionPage() {
         </div>
       </main>
       <Footer />
+      <VaniLivePod 
+        posts={allPosts.slice(0, 10)} 
+        isOpen={showPod} 
+        onClose={() => setShowPod(false)} 
+      />
+      <VaniBot articleTitle="Today's Daily Edition" />
     </>
   );
 }

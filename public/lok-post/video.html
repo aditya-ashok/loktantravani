@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Video Studio — Loktantra Vaani</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;600;700;900&family=Playfair+Display:wght@700;900&family=Source+Sans+3:wght@400;600;700;800;900&family=Lora:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+:root { --brown:#7d6144;--cream:#f5f0e6;--dark:#1a1a2e;--gold:#f59e0b;--lb:#c4a882;--db:#5c4433;--text:#2d2418; }
+body { background:#0d1117; min-height:100vh; font-family:'Source Sans 3',sans-serif; color:#e2e8f0; }
+.app { display:grid; grid-template-columns:370px 1fr; min-height:100vh; }
+
+/* Left panel */
+.left { background:#090d14; border-right:3px solid var(--gold); overflow-y:auto; display:flex; flex-direction:column; }
+.right { padding:28px 24px; display:flex; flex-direction:column; align-items:center; gap:18px; overflow-y:auto; }
+
+/* Nav */
+.nav-tabs { display:flex; background:#060910; border-bottom:1px solid #1e293b; flex-shrink:0; }
+.nav-tabs a { flex:1; text-align:center; padding:8px 4px; color:#475569; font-size:10px; font-weight:700; text-decoration:none; letter-spacing:.5px; transition:all .15s; border-bottom:2px solid transparent; }
+.nav-tabs a:hover { color:#94a3b8; background:rgba(255,255,255,.02); }
+.nav-tabs a.active { color:#f59e0b; border-bottom-color:#f59e0b; background:rgba(245,158,11,.05); }
+
+.lhead { background:#090d14; padding:16px 18px 12px; border-bottom:2px solid #1e293b; flex-shrink:0; }
+.lhead h2 { font-family:'Playfair Display',serif; color:var(--gold); font-size:19px; margin-bottom:3px; }
+.lhead p { color:#475569; font-size:10px; letter-spacing:0.8px; text-transform:uppercase; }
+
+/* Sections */
+.sec { padding:12px 18px; border-bottom:1px solid #111827; }
+.slabel { color:#475569; font-size:9px; text-transform:uppercase; letter-spacing:1.5px; font-weight:700; margin-bottom:8px; }
+.row2 { display:flex; gap:6px; }
+.pvbtn { flex:1; padding:10px 8px; border-radius:6px; border:1.5px solid #1e293b; background:transparent; color:#94a3b8; cursor:pointer; font-weight:700; font-size:11px; font-family:'Source Sans 3',sans-serif; transition:all .15s; }
+.pvbtn.on { background:var(--gold); color:#1a1a2e; border-color:var(--gold); }
+.pvbtn:hover:not(.on) { border-color:#334155; color:#e2e8f0; }
+.langbtn { flex:1; padding:9px 6px; border-radius:6px; border:1.5px solid #1e293b; background:transparent; color:#94a3b8; cursor:pointer; font-weight:700; font-size:11px; font-family:'Source Sans 3',sans-serif; transition:all .15s; }
+.langbtn.on { background:rgba(168,85,247,.15); border-color:#a855f7; color:#c084fc; }
+.ainput { width:100%; padding:10px 12px; background:#0d1117; border:1.5px solid #1e293b; border-radius:6px; color:#e2e8f0; font-size:12px; font-family:'Source Sans 3',sans-serif; outline:none; }
+.ainput:focus { border-color:var(--gold); }
+.sbtn { background:var(--gold); color:#1a1a2e; border:none; padding:10px 18px; border-radius:6px; font-weight:800; font-size:12px; cursor:pointer; font-family:'Source Sans 3',sans-serif; }
+.keyok { display:none; color:#22c55e; font-size:10px; font-weight:700; margin-top:4px; }
+.secbtn { flex:1; padding:9px 6px; border-radius:6px; border:1.5px solid #1e293b; background:transparent; color:#94a3b8; cursor:pointer; font-weight:700; font-size:11px; font-family:'Source Sans 3',sans-serif; transition:all .15s; }
+.secbtn.on { background:rgba(245,158,11,.12); border-color:var(--gold); color:var(--gold); }
+
+.gbtn { width:100%; padding:14px; background:var(--gold); color:#1a1a2e; border:none; border-radius:8px; font-size:15px; font-weight:900; cursor:pointer; font-family:'Source Sans 3',sans-serif; letter-spacing:.3px; margin-top:8px; }
+.gbtn:disabled { opacity:.5; cursor:not-allowed; }
+.status { margin-top:6px; color:#475569; font-size:10px; text-align:center; min-height:14px; }
+.hist-card { display:flex; gap:8px; padding:6px; border-radius:5px; border:1px solid #1e293b; cursor:pointer; transition:all .15s; align-items:center; }
+.hist-card:hover { background:#0f172a; border-color:#334155; }
+.hist-thumb { width:48px; height:27px; border-radius:3px; object-fit:cover; background:#1e293b; flex-shrink:0; }
+.hist-info { flex:1; min-width:0; }
+.hist-title { font-size:10px; color:#e2e8f0; font-weight:600; line-height:1.3; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.hist-date { font-size:8px; color:#475569; margin-top:1px; }
+.hist-del { background:none; border:none; color:#475569; font-size:12px; cursor:pointer; padding:2px 4px; flex-shrink:0; }
+.hist-del:hover { color:#ef4444; }
+#historyList::-webkit-scrollbar { width:2px; }
+#historyList::-webkit-scrollbar-thumb { background:#1e293b; }
+.url-hint { color:#64748b; font-size:10px; margin-top:4px; line-height:1.4; }
+
+/* ── VIDEO CARD ── */
+.vid-card { width:100%; max-width:680px; background:#0f172a; border:1.5px solid #1e293b; border-radius:12px; overflow:hidden; box-shadow:0 16px 48px rgba(0,0,0,.4); }
+.vid-header { display:flex; align-items:center; justify-content:space-between; padding:10px 16px; background:#0f172a; border-bottom:1px solid #1e293b; }
+.vid-header .brand { display:flex; align-items:center; gap:8px; }
+.vid-header .brand svg { width:28px; height:28px; flex-shrink:0; }
+.vid-header .brand-name { font-family:'Noto Sans Devanagari','Source Sans 3',sans-serif; font-weight:900; font-size:14px; color:#e2e8f0; }
+.vid-header .section-tag { background:rgba(245,158,11,.15); color:var(--gold); font-size:9px; font-weight:800; padding:3px 10px; border-radius:20px; letter-spacing:1px; text-transform:uppercase; }
+
+.vid-embed { width:100%; background:#000; position:relative; }
+.vid-embed iframe { width:100%; aspect-ratio:16/9; border:none; display:block; }
+.vid-embed .twitter-embed { padding:12px 16px; background:#000; min-height:200px; }
+.vid-embed .thumb-img { width:100%; aspect-ratio:16/9; object-fit:cover; display:block; }
+
+.vid-body { padding:16px 18px 14px; }
+.vid-headline { font-family:'Playfair Display',serif; font-size:clamp(18px,3vw,24px); font-weight:900; color:#f1f5f9; line-height:1.3; margin-bottom:8px; }
+.vid-summary { font-size:13px; color:#94a3b8; line-height:1.6; margin-bottom:12px; }
+.vid-source { display:flex; align-items:center; gap:6px; font-size:11px; color:#64748b; padding-top:10px; border-top:1px solid #1e293b; }
+.vid-source .platform-icon { font-size:14px; }
+
+.vid-footer { padding:8px 16px; border-top:1px solid #1e293b; display:flex; align-items:center; justify-content:space-between; background:rgba(15,23,42,.8); }
+.vid-footer span { font-size:9px; color:#475569; font-weight:600; }
+.vid-footer .ft-brand { color:var(--gold); font-weight:800; display:flex; align-items:center; gap:4px; }
+
+/* Download/share row */
+.dlrow { display:flex; gap:8px; width:100%; max-width:680px; margin-top:6px; }
+.dlrow button { flex:1; padding:10px; border-radius:8px; border:none; font-weight:800; font-size:12px; cursor:pointer; font-family:'Source Sans 3',sans-serif; transition:all .15s; }
+.dl-btn { background:var(--gold); color:#1a1a2e; }
+.wa-btn { background:#25d366; color:#fff; }
+.x-btn { background:#000; color:#fff; }
+.dl-btn:hover { filter:brightness(1.1); }
+.wa-btn:hover { filter:brightness(1.1); }
+.x-btn:hover { background:#1a1a1a; }
+
+/* Empty state */
+.empty { width:100%; max-width:680px; background:rgba(13,17,23,.7); border:2px dashed #1e293b; border-radius:12px; padding:52px 32px; text-align:center; }
+.empty .ico { font-size:48px; margin-bottom:14px; }
+.empty h3 { color:#64748b; font-family:'Playfair Display',serif; font-size:22px; margin-bottom:8px; }
+.empty p { color:#334155; font-size:13px; line-height:1.7; }
+.steps { display:flex; flex-direction:column; gap:8px; margin-top:18px; text-align:left; max-width:340px; margin-left:auto; margin-right:auto; }
+.step { display:flex; align-items:center; gap:10px; color:#475569; font-size:12px; }
+.step-n { background:#1e293b; color:var(--gold); width:22px; height:22px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:900; flex-shrink:0; }
+
+@keyframes fadein { from { opacity:0;transform:translateY(10px); } to { opacity:1;transform:translateY(0); } }
+.fadein { animation:fadein .3s ease; }
+
+@media (max-width:860px) {
+  .app { grid-template-columns:1fr; }
+  .left { height:auto; position:static; border-right:none; border-bottom:3px solid var(--gold); }
+  .right { padding:12px 8px; }
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+<!-- LEFT PANEL -->
+<div class="left">
+  <div class="nav-tabs">
+    <a href="/" title="Home">🏠</a>
+    <a href="/column.html">✍ Column</a>
+    <a href="/v21.html">📰 Classic</a>
+    <a href="/v24.html">🪷 Pro</a>
+    <a href="/video.html" class="active">🎬 Video</a>
+  </div>
+  <div class="lhead">
+    <h2>🎬 Video Studio</h2>
+    <p>Embed · Analyze · Share</p>
+  </div>
+
+  <!-- API -->
+  <div class="sec">
+    <div class="slabel">Image API</div>
+    <div class="row2" style="margin-bottom:8px">
+      <button class="pvbtn on" id="pv-gemini" onclick="setProv('gemini')">🍌 Gemini</button>
+      <button class="pvbtn" id="pv-openai" onclick="setProv('openai')">⚡ OpenAI / Sora</button>
+    </div>
+    <div class="row2">
+      <input class="ainput" type="password" id="api-key" placeholder="AIza... (aistudio.google.com/apikey)" />
+      <button class="sbtn" onclick="saveKey()">SAVE</button>
+    </div>
+    <div class="keyok" id="keyok">✓ Key saved — ready!</div>
+  </div>
+
+  <!-- Language -->
+  <div class="sec">
+    <div class="slabel">Language</div>
+    <div class="row2">
+      <button class="langbtn" id="lg-hi" onclick="setLang('hi')">🇮🇳 Hindi</button>
+      <button class="langbtn on" id="lg-en" onclick="setLang('en')">🇬🇧 English</button>
+      <button class="langbtn" id="lg-bi" onclick="setLang('bi')">🔀 Bilingual</button>
+    </div>
+  </div>
+
+  <!-- Video Source -->
+  <div class="sec">
+    <div class="slabel">Video Source</div>
+    <input class="ainput" type="url" id="videoUrl" placeholder="Paste YouTube or X/Twitter video URL" style="margin-bottom:8px" oninput="detectPlatform(this.value)" />
+    <div class="url-hint" id="platformHint">Supports: YouTube, X/Twitter video posts</div>
+    <textarea class="ainput" id="videoDesc" rows="3" placeholder="Optional: describe the video content or add talking points..." style="margin-top:8px;resize:vertical;min-height:60px"></textarea>
+  </div>
+
+  <!-- Section -->
+  <div class="sec">
+    <div class="slabel">Section</div>
+    <div class="row2">
+      <button class="secbtn on" id="sec-breaking" onclick="setSection('breaking')">Breaking</button>
+      <button class="secbtn" id="sec-opinion" onclick="setSection('opinion')">Opinion</button>
+      <button class="secbtn" id="sec-editorial" onclick="setSection('editorial')">Editorial</button>
+      <button class="secbtn" id="sec-analysis" onclick="setSection('analysis')">Analysis</button>
+    </div>
+  </div>
+
+  <!-- Custom Thumbnail -->
+  <div class="sec">
+    <div class="slabel">Custom Thumbnail (Optional)</div>
+    <div class="row2">
+      <button class="pvbtn" onclick="document.getElementById('thumbUpload').click()" style="font-size:10px">📷 Upload Photo</button>
+      <input type="file" id="thumbUpload" accept="image/*" style="display:none" onchange="handleThumbUpload(event)" />
+    </div>
+    <div id="thumbPreview" style="display:none;margin-top:6px">
+      <img id="thumbPreviewImg" style="width:100%;border-radius:6px;border:1px solid #1e293b" />
+      <button onclick="clearThumb()" style="background:transparent;border:1px solid #334155;color:#94a3b8;padding:4px 10px;border-radius:4px;font-size:10px;cursor:pointer;margin-top:4px;font-family:'Source Sans 3',sans-serif">✕ Remove</button>
+    </div>
+  </div>
+
+  <!-- History -->
+  <div class="sec" id="historySec" style="display:none">
+    <div class="slabel" style="display:flex;justify-content:space-between;align-items:center">History <span id="historyCount" style="font-size:8px;color:#334155"></span></div>
+    <div id="historyList" style="max-height:180px;overflow-y:auto;display:flex;flex-direction:column;gap:4px"></div>
+  </div>
+
+  <!-- Generate -->
+  <div class="sec">
+    <button class="gbtn" id="genBtn" onclick="generateVideo()">🎬 Generate Video Card</button>
+    <button class="gbtn" id="saveHistBtn" style="display:none;background:#1e293b;color:#94a3b8;font-size:11px;padding:8px;margin-top:6px;box-shadow:none;font-family:'Source Sans 3',sans-serif" onclick="saveToHistory()">💾 Save to History</button>
+    <div class="status" id="status"></div>
+  </div>
+
+</div>
+
+<!-- RIGHT PANEL -->
+<div class="right" id="right">
+  <div class="empty">
+    <div class="ico">🎬</div>
+    <h3>Your Video Card Appears Here</h3>
+    <p>Create a news-style video card in seconds.</p>
+    <div class="steps">
+      <div class="step"><span class="step-n">1</span>Paste a YouTube or X/Twitter video URL</div>
+      <div class="step"><span class="step-n">2</span>Optionally describe the video content</div>
+      <div class="step"><span class="step-n">3</span>Click Generate to create your video card</div>
+    </div>
+  </div>
+</div>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script>
+// ── STATE ──
+let prov = 'gemini', apiKey = '', lang = 'en', section = 'breaking';
+const USE_PROXY = true;
+let _serverKey = '', _hasOpenAI = false;
+let videoData = null; // generated card data
+let thumbImg = null;  // thumbnail for download
+let customThumb = null; // user-uploaded thumbnail
+
+// ── HISTORY ──────────────────────────────────────────────────────────────────
+const HIST_KEY = 'lv_hist_video', HIST_MAX = 20;
+function resizeImg(b64, maxW, q) {
+  return new Promise(r => {
+    if (!b64) { r(null); return; }
+    const img = new Image();
+    img.onload = () => { const s = Math.min(1, maxW / img.width); const c = document.createElement('canvas'); c.width = img.width * s; c.height = img.height * s; c.getContext('2d').drawImage(img, 0, 0, c.width, c.height); r(c.toDataURL('image/jpeg', q)); };
+    img.onerror = () => r(null);
+    img.src = b64;
+  });
+}
+function getHistory() { return smLoad(HIST_KEY, []); }
+function _saveHist(list) { try { smSave(HIST_KEY, list); } catch(e) { if (list.length > 1) { list.pop(); _saveHist(list); } } }
+
+async function saveToHistory() {
+  if (!videoData) return;
+  const thumb = await resizeImg(thumbImg, 150, 0.5);
+  const sThumb = await resizeImg(thumbImg, 400, 0.6);
+  const list = getHistory();
+  list.unshift({ id: Date.now(), title: videoData.headline || 'Untitled', thumb, ts: new Date().toISOString(),
+    state: { videoData: {...videoData}, lang, section },
+    images: { thumbImg: sThumb }
+  });
+  while (list.length > HIST_MAX) list.pop();
+  _saveHist(list); renderHistoryUI();
+  const btn = document.getElementById('saveHistBtn');
+  btn.textContent = '✅ Saved!'; setTimeout(() => { btn.textContent = '💾 Save to History'; }, 1500);
+}
+
+function loadFromHistory(id) {
+  const entry = getHistory().find(h => h.id === id);
+  if (!entry) return;
+  videoData = entry.state.videoData;
+  lang = entry.state.lang || 'en';
+  section = entry.state.section || 'breaking';
+  thumbImg = entry.images?.thumbImg || null;
+  document.querySelectorAll('.langbtn').forEach(b => b.classList.toggle('on', b.dataset.lang === lang));
+  document.querySelectorAll('[data-sec]').forEach(b => b.classList.toggle('on', b.dataset.sec === section));
+  renderVideoCard(videoData);
+  document.getElementById('saveHistBtn').style.display = '';
+  document.getElementById('genBtn').textContent = '↺ Regenerate Video Card';
+}
+
+function deleteFromHistory(id) { const list = getHistory().filter(h => h.id !== id); _saveHist(list); renderHistoryUI(); }
+
+function renderHistoryUI() {
+  const list = getHistory();
+  const sec = document.getElementById('historySec');
+  const container = document.getElementById('historyList');
+  const count = document.getElementById('historyCount');
+  if (!list.length) { sec.style.display = 'none'; return; }
+  sec.style.display = '';
+  count.textContent = list.length + '/' + HIST_MAX;
+  container.innerHTML = list.map(h => {
+    const d = new Date(h.ts);
+    const ds = d.toLocaleDateString('en-IN',{day:'numeric',month:'short'}) + ' ' + d.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
+    const timg = h.thumb ? `<img class="hist-thumb" src="${h.thumb}" alt=""/>` : `<div class="hist-thumb"></div>`;
+    return `<div class="hist-card" onclick="loadFromHistory(${h.id})">${timg}<div class="hist-info"><div class="hist-title">${(h.title||'').replace(/</g,'&lt;')}</div><div class="hist-date">${ds}</div></div><button class="hist-del" onclick="event.stopPropagation();deleteFromHistory(${h.id})" title="Delete">✕</button></div>`;
+  }).join('');
+}
+renderHistoryUI();
+
+// Fetch server keys
+fetch('/api/lok-post/key').then(r=>r.json()).then(d=>{
+  if(d.key) _serverKey=d.key;
+  if(d.openai) _hasOpenAI=true;
+}).catch(()=>{});
+
+// ── PROXY FUNCTIONS ──
+const IMAGE_MODELS = ['imagen-4.0-generate-001','gemini-3.1-flash-image-preview'];
+
+async function geminiProxy(model, body, action='generateContent') {
+  const key = apiKey || _serverKey;
+  if (IMAGE_MODELS.includes(model) && key) {
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:${action}?key=${key}`;
+    const r = await fetch(url, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) });
+    return r.json();
+  }
+  if (USE_PROXY && (!apiKey || prov === 'gemini')) {
+    const r = await fetch('/api/lok-post/gemini', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ model, action, body }) });
+    return r.json();
+  }
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:${action}?key=${key}`;
+  const r = await fetch(url, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) });
+  return r.json();
+}
+
+async function openaiProxy(url, body) {
+  if (USE_PROXY && _hasOpenAI && !apiKey) {
+    const r = await fetch('/api/lok-post/openai', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ url, body }) });
+    return { resp: r, data: await r.json() };
+  }
+  const r = await fetch(url, { method:'POST', headers:{'Content-Type':'application/json','Authorization':`Bearer ${apiKey}`}, body:JSON.stringify(body) });
+  return { resp: r, data: await r.json() };
+}
+
+async function gemImg(prompt) {
+  try {
+    const d = await geminiProxy('imagen-4.0-generate-001', {instances:[{prompt:prompt+' Bold news broadcast illustration. No text.'}],parameters:{sampleCount:1,aspectRatio:'16:9'}}, 'predict');
+    if (!d.error) { const b = d?.predictions?.[0]?.bytesBase64Encoded; if (b) return `data:image/png;base64,${b}`; }
+  } catch(e){}
+  try {
+    const d = await geminiProxy('gemini-3.1-flash-image-preview', {contents:[{parts:[{text:prompt+' Bold news illustration. No text.'}]}],generationConfig:{responseModalities:['IMAGE','TEXT']}});
+    if (!d.error) { const p = d?.candidates?.[0]?.content?.parts?.find(p=>p.inlineData); if (p) return `data:${p.inlineData.mimeType};base64,${p.inlineData.data}`; }
+  } catch(e){}
+  throw new Error('Image generation failed');
+}
+
+async function oaiImg(prompt) {
+  const styledPrompt = prompt + ' News broadcast illustration style.';
+  const url = 'https://api.openai.com/v1/images/generations';
+  try {
+    const {resp, data: d} = await openaiProxy(url, {model:'gpt-image-1',prompt:styledPrompt,n:1,size:'1536x1024',quality:'medium'});
+    if (resp.ok || !d.error) { const b = d?.data?.[0]?.b64_json; if (b) return `data:image/png;base64,${b}`; }
+  } catch(e){}
+  for (const {m,sz} of [{m:'dall-e-3',sz:'1792x1024'},{m:'dall-e-2',sz:'512x512'}]) {
+    try {
+      const {resp, data: d} = await openaiProxy(url, {model:m,prompt:styledPrompt,n:1,size:sz,response_format:'b64_json'});
+      if (resp.ok || !d.error){ const b = d?.data?.[0]?.b64_json; if (b) return `data:image/png;base64,${b}`; }
+    } catch(e){}
+  }
+  throw new Error('Image generation failed');
+}
+
+// ── UI HELPERS ──
+if (USE_PROXY) { document.getElementById('keyok').textContent = '✓ Server key active'; document.getElementById('keyok').style.display = 'block'; }
+
+function smSave(k,v){ try{localStorage.setItem(k,JSON.stringify(v))}catch(e){} }
+function smLoad(k,d){ try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d} }
+
+function setProv(p) {
+  prov = p;
+  document.getElementById('pv-gemini').classList.toggle('on', p==='gemini');
+  document.getElementById('pv-openai').classList.toggle('on', p==='openai');
+}
+
+function setLang(l) {
+  lang = l;
+  document.querySelectorAll('.langbtn').forEach(b => b.classList.remove('on'));
+  document.getElementById('lg-'+l).classList.add('on');
+}
+
+function setSection(s) {
+  section = s;
+  document.querySelectorAll('.secbtn').forEach(b => b.classList.remove('on'));
+  document.getElementById('sec-'+s).classList.add('on');
+}
+
+function saveKey() {
+  apiKey = document.getElementById('api-key').value.trim();
+  if(apiKey) { smSave('vid_apiKey',apiKey); document.getElementById('keyok').textContent='✓ Key saved — ready!'; document.getElementById('keyok').style.display='block'; }
+}
+(function(){const k=smLoad('vid_apiKey','');if(k){apiKey=k;document.getElementById('api-key').value=k;document.getElementById('keyok').textContent='✓ Key saved — ready!';document.getElementById('keyok').style.display='block';}})();
+
+function detectPlatform(url) {
+  const hint = document.getElementById('platformHint');
+  if (/youtube\.com\/|youtu\.be\//.test(url)) {
+    hint.innerHTML = '🟥 <b style="color:#ff0000">YouTube</b> video detected';
+    hint.style.color = '#e2e8f0';
+  } else if (/^https?:\/\/(x\.com|twitter\.com)\/\w+\/status\/\d+/.test(url.trim())) {
+    hint.innerHTML = '🐦 <b style="color:#1d9bf0">X/Twitter</b> post detected';
+    hint.style.color = '#e2e8f0';
+  } else {
+    hint.innerHTML = 'Supports: YouTube, X/Twitter video posts';
+    hint.style.color = '#64748b';
+  }
+}
+
+// ── THUMBNAIL UPLOAD ──
+function handleThumbUpload(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(ev) {
+    customThumb = ev.target.result;
+    document.getElementById('thumbPreviewImg').src = customThumb;
+    document.getElementById('thumbPreview').style.display = 'block';
+  };
+  reader.readAsDataURL(file);
+}
+
+function clearThumb() {
+  customThumb = null;
+  document.getElementById('thumbPreview').style.display = 'none';
+  document.getElementById('thumbUpload').value = '';
+}
+
+// ── URL PARSERS ──
+function extractYouTubeId(url) {
+  const patterns = [
+    /youtube\.com\/watch\?v=([^&#]+)/,
+    /youtu\.be\/([^?&#]+)/,
+    /youtube\.com\/shorts\/([^?&#]+)/,
+    /youtube\.com\/embed\/([^?&#]+)/,
+    /youtube\.com\/live\/([^?&#]+)/
+  ];
+  for (const p of patterns) {
+    const m = url.match(p);
+    if (m) return m[1];
+  }
+  return null;
+}
+
+function extractTwitterId(url) {
+  const m = url.match(/(?:x\.com|twitter\.com)\/(\w+)\/status\/(\d+)/);
+  return m ? { handle: m[1], id: m[2] } : null;
+}
+
+function getVideoType(url) {
+  if (extractYouTubeId(url)) return 'youtube';
+  if (extractTwitterId(url)) return 'twitter';
+  return null;
+}
+
+// ── AI CONTENT GENERATION ──
+async function getVideoContent(url, desc) {
+  const langInstr = lang === 'hi' ? 'Write ENTIRELY in Hindi (Devanagari script).'
+    : lang === 'bi' ? 'Write headline in Hindi, summary in English.'
+    : 'Write in English.';
+
+  const videoType = getVideoType(url);
+  const handle = videoType === 'twitter' ? extractTwitterId(url)?.handle : null;
+
+  let sourceContext = '';
+  if (desc) {
+    sourceContext = `\n\nUSER-PROVIDED VIDEO DESCRIPTION (USE AS PRIMARY CONTENT SOURCE): ${desc}`;
+  }
+
+  const prompt = `You are a news editor creating a social media news card for a video.
+
+Video URL: ${url}
+Platform: ${videoType === 'youtube' ? 'YouTube' : 'X/Twitter'}
+${handle ? `Handle: @${handle}` : ''}
+Section: ${section}
+${sourceContext}
+
+${langInstr}
+
+IMPORTANT: Search the web for this URL to get the actual video title, description, and context. For X/Twitter posts, search for the handle and post content.
+
+Return ONLY valid JSON (no markdown, no backticks):
+{
+  "headline": "Bold news headline about the video (max 15 words)",
+  "summary": "2-3 sentence summary of the video content for a news audience",
+  "source": "Channel name or account name",
+  "handle": "@handle or channel name",
+  "platform": "YouTube" or "X (Twitter)",
+  "imagePrompt": "Detailed description for generating a news illustration thumbnail of this video's topic"
+}`;
+
+  const model = 'gemini-2.5-flash';
+  const body = {
+    contents: [{ parts: [{ text: prompt }] }],
+    generationConfig: { temperature: 0.7 },
+    tools: [{ google_search: {} }]
+  };
+
+  const d = await geminiProxy(model, body);
+  const raw = d?.candidates?.[0]?.content?.parts?.map(p => p.text).join('') || '';
+
+  // Parse JSON from response
+  const jsonMatch = raw.match(/\{[\s\S]*\}/);
+  if (!jsonMatch) throw new Error('Failed to parse AI response');
+  return JSON.parse(jsonMatch[0]);
+}
+
+// ── RENDER ──
+function renderVideoCard(data) {
+  const videoUrl = document.getElementById('videoUrl').value.trim();
+  const videoType = getVideoType(videoUrl);
+  const today = new Date().toLocaleDateString('en-IN', { day:'numeric', month:'long', year:'numeric' });
+
+  const sectionLabels = {
+    breaking: 'BREAKING', opinion: 'OPINION', editorial: 'EDITORIAL', analysis: 'ANALYSIS'
+  };
+
+  let embedHTML = '';
+  if (videoType === 'youtube') {
+    const ytId = extractYouTubeId(videoUrl);
+    embedHTML = `<iframe src="https://www.youtube.com/embed/${ytId}?rel=0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`;
+  } else if (videoType === 'twitter') {
+    const tw = extractTwitterId(videoUrl);
+    embedHTML = `<div class="twitter-embed" id="twitterEmbed">
+      <blockquote class="twitter-tweet" data-theme="dark"><a href="${videoUrl}"></a></blockquote>
+    </div>`;
+  }
+
+  // Thumbnail for download (hidden initially)
+  const thumbHTML = thumbImg ? `<img class="thumb-img" id="thumbImg" src="${thumbImg}" style="display:none" alt="thumbnail"/>` : '';
+
+  const platformIcon = videoType === 'youtube' ? '🟥' : '🐦';
+
+  document.getElementById('right').innerHTML = `
+    <div class="vid-card fadein" id="vidCard">
+      <div class="vid-header">
+        <div class="brand">
+          <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="40" cy="50" r="22" stroke="#f59e0b" stroke-width="2.5" fill="none"/>
+            <circle cx="40" cy="50" r="5" fill="#f59e0b"/>
+            <g stroke="#f59e0b" stroke-width="1.2">
+              <line x1="40" y1="28" x2="40" y2="72"/>
+              <line x1="18" y1="50" x2="62" y2="50"/>
+              <line x1="24.4" y1="34.4" x2="55.6" y2="65.6"/>
+              <line x1="55.6" y1="34.4" x2="24.4" y2="65.6"/>
+              <line x1="40" y1="28" x2="40" y2="72" transform="rotate(22.5 40 50)"/>
+              <line x1="40" y1="28" x2="40" y2="72" transform="rotate(67.5 40 50)"/>
+              <line x1="40" y1="28" x2="40" y2="72" transform="rotate(112.5 40 50)"/>
+              <line x1="40" y1="28" x2="40" y2="72" transform="rotate(157.5 40 50)"/>
+            </g>
+            <path d="M66 38 Q76 50 66 62" stroke="#FF9933" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+            <path d="M72 32 Q85 50 72 68" stroke="#f59e0b" stroke-width="2" fill="none" stroke-linecap="round" opacity=".6"/>
+            <path d="M78 26 Q94 50 78 74" stroke="#138808" stroke-width="1.8" fill="none" stroke-linecap="round" opacity=".5"/>
+          </svg>
+          <span class="brand-name">लोकतंत्र वाणी</span>
+        </div>
+        <span class="section-tag">${sectionLabels[section] || 'NEWS'}</span>
+      </div>
+
+      <div class="vid-embed" id="vidEmbed">
+        ${embedHTML}
+        ${thumbHTML}
+      </div>
+
+      <div class="vid-body">
+        <div class="vid-headline">${data.headline}</div>
+        <div class="vid-summary">${data.summary}</div>
+        <div class="vid-source">
+          <span class="platform-icon">${platformIcon}</span>
+          <span>${data.handle || data.source} · ${data.platform} · ${today}</span>
+        </div>
+      </div>
+
+      <div class="vid-footer">
+        <span>✉ enquiry@kautilya.world</span>
+        <span class="ft-brand">🪷 Kautilya World</span>
+        <span>kautilya.world</span>
+      </div>
+    </div>
+
+    <div class="dlrow">
+      <button class="dl-btn" onclick="dlPNG()">📥 Download PNG</button>
+      <button class="wa-btn" onclick="shareWhatsApp()">💬 WhatsApp</button>
+      <button class="x-btn" onclick="shareOnX()">𝕏 Share</button>
+    </div>
+  `;
+
+  // Load Twitter widget if needed
+  if (videoType === 'twitter') {
+    const s = document.createElement('script');
+    s.src = 'https://platform.twitter.com/widgets.js';
+    s.async = true;
+    document.getElementById('twitterEmbed')?.appendChild(s);
+  }
+}
+
+// ── MAIN GENERATE ──
+async function generateVideo() {
+  const url = document.getElementById('videoUrl').value.trim();
+  const desc = document.getElementById('videoDesc').value.trim();
+  const status = document.getElementById('status');
+  const btn = document.getElementById('genBtn');
+
+  if (!url) { status.textContent = 'Please paste a video URL'; return; }
+
+  const videoType = getVideoType(url);
+  if (!videoType) { status.textContent = 'URL not recognized. Use YouTube or X/Twitter links.'; return; }
+
+  btn.disabled = true;
+  status.textContent = '🔍 Analyzing video content...';
+
+  try {
+    // Step 1: AI analysis
+    videoData = await getVideoContent(url, desc);
+    // Step 2: Thumbnail for download
+    if (customThumb) {
+      thumbImg = customThumb;
+      status.textContent = '✅ Using uploaded thumbnail...';
+    } else {
+      status.textContent = '🎨 Generating thumbnail for download...';
+    }
+
+    if (!customThumb) {
+      const imgPrompt = videoData.imagePrompt || videoData.headline;
+      try {
+        thumbImg = prov === 'openai' ? await oaiImg(imgPrompt) : await gemImg(imgPrompt);
+      } catch(e) {
+        if (videoType === 'youtube') {
+          const ytId = extractYouTubeId(url);
+          thumbImg = `https://img.youtube.com/vi/${ytId}/maxresdefault.jpg`;
+        } else {
+          thumbImg = null;
+        }
+      }
+    }
+
+    // Step 3: Render
+    renderVideoCard(videoData);
+    status.textContent = '';
+    document.getElementById('saveHistBtn').style.display = '';
+
+  } catch(e) {
+    console.error(e);
+    status.textContent = 'Error: ' + e.message;
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+// ── DOWNLOAD ──
+async function dlPNG() {
+  const card = document.getElementById('vidCard');
+  if (!card) return;
+
+  // Swap video embed with thumbnail for capture
+  const embed = document.getElementById('vidEmbed');
+  const iframe = embed.querySelector('iframe');
+  const twitterEmbed = embed.querySelector('.twitter-embed');
+  const thumb = document.getElementById('thumbImg');
+
+  if (iframe) iframe.style.display = 'none';
+  if (twitterEmbed) twitterEmbed.style.display = 'none';
+  if (thumb) thumb.style.display = 'block';
+
+  // If no thumb, try YouTube thumbnail
+  if (!thumb && iframe) {
+    const url = document.getElementById('videoUrl').value.trim();
+    const ytId = extractYouTubeId(url);
+    if (ytId) {
+      const img = document.createElement('img');
+      img.className = 'thumb-img';
+      img.src = `https://img.youtube.com/vi/${ytId}/maxresdefault.jpg`;
+      img.style.width = '100%';
+      img.style.aspectRatio = '16/9';
+      img.style.objectFit = 'cover';
+      img.style.display = 'block';
+      embed.insertBefore(img, embed.firstChild);
+      await new Promise(r => { img.onload = r; img.onerror = r; setTimeout(r, 2000); });
+    }
+  }
+
+  try {
+    const canvas = await html2canvas(card, { scale:2, useCORS:true, backgroundColor:'#0f172a' });
+    const a = document.createElement('a');
+    a.download = `loktantra-vaani-video-${new Date().toISOString().slice(0,10)}.png`;
+    a.href = canvas.toDataURL('image/png');
+    a.click();
+  } catch(e) { alert('Download error: '+e.message); }
+
+  // Restore video embed
+  if (iframe) iframe.style.display = '';
+  if (twitterEmbed) twitterEmbed.style.display = '';
+  if (thumb) thumb.style.display = 'none';
+
+  // Remove temp YouTube thumb if added
+  const tempThumb = embed.querySelector('img:not(#thumbImg)');
+  if (tempThumb) tempThumb.remove();
+}
+
+// ── WHATSAPP SHARE ──
+async function shareWhatsApp() {
+  const card = document.getElementById('vidCard');
+  if (!card || !videoData) return;
+
+  const sectionNames = {
+    en: {breaking:'Breaking News', opinion:'OpEd', editorial:'Editorial', analysis:'Analysis'},
+    hi: {breaking:'ब्रेकिंग', opinion:'ओपिनियन', editorial:'संपादकीय', analysis:'विश्लेषण'}
+  };
+  const sLang = lang === 'hi' ? 'hi' : 'en';
+  const sName = sectionNames[sLang][section] || section;
+
+  let msg;
+  if (lang === 'hi') {
+    msg = `लोकतंत्र वाणी पर ${sName} 🎬\n\n"${videoData.headline}"\n\n📺 ${videoData.source || videoData.handle}\n🪷 कौटिल्य वर्ल्ड`;
+  } else {
+    msg = `${sName} on Loktantra Vaani 🎬\n\n"${videoData.headline}"\n\n📺 ${videoData.source || videoData.handle}\n🪷 Kautilya World`;
+  }
+
+  // Try Web Share API with image
+  try {
+    // Swap for capture
+    const embed = document.getElementById('vidEmbed');
+    const iframe = embed.querySelector('iframe');
+    const twitterEmbed = embed.querySelector('.twitter-embed');
+    const thumb = document.getElementById('thumbImg');
+    if (iframe) iframe.style.display = 'none';
+    if (twitterEmbed) twitterEmbed.style.display = 'none';
+    if (thumb) thumb.style.display = 'block';
+
+    const canvas = await html2canvas(card, { scale:2, useCORS:true, backgroundColor:'#0f172a' });
+
+    if (iframe) iframe.style.display = '';
+    if (twitterEmbed) twitterEmbed.style.display = '';
+    if (thumb) thumb.style.display = 'none';
+
+    const blob = await new Promise(r => canvas.toBlob(r, 'image/png'));
+    const file = new File([blob], 'loktantra-vaani-video.png', {type:'image/png'});
+    if (navigator.canShare && navigator.canShare({files:[file]})) {
+      await navigator.share({text: msg, files:[file]});
+      return;
+    }
+  } catch(e) { console.warn('Web Share failed:', e); }
+
+  const waUrl = `https://wa.me/?text=${encodeURIComponent(msg)}`;
+  window.open(waUrl, '_blank');
+}
+
+function shareOnX() {
+  if (!videoData) return;
+  const text = encodeURIComponent(`${videoData.headline}\n\nLoktantra Vaani | Kautilya World\nloktantra-vaani.vercel.app`);
+  window.open(`https://twitter.com/intent/tweet?text=${text}`, '_blank');
+}
+</script>
+</body>
+</html>

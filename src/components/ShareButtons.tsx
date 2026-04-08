@@ -46,8 +46,8 @@ export default function ShareButtons({ url, title }: ShareButtonsProps) {
   };
 
   return (
-    <div className="flex items-center gap-2">
-      <span className="text-[10px] font-inter font-black uppercase tracking-widest opacity-40 dark:text-white/40 mr-2">
+    <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+      <span className="text-[10px] font-inter font-black uppercase tracking-widest opacity-40 dark:text-white/40 mr-1 sm:mr-2 hidden sm:inline">
         {t("Share", "साझा करें")}
       </span>
       {shareLinks.map((link) => (
@@ -57,7 +57,7 @@ export default function ShareButtons({ url, title }: ShareButtonsProps) {
           target="_blank"
           rel="noopener noreferrer"
           title={link.title}
-          className="w-10 h-10 border-2 border-black dark:border-white flex items-center justify-center font-inter font-black text-xs hover:bg-primary hover:text-white hover:border-primary transition-all dark:text-white"
+          className="w-8 h-8 sm:w-10 sm:h-10 border-2 border-black dark:border-white flex items-center justify-center font-inter font-black text-[10px] sm:text-xs hover:bg-primary hover:text-white hover:border-primary transition-all dark:text-white"
         >
           {link.label}
         </a>
@@ -65,9 +65,9 @@ export default function ShareButtons({ url, title }: ShareButtonsProps) {
       <button
         onClick={handleCopy}
         title="Copy link"
-        className="w-10 h-10 border-2 border-black dark:border-white flex items-center justify-center hover:bg-primary hover:text-white hover:border-primary transition-all dark:text-white"
+        className="w-8 h-8 sm:w-10 sm:h-10 border-2 border-black dark:border-white flex items-center justify-center hover:bg-primary hover:text-white hover:border-primary transition-all dark:text-white"
       >
-        {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+        {copied ? <Check className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> : <Copy className="w-3.5 h-3.5 sm:w-4 sm:h-4" />}
       </button>
     </div>
   );

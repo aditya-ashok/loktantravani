@@ -43,8 +43,8 @@ export const SEED_POSTS: Omit<Post, "id" | "createdAt" | "updatedAt">[] = [
     status: "published",
     tags: ["quad", "indo-pacific", "geopolitics", "diplomacy"],
     readingTimeMin: 6,
-    reactions: { fire: 342, india: 891, bulb: 156, clap: 267 },
-    viewCount: 15420,
+    reactions: { fire: 0, india: 0, bulb: 0, clap: 0 },
+    viewCount: 0,
   },
   {
     slug: "silk-routes-silicon-spies-a9m3x",
@@ -68,8 +68,8 @@ export const SEED_POSTS: Omit<Post, "id" | "createdAt" | "updatedAt">[] = [
     status: "published",
     tags: ["belt-and-road", "IMEC", "intelligence", "infrastructure"],
     readingTimeMin: 5,
-    reactions: { fire: 198, india: 567, bulb: 234, clap: 145 },
-    viewCount: 8930,
+    reactions: { fire: 0, india: 0, bulb: 0, clap: 0 },
+    viewCount: 0,
   },
   {
     slug: "bhagavad-gita-productivity-manual-k7p2q",
@@ -91,7 +91,7 @@ export const SEED_POSTS: Omit<Post, "id" | "createdAt" | "updatedAt">[] = [
 
 <h2>निष्काम कर्म: मूल फ्लो स्टेट</h2>
 <p>"कर्मण्येवाधिकारस्ते मा फलेषु कदाचन" — यह सिर्फ दर्शन नहीं है। यह अब तक तैयार किया गया सबसे परिष्कृत उत्पादकता ढांचा है।</p>`,
-    category: "GenZ",
+    category: "Cities",
     section: "Trending",
     author: "Arjun Kapil",
     authorRole: "author",
@@ -99,8 +99,8 @@ export const SEED_POSTS: Omit<Post, "id" | "createdAt" | "updatedAt">[] = [
     status: "published",
     tags: ["gita", "productivity", "genz", "ancient-wisdom", "mental-health"],
     readingTimeMin: 4,
-    reactions: { fire: 1240, india: 2100, bulb: 890, clap: 670 },
-    viewCount: 45000,
+    reactions: { fire: 0, india: 0, bulb: 0, clap: 0 },
+    viewCount: 0,
   },
   {
     slug: "direct-citizen-dissent-platforms-r4n8w",
@@ -121,8 +121,8 @@ export const SEED_POSTS: Omit<Post, "id" | "createdAt" | "updatedAt">[] = [
     status: "published",
     tags: ["democracy", "blockchain", "civic-tech", "governance"],
     readingTimeMin: 4,
-    reactions: { fire: 156, india: 423, bulb: 312, clap: 189 },
-    viewCount: 6700,
+    reactions: { fire: 0, india: 0, bulb: 0, clap: 0 },
+    viewCount: 0,
   },
   {
     slug: "vedic-logic-quantum-age-m2k9p",
@@ -143,8 +143,8 @@ export const SEED_POSTS: Omit<Post, "id" | "createdAt" | "updatedAt">[] = [
     status: "published",
     tags: ["quantum", "vedic", "technology", "IIT", "research"],
     readingTimeMin: 5,
-    reactions: { fire: 234, india: 678, bulb: 890, clap: 345 },
-    viewCount: 12300,
+    reactions: { fire: 0, india: 0, bulb: 0, clap: 0 },
+    viewCount: 0,
   },
   {
     slug: "decentralized-dharma-dao-communities-t5v2n",
@@ -157,7 +157,7 @@ export const SEED_POSTS: Omit<Post, "id" | "createdAt" | "updatedAt">[] = [
 <h2>The Panchayat Protocol</h2>
 <p>A team of IIT Delhi graduates has built "PanchayatDAO" — a governance protocol that digitizes the 73rd Amendment's vision of grassroots democracy using smart contracts on the Polygon network.</p>`,
     contentHi: `<p>"संघ" की अवधारणा — साझा सिद्धांतों के आसपास संगठित समुदाय — इंटरनेट से 2,500 साल पुरानी है। अब, विकेंद्रीकृत स्वायत्त संगठन अनिवार्य रूप से डिजिटल संघ हैं।</p>`,
-    category: "GenZ",
+    category: "Cities",
     section: "Main Feed",
     author: "Priya Sharma",
     authorRole: "author",
@@ -165,8 +165,8 @@ export const SEED_POSTS: Omit<Post, "id" | "createdAt" | "updatedAt">[] = [
     status: "published",
     tags: ["web3", "dao", "community", "blockchain", "panchayat"],
     readingTimeMin: 5,
-    reactions: { fire: 456, india: 234, bulb: 567, clap: 123 },
-    viewCount: 9800,
+    reactions: { fire: 0, india: 0, bulb: 0, clap: 0 },
+    viewCount: 0,
   },
   {
     slug: "modern-mandala-5g-guru-cartoon-h3j7y",
@@ -174,13 +174,13 @@ export const SEED_POSTS: Omit<Post, "id" | "createdAt" | "updatedAt">[] = [
     titleHi: "5G गुरु का आधुनिक मंडला",
     summary: "Satirical commentary on India's digital paradox — where ancient gurus meet modern tech evangelists.",
     summaryHi: "भारत के डिजिटल विरोधाभास पर व्यंग्यात्मक टिप्पणी — जहां प्राचीन गुरु आधुनिक तकनीकी प्रचारकों से मिलते हैं।",
-    content: `<p class="text-xl font-newsreader italic mb-8">In this week's Cartoon Mandala, we explore the curious convergence of tech evangelism and spiritual entrepreneurship in modern India.</p>
+    content: `<p class="text-xl font-newsreader italic mb-8">In this week's Lok Post, we explore the curious convergence of tech evangelism and spiritual entrepreneurship in modern India.</p>
 
 <p>The cartoon depicts a figure seated in lotus position atop a cell tower, conducting a Zoom satsang to thousands of followers while simultaneously launching an NFT collection of sacred mantras.</p>
 
 <p>It's satire, yes — but barely. In a nation where a yoga guru runs one of the largest FMCG companies and a meditation app has more daily users than most news platforms, the line between spiritual guidance and tech startup culture has blurred beyond recognition.</p>`,
     contentHi: `<p class="text-xl font-newsreader italic mb-8">इस सप्ताह के कार्टून मंडला में, हम आधुनिक भारत में तकनीकी प्रचारवाद और आध्यात्मिक उद्यमशीलता के उत्सुक संगम का पता लगाते हैं।</p>`,
-    category: "Cartoon Mandala",
+    category: "Lok Post",
     section: "Main Feed",
     author: "Aditya Vani",
     authorRole: "admin",
@@ -188,8 +188,8 @@ export const SEED_POSTS: Omit<Post, "id" | "createdAt" | "updatedAt">[] = [
     status: "published",
     tags: ["cartoon", "satire", "tech", "spirituality", "humor"],
     readingTimeMin: 3,
-    reactions: { fire: 890, india: 345, bulb: 234, clap: 1200 },
-    viewCount: 23000,
+    reactions: { fire: 0, india: 0, bulb: 0, clap: 0 },
+    viewCount: 0,
   },
   {
     slug: "silicon-saint-cartoon-q9w4m",
@@ -197,11 +197,11 @@ export const SEED_POSTS: Omit<Post, "id" | "createdAt" | "updatedAt">[] = [
     titleHi: "सिलिकॉन संत",
     summary: "A satirical look at the new-age tech messiahs promising salvation through subscription models.",
     summaryHi: "सदस्यता मॉडल के माध्यम से मोक्ष का वादा करने वाले नए युग के तकनीकी मसीहाओं पर एक व्यंग्यात्मक नज़र।",
-    content: `<p>This week's Cartoon Mandala presents "The Silicon Saint" — a figure who has achieved enlightenment through series funding and promises digital nirvana at just ₹999/month (annual plan recommended).</p>
+    content: `<p>This week's Lok Post presents "The Silicon Saint" — a figure who has achieved enlightenment through series funding and promises digital nirvana at just ₹999/month (annual plan recommended).</p>
 
 <p>In the tradition of great Indian satirists, we hold a mirror to the cult of personality that has engulfed both Silicon Valley and Haridwar.</p>`,
     contentHi: `<p>इस सप्ताह का कार्टून मंडला "सिलिकॉन संत" प्रस्तुत करता है — एक ऐसी शख्सियत जिसने सीरीज फंडिंग के माध्यम से ज्ञान प्राप्त किया है।</p>`,
-    category: "Cartoon Mandala",
+    category: "Lok Post",
     section: "Main Feed",
     author: "Aditya Vani",
     authorRole: "admin",
@@ -209,8 +209,8 @@ export const SEED_POSTS: Omit<Post, "id" | "createdAt" | "updatedAt">[] = [
     status: "published",
     tags: ["cartoon", "satire", "tech-culture", "startup"],
     readingTimeMin: 2,
-    reactions: { fire: 567, india: 123, bulb: 345, clap: 890 },
-    viewCount: 18500,
+    reactions: { fire: 0, india: 0, bulb: 0, clap: 0 },
+    viewCount: 0,
   },
   {
     slug: "global-south-soft-power-bharat-n6r1e",
@@ -231,8 +231,8 @@ export const SEED_POSTS: Omit<Post, "id" | "createdAt" | "updatedAt">[] = [
     status: "published",
     tags: ["global-south", "diplomacy", "G20", "multipolar", "soft-power"],
     readingTimeMin: 5,
-    reactions: { fire: 445, india: 1230, bulb: 234, clap: 567 },
-    viewCount: 14200,
+    reactions: { fire: 0, india: 0, bulb: 0, clap: 0 },
+    viewCount: 0,
   },
   {
     slug: "geopolitics-chai-tapri-cartoon-w8k3v",
@@ -244,7 +244,7 @@ export const SEED_POSTS: Omit<Post, "id" | "createdAt" | "updatedAt">[] = [
 
 <p>Our illustration shows a chai wallah serving "diplomatic cutting chai" to representatives of the UN Security Council, while explaining India's position on the Ukraine crisis using only metaphors involving cricket and Bollywood.</p>`,
     contentHi: `<p class="text-xl font-newsreader italic mb-8">यह कार्टून भारतीय लोकतंत्र के सार को दर्शाता है — संसद के पवित्र हॉल में नहीं, बल्कि गली के कोने पर चाय टपरी पर जहां हर नागरिक एक नीति विश्लेषक है।</p>`,
-    category: "Cartoon Mandala",
+    category: "Lok Post",
     section: "Trending",
     author: "Aditya Vani",
     authorRole: "admin",
@@ -252,8 +252,8 @@ export const SEED_POSTS: Omit<Post, "id" | "createdAt" | "updatedAt">[] = [
     status: "published",
     tags: ["cartoon", "satire", "chai", "democracy", "humor"],
     readingTimeMin: 2,
-    reactions: { fire: 1500, india: 2300, bulb: 400, clap: 1800 },
-    viewCount: 35000,
+    reactions: { fire: 0, india: 0, bulb: 0, clap: 0 },
+    viewCount: 0,
   },
   {
     slug: "elections-2026-genz-voter-analysis-p3m7n",
@@ -274,8 +274,8 @@ export const SEED_POSTS: Omit<Post, "id" | "createdAt" | "updatedAt">[] = [
     status: "published",
     tags: ["elections", "genz", "voters", "democracy", "youth"],
     readingTimeMin: 4,
-    reactions: { fire: 678, india: 890, bulb: 345, clap: 456 },
-    viewCount: 21000,
+    reactions: { fire: 0, india: 0, bulb: 0, clap: 0 },
+    viewCount: 0,
   },
   {
     slug: "ancient-india-ai-ethics-framework-j2h8c",
@@ -296,8 +296,8 @@ export const SEED_POSTS: Omit<Post, "id" | "createdAt" | "updatedAt">[] = [
     status: "published",
     tags: ["AI", "ethics", "dharma", "ancient-india", "governance"],
     readingTimeMin: 6,
-    reactions: { fire: 345, india: 567, bulb: 890, clap: 234 },
-    viewCount: 11500,
+    reactions: { fire: 0, india: 0, bulb: 0, clap: 0 },
+    viewCount: 0,
   },
 ];
 

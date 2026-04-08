@@ -81,7 +81,7 @@ interface GetPostsOptions {
 export async function getPosts(options: GetPostsOptions = {}): Promise<{ posts: Post[]; lastDoc: DocumentSnapshot | null }> {
   const {
     category,
-    status = "published",
+    status,
     author,
     pageSize = 12,
     afterDoc,
@@ -89,7 +89,7 @@ export async function getPosts(options: GetPostsOptions = {}): Promise<{ posts: 
   } = options;
 
   const constraints: Parameters<typeof query>[1][] = [];
-  if (status) constraints.push(where("status", "==", status));
+  if (status && status !== "all") constraints.push(where("status", "==", status));
   if (category) constraints.push(where("category", "==", category));
   if (author) constraints.push(where("author", "==", author));
   constraints.push(orderBy(orderField, "desc"));

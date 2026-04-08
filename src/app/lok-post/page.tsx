@@ -16,7 +16,7 @@ export default function CartoonMandalaPage() {
 
   const cartoonPosts: Post[] = useMemo(
     () =>
-      SEED_POSTS.filter((p) => p.category === "Cartoon Mandala").map((p, i) => ({
+      SEED_POSTS.filter((p) => p.category === "Lok Post").map((p, i) => ({
         ...p,
         id: `seed-cm-${i}`,
         createdAt: new Date(Date.now() - i * 86400000),
@@ -44,7 +44,7 @@ export default function CartoonMandalaPage() {
               <Sparkles className="w-8 h-8 text-primary" />
             </div>
             <h1 className="text-6xl md:text-9xl font-newsreader font-black uppercase tracking-tighter mb-6 dark:text-white">
-              {t("Cartoon Mandala", "कार्टून मंडला")}
+              {t("Lok Post", "कार्टून मंडला")}
             </h1>
             <p className="text-xl font-newsreader italic opacity-60 max-w-2xl mx-auto dark:text-white/60">
               {t(

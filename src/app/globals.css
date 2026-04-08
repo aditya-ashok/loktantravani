@@ -4,45 +4,59 @@
 
 :root {
   --background: 0 0% 100%;
-  --foreground: 0 0% 0%;
+  --foreground: 222 15% 8%;
   --card: 0 0% 100%;
-  --card-foreground: 0 0% 0%;
+  --card-foreground: 222 15% 8%;
   --popover: 0 0% 100%;
-  --popover-foreground: 0 0% 0%;
+  --popover-foreground: 222 15% 8%;
   --primary: 33 100% 50%;
   --primary-foreground: 0 0% 100%;
-  --secondary: 0 0% 10%;
-  --secondary-foreground: 0 0% 100%;
-  --muted: 0 0% 96%;
-  --muted-foreground: 0 0% 40%;
+  --secondary: 0 0% 96%;
+  --secondary-foreground: 222 15% 8%;
+  --muted: 0 0% 97%;
+  --muted-foreground: 0 0% 45%;
   --accent: 33 100% 95%;
   --accent-foreground: 33 100% 10%;
   --destructive: 0 84% 60%;
   --destructive-foreground: 0 0% 100%;
-  --border: 0 0% 90%;
-  --input: 0 0% 90%;
+  --border: 0 0% 87%;
+  --input: 0 0% 87%;
   --ring: 33 100% 50%;
   --radius: 0px;
+
+  /* NYT-style design tokens */
+  --nyt-black: #121212;
+  --nyt-gray: #727272;
+  --nyt-light-gray: #f7f7f5;
+  --nyt-border: #dfdfdf;
+  --nyt-section-border: #e2e2e2;
+  --saffron: #FF9933;
 }
 
 .dark {
-  --background: 0 0% 4%;
-  --foreground: 0 0% 95%;
-  --card: 0 0% 7%;
-  --card-foreground: 0 0% 95%;
-  --popover: 0 0% 7%;
-  --popover-foreground: 0 0% 95%;
+  --background: 222 15% 6%;
+  --foreground: 0 0% 93%;
+  --card: 222 15% 9%;
+  --card-foreground: 0 0% 93%;
+  --popover: 222 15% 9%;
+  --popover-foreground: 0 0% 93%;
   --primary: 33 100% 50%;
   --primary-foreground: 0 0% 100%;
-  --secondary: 0 0% 90%;
-  --secondary-foreground: 0 0% 5%;
-  --muted: 0 0% 15%;
-  --muted-foreground: 0 0% 60%;
+  --secondary: 0 0% 14%;
+  --secondary-foreground: 0 0% 93%;
+  --muted: 0 0% 13%;
+  --muted-foreground: 0 0% 58%;
   --accent: 33 100% 10%;
   --accent-foreground: 33 100% 90%;
-  --border: 0 0% 20%;
-  --input: 0 0% 20%;
+  --border: 0 0% 18%;
+  --input: 0 0% 18%;
   --ring: 33 100% 50%;
+
+  --nyt-black: #f0f0f0;
+  --nyt-gray: #a0a0a0;
+  --nyt-light-gray: #141414;
+  --nyt-border: #2a2a2a;
+  --nyt-section-border: #252525;
 }
 
 @theme inline {
@@ -65,99 +79,135 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
-
   --radius-lg: var(--radius);
   --radius-md: var(--radius);
   --radius-sm: var(--radius);
 }
 
+/* ─── Base ──────────────────────────────────────────────────────────────── */
 body {
   background-color: hsl(var(--background));
   color: hsl(var(--foreground));
   font-family: var(--font-inter), ui-sans-serif, system-ui;
+  -webkit-font-smoothing: antialiased;
 }
 
-/* Typography */
-.font-newsreader {
-  font-family: var(--font-newsreader), Georgia, serif;
+/* ─── Typography ─────────────────────────────────────────────────────────── */
+.font-newsreader { font-family: var(--font-newsreader), Georgia, serif; }
+.font-inter      { font-family: var(--font-inter), ui-sans-serif, system-ui; }
+.hindi           { font-family: var(--font-hindi), serif; }
+
+/* ─── NYT-style section label ────────────────────────────────────────────── */
+.nyt-section-label {
+  font-family: var(--font-inter), ui-sans-serif;
+  font-size: 0.6rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--saffron);
 }
 
-.font-inter {
-  font-family: var(--font-inter), ui-sans-serif, system-ui;
+/* ─── NYT thick top border on section headers ────────────────────────────── */
+.nyt-section-header {
+  border-top: 3px solid var(--nyt-black);
+  padding-top: 0.6rem;
+}
+.dark .nyt-section-header {
+  border-top-color: hsl(var(--foreground));
 }
 
-.hindi {
-  font-family: var(--font-hindi), serif;
+/* ─── Thin rule divider (like NYT's thin horizontal lines) ───────────────── */
+.nyt-rule {
+  border: none;
+  border-top: 1px solid var(--nyt-border);
+}
+.dark .nyt-rule {
+  border-top-color: var(--nyt-border);
 }
 
-.nyt-border {
-  border-bottom: 4px double #000;
+.nyt-rule-thick {
+  border: none;
+  border-top: 3px solid var(--nyt-black);
 }
-.dark .nyt-border {
-  border-bottom-color: rgba(255, 255, 255, 0.3);
-}
-
-.ndtv-headline {
-  text-shadow: 0.5px 0 0 rgba(0, 0, 0, 0.4);
-}
-.dark .ndtv-headline {
-  text-shadow: 0.5px 0 0 rgba(255, 255, 255, 0.4);
+.dark .nyt-rule-thick {
+  border-top-color: hsl(var(--foreground));
 }
 
+.nyt-rule-double {
+  border-bottom: 4px double var(--nyt-black);
+}
+.dark .nyt-rule-double {
+  border-bottom-color: hsl(var(--foreground) / 0.3);
+}
+
+/* ─── NYT column rule (vertical divider) ────────────────────────────────── */
+.nyt-col-rule {
+  border-right: 1px solid var(--nyt-border);
+}
+.dark .nyt-col-rule {
+  border-right-color: var(--nyt-border);
+}
+
+/* ─── Saffron gradient ───────────────────────────────────────────────────── */
 .saffron-gradient {
   background: linear-gradient(135deg, #ff9933 0%, #e68a00 100%);
 }
 
-.newspaper-text {
-  line-height: 1.7;
-  letter-spacing: -0.01em;
-}
-
-/* Newspaper broadsheet styles */
-.broadsheet-columns {
-  column-count: 3;
-  column-gap: 2rem;
-  column-rule: 1px solid rgba(0, 0, 0, 0.15);
-}
-.dark .broadsheet-columns {
-  column-rule-color: rgba(255, 255, 255, 0.15);
-}
-
-@media (max-width: 1024px) {
-  .broadsheet-columns {
-    column-count: 2;
-  }
-}
-@media (max-width: 640px) {
-  .broadsheet-columns {
-    column-count: 1;
-  }
-}
-
+/* ─── Drop cap ───────────────────────────────────────────────────────────── */
 .dropcap::first-letter {
   font-family: var(--font-newsreader), Georgia, serif;
   float: left;
   font-size: 4.5em;
   line-height: 0.8;
-  padding-right: 0.1em;
+  padding-right: 0.12em;
   font-weight: 900;
   color: #ff9933;
 }
 
-.column-rule-vertical {
-  border-right: 1px solid rgba(0, 0, 0, 0.15);
+/* ─── Broadsheet columns ─────────────────────────────────────────────────── */
+.broadsheet-columns {
+  column-count: 3;
+  column-gap: 2rem;
+  column-rule: 1px solid var(--nyt-border);
 }
-.dark .column-rule-vertical {
-  border-right-color: rgba(255, 255, 255, 0.15);
+@media (max-width: 1024px) { .broadsheet-columns { column-count: 2; } }
+@media (max-width: 640px)  { .broadsheet-columns { column-count: 1; } }
+
+/* ─── NYT card hover ─────────────────────────────────────────────────────── */
+.nyt-card {
+  transition: background 0.15s ease;
+}
+.nyt-card:hover {
+  background: hsl(var(--muted));
 }
 
-/* Selection */
+/* ─── West Asia War special section ─────────────────────────────────────── */
+.breaking-band {
+  background: #c0392b;
+  color: #fff;
+  font-family: var(--font-inter);
+  font-size: 0.6rem;
+  font-weight: 900;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  padding: 0.3rem 0.75rem;
+}
+
+/* ─── Selection ──────────────────────────────────────────────────────────── */
 ::selection {
   background-color: #ff9933;
   color: #fff;
 }
 
-/* Post content styling */
+/* ─── Mobile overflow fix ────────────────────────────────────────────────── */
+html, body { overflow-x: hidden; max-width: 100vw; }
+.post-content { overflow-x: hidden; word-wrap: break-word; overflow-wrap: break-word; }
+.post-content img { max-width: 100%; height: auto; }
+.post-content pre, .post-content code { overflow-x: auto; max-width: 100%; white-space: pre-wrap; word-break: break-word; }
+.post-content table { display: block; overflow-x: auto; max-width: 100%; }
+.post-content iframe { max-width: 100%; }
+
+/* ─── Post content ───────────────────────────────────────────────────────── */
 .post-content h2 {
   font-family: var(--font-newsreader), Georgia, serif;
   font-size: 1.75rem;
@@ -165,14 +215,9 @@ body {
   margin-top: 2.5rem;
   margin-bottom: 1rem;
   letter-spacing: -0.02em;
-  text-transform: uppercase;
-  border-bottom: 2px solid rgba(0, 0, 0, 0.1);
+  border-bottom: 1px solid var(--nyt-border);
   padding-bottom: 0.5rem;
 }
-.dark .post-content h2 {
-  border-bottom-color: rgba(255, 255, 255, 0.1);
-}
-
 .post-content h3 {
   font-family: var(--font-newsreader), Georgia, serif;
   font-size: 1.35rem;
@@ -180,79 +225,539 @@ body {
   margin-top: 2rem;
   margin-bottom: 0.75rem;
 }
-
 .post-content p {
-  font-family: var(--font-inter), ui-sans-serif, system-ui;
-  line-height: 1.8;
+  font-family: var(--font-inter), ui-sans-serif;
+  line-height: 1.85;
   margin-bottom: 1.25rem;
-  font-size: 1.05rem;
+  font-size: 1.0625rem;
+  color: hsl(var(--foreground));
 }
-
 .post-content blockquote {
-  border-left: 6px solid #ff9933;
-  padding: 1.5rem 2rem;
+  border-left: 4px solid #ff9933;
+  padding: 1.25rem 1.75rem;
   margin: 2rem 0;
   font-family: var(--font-newsreader), Georgia, serif;
   font-style: italic;
-  font-size: 1.25rem;
-  background: rgba(255, 153, 51, 0.05);
+  font-size: 1.2rem;
+  background: rgba(255, 153, 51, 0.04);
+}
+.post-content ul, .post-content ol { padding-left: 1.5rem; margin-bottom: 1.25rem; }
+.post-content li { margin-bottom: 0.5rem; line-height: 1.75; }
+
+/* ─── Scrollbar ──────────────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #ff9933; border-radius: 0; }
+
+/* ─── Marquee ────────────────────────────────────────────────────────────── */
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
 }
 
-.post-content ul,
-.post-content ol {
+@keyframes stock-ticker {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+
+@utility animate-stock-ticker {
+  animation: stock-ticker 30s linear infinite;
+}
+
+/* ─── Mobile article & card refinements ──────────────────────────────────── */
+@media (max-width: 640px) {
+  .post-content h2 { font-size: 1.4rem; margin-top: 2rem; }
+  .post-content h3 { font-size: 1.15rem; margin-top: 1.5rem; }
+  .post-content p  { font-size: 1rem; line-height: 1.75; }
+  .post-content blockquote { padding: 1rem 1.25rem; font-size: 1.05rem; margin: 1.5rem 0; }
+  .dropcap::first-letter { font-size: 3.5em; }
+  .post-content > p:first-of-type::first-letter { font-size: 3.5em; }
+  .fact-box, .info-box, .timeline-box { margin: 1.5rem 0; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   PREMIUM MOBILE-FIRST ENHANCEMENTS
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ─── Smooth transitions everywhere ─────────────────────────────────────── */
+*, *::before, *::after {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* ─── Premium card glass effect ─────────────────────────────────────────── */
+.glass-card {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.glass-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.08);
+}
+.dark .glass-card {
+  background: rgba(20, 20, 30, 0.85);
+  border-color: rgba(255, 255, 255, 0.06);
+}
+.dark .glass-card:hover {
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
+}
+
+/* ─── Premium gradient text ─────────────────────────────────────────────── */
+.gradient-text {
+  background: linear-gradient(135deg, #ff9933 0%, #e65100 50%, #ff6f00 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.dark .gradient-text {
+  background: linear-gradient(135deg, #ffb74d 0%, #ff9933 50%, #ffd54f 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+}
+
+/* ─── Premium shimmer loading effect ────────────────────────────────────── */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.shimmer {
+  background: linear-gradient(90deg, transparent 0%, rgba(255, 153, 51, 0.08) 50%, transparent 100%);
+  background-size: 200% 100%;
+  animation: shimmer 2s ease-in-out infinite;
+}
+
+/* ─── Pulse glow for breaking news / badges ─────────────────────────────── */
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255, 153, 51, 0.4); }
+  50% { box-shadow: 0 0 20px 4px rgba(255, 153, 51, 0.2); }
+}
+.pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+/* ─── Mobile touch-friendly spacing ─────────────────────────────────────── */
+@media (max-width: 640px) {
+  /* Larger touch targets */
+  button, a, [role="button"] {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  /* Navigation links can be smaller */
+  nav a, nav button {
+    min-height: 36px;
+    min-width: auto;
+  }
+  /* Better mobile padding */
+  .mobile-pad { padding-left: 1rem; padding-right: 1rem; }
+}
+
+/* ─── Premium section divider ───────────────────────────────────────────── */
+.premium-divider {
+  height: 3px;
+  background: linear-gradient(90deg, transparent 0%, #ff9933 20%, #ff9933 80%, transparent 100%);
+  border: none;
+  margin: 2rem 0;
+}
+
+/* ─── Frosted navbar backdrop ───────────────────────────────────────────── */
+.frosted-nav {
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+}
+.dark .frosted-nav {
+  background: rgba(10, 10, 15, 0.92);
+}
+
+/* ─── Admin panel mobile enhancements ───────────────────────────────────── */
+@media (max-width: 768px) {
+  /* Full-width inputs on mobile */
+  input, select, textarea { font-size: 16px !important; /* Prevent iOS zoom */ }
+  /* Admin cards stack nicely */
+  .admin-grid { grid-template-columns: 1fr !important; }
+}
+
+/* ─── Print ──────────────────────────────────────────────────────────────── */
+@media print {
+  .no-print { display: none !important; }
+  body { background: white !important; color: black !important; font-size: 10pt; }
+  .broadsheet-columns { column-count: 3; column-gap: 1.5rem; column-rule: 0.5pt solid #000; }
+  h1, h2, h3 { page-break-after: avoid; }
+  img { max-width: 100% !important; filter: grayscale(100%); }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   PREMIUM ARTICLE STYLES — Newspaper-quality typography & components
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ─── Blockquote redesign — NYT-style pull quotes ───────────────────────── */
+.post-content blockquote {
+  position: relative;
+  border-left: 4px solid var(--saffron);
+  padding: 2rem 2rem 1.5rem 2.5rem;
+  margin: 2.5rem 0;
+  font-family: var(--font-newsreader), Georgia, serif;
+  font-style: italic;
+  font-size: 1.25rem;
+  line-height: 1.7;
+  background: var(--nyt-light-gray);
+  color: var(--nyt-black);
+}
+.post-content blockquote::before {
+  content: "\201C";
+  position: absolute;
+  top: -0.15em;
+  left: 0.25rem;
+  font-family: var(--font-newsreader), Georgia, serif;
+  font-size: 5rem;
+  line-height: 1;
+  color: var(--saffron);
+  opacity: 0.5;
+  font-style: normal;
+}
+.post-content blockquote p {
+  font-family: var(--font-newsreader), Georgia, serif;
+  font-style: italic;
+  font-size: 1.2rem;
+  color: var(--nyt-black);
+}
+.post-content blockquote cite,
+.post-content blockquote footer {
+  display: block;
+  margin-top: 0.75rem;
+  font-family: var(--font-inter), ui-sans-serif;
+  font-style: normal;
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  color: var(--nyt-gray);
+}
+.post-content blockquote cite::before,
+.post-content blockquote footer::before {
+  content: "— ";
+}
+
+/* ─── Fact box — KEY FACTS panel ────────────────────────────────────────── */
+.fact-box {
+  border: 2px solid var(--nyt-black);
+  padding: 0;
+  margin: 2.5rem 0;
+  background: #fff;
+}
+.fact-box::before {
+  content: "KEY FACTS";
+  display: block;
+  background: var(--nyt-black);
+  color: #fff;
+  font-family: var(--font-inter), ui-sans-serif;
+  font-size: 0.65rem;
+  font-weight: 900;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  padding: 0.5rem 1.25rem;
+}
+.fact-box ul {
+  list-style: none;
+  padding: 1rem 1.25rem;
+  margin: 0;
+}
+.fact-box ul li {
+  position: relative;
+  padding-left: 1.25rem;
+  margin-bottom: 0.65rem;
+  font-family: var(--font-inter), ui-sans-serif;
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: var(--nyt-black);
+}
+.fact-box ul li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.55em;
+  width: 6px;
+  height: 6px;
+  background: var(--saffron);
+  border-radius: 50%;
+}
+.fact-box ul li:last-child {
+  margin-bottom: 0;
+}
+
+/* ─── Infographic box — stats & numbers ─────────────────────────────────── */
+.info-box {
+  border: 1px solid var(--nyt-border);
+  border-radius: 8px;
+  padding: 0;
+  margin: 2.5rem 0;
+  overflow: hidden;
+  background: #fff;
+}
+.info-box-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--nyt-light-gray);
+  padding: 0.75rem 1.25rem;
+  border-bottom: 1px solid var(--nyt-border);
+  font-family: var(--font-inter), ui-sans-serif;
+  font-size: 0.65rem;
+  font-weight: 900;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--nyt-black);
+}
+.info-box-header::before {
+  content: "📊";
+  font-size: 1rem;
+}
+.info-box-body {
+  padding: 1.25rem;
+}
+.info-box-stat {
+  text-align: center;
+  padding: 1rem 0.5rem;
+}
+.info-box-stat .stat-number {
+  display: block;
+  font-family: var(--font-newsreader), Georgia, serif;
+  font-size: 2.5rem;
+  font-weight: 900;
+  line-height: 1.1;
+  color: var(--saffron);
+}
+.info-box-stat .stat-label {
+  display: block;
+  font-family: var(--font-inter), ui-sans-serif;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--nyt-gray);
+  margin-top: 0.35rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.info-box-stats-row {
+  display: flex;
+  justify-content: space-around;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+/* ─── Figure & caption — image captions ─────────────────────────────────── */
+.post-content figure {
+  margin: 2.5rem 0;
+  padding: 0;
+}
+.post-content figure img {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+.post-content figure figcaption {
+  font-family: var(--font-inter), ui-sans-serif;
+  font-size: 0.8rem;
+  font-style: italic;
+  line-height: 1.5;
+  color: var(--nyt-gray);
+  padding-top: 0.6rem;
+  border-top: 1px solid var(--nyt-border);
+  margin-top: 0.5rem;
+}
+.post-content figure figcaption .credit {
+  font-style: normal;
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 0.7rem;
+  letter-spacing: 0.05em;
+}
+
+/* ─── First paragraph dropcap ───────────────────────────────────────────── */
+.post-content > p:first-of-type::first-letter {
+  font-family: var(--font-newsreader), Georgia, serif;
+  float: left;
+  font-size: 4.5em;
+  line-height: 0.8;
+  padding-right: 0.12em;
+  padding-top: 0.05em;
+  font-weight: 900;
+  color: var(--saffron);
+}
+
+/* ─── Article subheading — h2 with bottom border & small caps ───────────── */
+.post-content h2 {
+  font-family: var(--font-newsreader), Georgia, serif;
+  font-size: 1.75rem;
+  font-weight: 900;
+  margin-top: 2.5rem;
+  margin-bottom: 1rem;
+  letter-spacing: -0.02em;
+  border-bottom: 2px solid var(--nyt-black);
+  padding-bottom: 0.5rem;
+}
+.post-content h2 .section-label,
+.post-content h2 small {
+  display: block;
+  font-family: var(--font-inter), ui-sans-serif;
+  font-size: 0.6rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--saffron);
+  margin-bottom: 0.2rem;
+}
+
+/* ─── Timeline box — chronological events ───────────────────────────────── */
+.timeline-box {
+  border: 1px solid var(--nyt-border);
+  margin: 2.5rem 0;
+  padding: 0;
+  background: #fff;
+  overflow: hidden;
+}
+.timeline-box::before {
+  content: "TIMELINE";
+  display: block;
+  background: var(--nyt-black);
+  color: #fff;
+  font-family: var(--font-inter), ui-sans-serif;
+  font-size: 0.65rem;
+  font-weight: 900;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  padding: 0.5rem 1.25rem;
+}
+.timeline-box ul {
+  list-style: none;
+  padding: 1.25rem 1.25rem 1.25rem 2.5rem;
+  margin: 0;
+  position: relative;
+}
+.timeline-box ul::before {
+  content: "";
+  position: absolute;
+  left: 1.75rem;
+  top: 1.25rem;
+  bottom: 1.25rem;
+  width: 2px;
+  background: var(--nyt-border);
+}
+.timeline-box ul li {
+  position: relative;
   padding-left: 1.5rem;
   margin-bottom: 1.25rem;
+  font-family: var(--font-inter), ui-sans-serif;
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: var(--nyt-black);
+}
+.timeline-box ul li::before {
+  content: "";
+  position: absolute;
+  left: -1.05rem;
+  top: 0.45em;
+  width: 10px;
+  height: 10px;
+  background: var(--saffron);
+  border: 2px solid #fff;
+  border-radius: 50%;
+  z-index: 1;
+}
+.timeline-box ul li:last-child {
+  margin-bottom: 0;
+}
+.timeline-box ul li strong {
+  display: block;
+  font-family: var(--font-newsreader), Georgia, serif;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--nyt-black);
+  margin-bottom: 0.15rem;
 }
 
-.post-content li {
-  margin-bottom: 0.5rem;
-  line-height: 1.7;
+/* ═══════════════════════════════════════════════════════════════════════════
+   DARK MODE VARIANTS — Premium article components
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Blockquote dark mode */
+.dark .post-content blockquote {
+  background: rgba(255, 255, 255, 0.04);
+  color: hsl(var(--foreground));
+}
+.dark .post-content blockquote::before {
+  color: var(--saffron);
+  opacity: 0.4;
+}
+.dark .post-content blockquote p {
+  color: hsl(var(--foreground));
+}
+.dark .post-content blockquote cite,
+.dark .post-content blockquote footer {
+  color: var(--nyt-gray);
 }
 
-/* Print styles for Daily Edition */
-@media print {
-  .no-print {
-    display: none !important;
-  }
-  body {
-    background: white !important;
-    color: black !important;
-    font-size: 10pt;
-  }
-  .broadsheet-columns {
-    column-count: 3;
-    column-gap: 1.5rem;
-    column-rule: 0.5pt solid #000;
-  }
-  h1,
-  h2,
-  h3 {
-    page-break-after: avoid;
-  }
-  img {
-    max-width: 100% !important;
-    filter: grayscale(100%);
-  }
+/* Fact box dark mode */
+.dark .fact-box {
+  border-color: hsl(var(--border));
+  background: hsl(var(--card));
+}
+.dark .fact-box::before {
+  background: hsl(var(--foreground));
+  color: hsl(var(--background));
+}
+.dark .fact-box ul li {
+  color: hsl(var(--foreground));
 }
 
-/* Scrollbar */
-::-webkit-scrollbar {
-  width: 8px;
+/* Info box dark mode */
+.dark .info-box {
+  border-color: hsl(var(--border));
+  background: hsl(var(--card));
 }
-::-webkit-scrollbar-track {
-  background: transparent;
+.dark .info-box-header {
+  background: hsl(var(--muted));
+  border-bottom-color: hsl(var(--border));
+  color: hsl(var(--foreground));
 }
-::-webkit-scrollbar-thumb {
-  background: #ff9933;
-  border-radius: 0;
+.dark .info-box-stat .stat-label {
+  color: var(--nyt-gray);
 }
 
-/* Marquee animation */
-@keyframes marquee {
-  from {
-    transform: translateX(0);
-  }
-  to {
-    transform: translateX(-50%);
-  }
+/* Figure caption dark mode */
+.dark .post-content figure figcaption {
+  color: var(--nyt-gray);
+  border-top-color: hsl(var(--border));
+}
+
+/* Dropcap dark mode */
+.dark .post-content > p:first-of-type::first-letter {
+  color: var(--saffron);
+}
+
+/* Article h2 dark mode */
+.dark .post-content h2 {
+  border-bottom-color: hsl(var(--border));
+}
+
+/* Timeline box dark mode */
+.dark .timeline-box {
+  border-color: hsl(var(--border));
+  background: hsl(var(--card));
+}
+.dark .timeline-box::before {
+  background: hsl(var(--foreground));
+  color: hsl(var(--background));
+}
+.dark .timeline-box ul::before {
+  background: hsl(var(--border));
+}
+.dark .timeline-box ul li {
+  color: hsl(var(--foreground));
+}
+.dark .timeline-box ul li::before {
+  border-color: hsl(var(--card));
+}
+.dark .timeline-box ul li strong {
+  color: hsl(var(--foreground));
 }

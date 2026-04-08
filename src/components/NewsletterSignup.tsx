@@ -13,10 +13,18 @@ export default function NewsletterSignup() {
     e.preventDefault();
     if (!email) return;
     try {
-      const { addSubscriber } = await import("@/lib/firebase-service");
-      await addSubscriber(email);
+      // Call subscribe API (saves to Firestore + sends welcome email)
+      await fetch("/api/subscribe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
     } catch {
-      // Firebase not configured
+      // fallback: try direct Firestore
+      try {
+        const { addSubscriber } = await import("@/lib/firebase-service");
+        await addSubscriber(email);
+      } catch { /* ignore */ }
     }
     setSubscribed(true);
     setEmail("");

@@ -6,13 +6,20 @@ import { Send, MessageCircle } from "lucide-react";
 import { useLanguage } from "@/lib/language-context";
 
 const footerLinks = [
-  { en: "Geopolitics", hi: "भू-राजनीति", href: "/category/Geopolitics" },
-  { en: "International Relations", hi: "अंतर्राष्ट्रीय संबंध", href: "/category/IR" },
-  { en: "Mental Models", hi: "मानसिक मॉडल", href: "/category/GenZ" },
-  { en: "Ancient Wisdom", hi: "प्राचीन ज्ञान", href: "/category/Ancient India" },
-  { en: "Cartoon Mandala", hi: "कार्टून मंडला", href: "/cartoon-mandala" },
+  { en: "Bharat Pulse", hi: "भारत पल्स", href: "/category/India" },
+  { en: "Neta Watch", hi: "नेता वॉच", href: "/category/Politics" },
+  { en: "Power Moves", hi: "पावर मूव्स", href: "/category/Geopolitics" },
+  { en: "Paisa Talk", hi: "पैसा टॉक", href: "/category/Economy" },
+  { en: "Game On", hi: "गेम ऑन", href: "/category/Sports" },
+  { en: "Tech Bro", hi: "टेक ब्रो", href: "/category/Tech" },
+  { en: "Shield & Sword", hi: "शील्ड & स्वॉर्ड", href: "/category/Defence" },
+  { en: "Hot Takes", hi: "हॉट टेक्स", href: "/category/Opinion" },
+  { en: "City Vibes", hi: "सिटी वाइब्स", href: "/category/Cities" },
+  { en: "Lok Post", hi: "कार्टून मंडला", href: "/lok-post" },
   { en: "Daily Edition", hi: "दैनिक संस्करण", href: "/daily" },
   { en: "About", hi: "हमारे बारे में", href: "/about" },
+  { en: "Privacy", hi: "गोपनीयता", href: "/privacy" },
+  { en: "Terms", hi: "शर्तें", href: "/terms" },
 ];
 
 const socialLinks = [
@@ -37,25 +44,22 @@ export default function Footer() {
   };
 
   return (
-    <footer className="mt-24 border-t-[20px] border-black dark:border-white pt-24 pb-12 px-8 md:px-16 bg-white dark:bg-[#0a0a0a]">
+    <footer className="mt-16 border-t-4 border-black dark:border-white/20 pt-10 pb-8 px-6 md:px-12 bg-white dark:bg-[#0a0a0a]">
       <div className="max-w-7xl mx-auto">
-        {/* Newsletter */}
-        <div className="mb-20 p-12 border-4 border-black dark:border-white shadow-[12px_12px_0px_0px_rgba(0,0,0,1)] dark:shadow-[12px_12px_0px_0px_rgba(255,255,255,0.2)]">
-          <div className="flex flex-col md:flex-row items-center gap-8">
+        {/* Newsletter — compact */}
+        <div className="mb-10 p-6 border-2 border-black dark:border-white/20 bg-[#fafafa] dark:bg-white/5">
+          <div className="flex flex-col md:flex-row items-center gap-4">
             <div className="flex-1">
-              <h3 className="text-3xl md:text-4xl font-newsreader font-black uppercase mb-2 dark:text-white">
+              <h3 className="text-lg font-newsreader font-black uppercase dark:text-white">
                 {t("Subscribe to the Vani", "वाणी की सदस्यता लें")}
               </h3>
-              <p className="text-sm font-inter opacity-60 dark:text-white/60">
-                {t(
-                  "Daily editorial digest. Neo Bharat perspective. Zero spam.",
-                  "दैनिक संपादकीय संग्रह। नव भारत परिप्रेक्ष्य। शून्य स्पैम।"
-                )}
+              <p className="text-[11px] font-inter opacity-50 dark:text-white/50">
+                {t("Daily digest. Zero spam.", "दैनिक संग्रह। शून्य स्पैम।")}
               </p>
             </div>
             {subscribed ? (
-              <div className="text-primary font-inter font-black text-sm uppercase tracking-widest">
-                {t("Welcome to the discourse!", "विमर्श में स्वागत है!")}
+              <div className="text-primary font-inter font-bold text-xs uppercase tracking-widest">
+                {t("Subscribed ✓", "सदस्यता ✓")}
               </div>
             ) : (
               <form onSubmit={handleSubscribe} className="flex w-full md:w-auto">
@@ -64,14 +68,14 @@ export default function Footer() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder={t("your@email.com", "आपका@ईमेल.com")}
-                  className="px-6 py-4 border-2 border-black dark:border-white border-r-0 font-inter text-sm flex-1 md:w-72 bg-transparent dark:text-white placeholder:opacity-40"
+                  className="px-4 py-2.5 border-2 border-black dark:border-white/30 border-r-0 font-inter text-xs flex-1 md:w-56 bg-transparent dark:text-white placeholder:opacity-40"
                   required
                 />
                 <button
                   type="submit"
-                  className="px-8 py-4 bg-black dark:bg-white text-white dark:text-black font-inter font-black text-xs uppercase tracking-widest hover:bg-primary transition-colors flex items-center gap-2"
+                  className="px-5 py-2.5 bg-black dark:bg-white text-white dark:text-black font-inter font-black text-[10px] uppercase tracking-widest hover:bg-primary transition-colors flex items-center gap-1.5"
                 >
-                  <Send className="w-4 h-4" />
+                  <Send className="w-3 h-3" />
                   {t("Subscribe", "सदस्यता")}
                 </button>
               </form>
@@ -80,14 +84,17 @@ export default function Footer() {
         </div>
 
         {/* Brand + Links */}
-        <div className="flex flex-col items-center text-center space-y-12">
+        <div className="flex flex-col items-center text-center space-y-8">
           <Link href="/">
-            <h2 className="text-6xl md:text-9xl font-newsreader font-black tracking-tighter text-black dark:text-white uppercase">
+            <h2 className="text-xl md:text-2xl font-newsreader font-black tracking-tighter text-black dark:text-white uppercase">
               Loktantra<span className="text-primary">Vani</span>
             </h2>
+            <p className="text-[8px] font-inter font-bold uppercase tracking-[0.3em] text-[var(--nyt-gray)] dark:text-white/30 mt-0.5">
+              India&apos;s 1st AI Newspaper
+            </p>
           </Link>
 
-          <div className="flex flex-wrap justify-center gap-12 text-xs font-inter font-black tracking-[0.3em] uppercase opacity-40 dark:text-white/40">
+          <div className="flex flex-wrap justify-center gap-6 text-[10px] font-inter font-bold tracking-[0.2em] uppercase opacity-40 dark:text-white/40">
             {footerLinks.map((link) => (
               <Link key={link.href} href={link.href} className="hover:text-primary hover:opacity-100 transition-all">
                 {lang === "hi" ? link.hi : link.en}
@@ -96,14 +103,14 @@ export default function Footer() {
           </div>
 
           {/* Social Links */}
-          <div className="flex gap-4">
+          <div className="flex gap-2.5">
             {socialLinks.map((link) => (
               <a
                 key={link.label}
                 href={link.href}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-12 h-12 border-2 border-black dark:border-white flex items-center justify-center font-inter font-black text-sm hover:bg-primary hover:text-white hover:border-primary transition-all dark:text-white"
+                className="w-8 h-8 border border-black/20 dark:border-white/20 flex items-center justify-center font-inter font-bold text-[10px] hover:bg-primary hover:text-white hover:border-primary transition-all dark:text-white/60"
                 title={link.label}
               >
                 {link.icon}
@@ -111,29 +118,15 @@ export default function Footer() {
             ))}
           </div>
 
-          {/* Discord CTA */}
-          <a
-            href="https://discord.gg/loktantravani"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-3 px-8 py-4 bg-[#5865F2] text-white font-inter font-black text-xs uppercase tracking-widest hover:opacity-90 transition-opacity"
-          >
-            <MessageCircle className="w-5 h-5" />
-            {t("Join our Discord Community", "हमारे Discord समुदाय से जुड़ें")}
-          </a>
-
           <div className="w-full h-px bg-black/10 dark:bg-white/10" />
 
-          <div className="flex flex-col md:flex-row justify-between items-center w-full gap-8 text-[10px] font-inter font-black opacity-30 tracking-[0.2em] uppercase dark:text-white/30">
-            <p>&copy; 2026 LOKTANTRAVANI MEDIA GROUP &bull; THE NEO BHARAT VOICE.</p>
-            <div className="flex items-center gap-2">
-              <div className="w-1 h-1 bg-black dark:bg-white rounded-full" />
-              <span>VERIFIED AUTHORITATIVE SOURCE</span>
-              <div className="w-1 h-1 bg-black dark:bg-white rounded-full" />
-            </div>
-            <div className="flex gap-8">
-              <a href="#">NEO BHARAT ETHICS</a>
-              <a href="#">DATA SOVEREIGNTY</a>
+          <div className="flex flex-col md:flex-row justify-between items-center w-full gap-4 text-[9px] font-inter font-bold opacity-25 tracking-[0.15em] uppercase dark:text-white/25">
+            <p>&copy; 2026 LoktantraVani by <a href="https://kautilya.world" target="_blank" rel="noopener noreferrer" className="hover:opacity-60 underline">Kautilya World</a></p>
+            <div className="flex gap-6">
+              <a href="https://kautilya.world" target="_blank" rel="noopener noreferrer" className="hover:opacity-60">Kautilya World</a>
+              <a href="/about" className="hover:opacity-60">Ethics</a>
+              <a href="/privacy" className="hover:opacity-60">Privacy</a>
+              <a href="/terms" className="hover:opacity-60">Terms</a>
             </div>
           </div>
         </div>

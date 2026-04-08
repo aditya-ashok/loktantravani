@@ -23,6 +23,13 @@ export const ROLE_PERMISSIONS: Record<UserRole, string[]> = {
     "comments.create",
     "comments.deleteOwn",
   ],
+  contributor: [
+    "posts.submitForReview",
+    "comments.create",
+    "comments.deleteOwn",
+    "reactions.add",
+    "bookmarks.manage",
+  ],
   guest: [
     "comments.create",
     "reactions.add",
@@ -37,5 +44,6 @@ export function hasPermission(role: UserRole, permission: string): boolean {
 export const ROLE_LABELS: Record<UserRole, { en: string; hi: string }> = {
   admin: { en: "Chief Editor", hi: "प्रधान संपादक" },
   author: { en: "Author", hi: "लेखक" },
+  contributor: { en: "Contributor", hi: "योगदानकर्ता" },
   guest: { en: "Reader", hi: "पाठक" },
 };

@@ -1,0 +1,1855 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>लोकतंत्र वाणी — Column Writer</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;700;900&family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400;1,700&family=Source+Sans+3:wght@400;600;700&family=Lora:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+:root { --brown:#6b5640;--cream:#faf7f2;--dark:#121212;--gold:#c8a45c;--lb:#d4c5a9;--db:#4a3728;--text:#1a1a1a; }
+:root.white-theme { --cream:#ffffff;--dark:#1a1a1a;--lb:#e0e0e0;--db:#444444;--brown:#555555;--text:#222222;--gold:#a08030; }
+:root.white-theme .right { background:#f0f0f0; }
+:root.white-theme .col-np { box-shadow:0 0 0 4px #fff,0 0 0 5px #ccc,0 12px 40px rgba(0,0,0,.15); }
+:root.white-theme .fc.br, :root.white-theme .fc.br2 { background:#2a2a2a; color:#f5f5f5; }
+:root.white-theme .col-pullquote { background:rgba(160,128,48,.06); }
+:root.white-theme .col-infographic { background:rgba(160,128,48,.04); border-color:#ccc; }
+body { background:#f0e8d8; min-height:100vh; font-family:'Source Sans 3',sans-serif; }
+.app { display:grid; grid-template-columns:370px 1fr; min-height:100vh; }
+
+/* LEFT — Light sidebar */
+.left { background:#f8f6f1; border-right:2px solid var(--gold); display:flex; flex-direction:column; height:100vh; position:sticky; top:0; overflow-y:auto; }
+.left::-webkit-scrollbar { width:3px; }
+.left::-webkit-scrollbar-thumb { background:#c4b89a; }
+.nav-tabs { display:flex; background:#ede8dc; border-bottom:1px solid #d4c9b4; flex-shrink:0; }
+.nav-tabs a { flex:1; text-align:center; padding:8px 4px; color:#8b7d6b; font-size:10px; font-weight:700; text-decoration:none; letter-spacing:.5px; transition:all .15s; border-bottom:2px solid transparent; }
+.nav-tabs a:hover { color:#5c4433; background:rgba(0,0,0,.03); }
+.nav-tabs a.active { color:#b8860b; border-bottom-color:#b8860b; background:rgba(184,134,11,.06); }
+.lhead { background:#ede8dc; padding:16px 18px 12px; border-bottom:2px solid #d4c9b4; flex-shrink:0; }
+.lhead h2 { font-family:'Playfair Display',serif; color:#5c4433; font-size:19px; margin-bottom:3px; }
+.lhead p { color:#8b7d6b; font-size:10px; letter-spacing:0.8px; text-transform:uppercase; }
+
+.sec { padding:12px 16px; border-bottom:1px solid #e0d8c8; flex-shrink:0; }
+.slabel { color:#8b7d6b; font-size:9px; text-transform:uppercase; letter-spacing:1.5px; margin-bottom:7px; font-weight:700; }
+.row2 { display:flex; gap:6px; }
+.pvbtn,.langbtn { flex:1; padding:7px 5px; border-radius:5px; border:1.5px solid #d4c9b4; background:#fff; color:#6b5640; font-size:11px; font-weight:700; cursor:pointer; transition:all .15s; font-family:'Source Sans 3',sans-serif; }
+.pvbtn.on { border-color:#b8860b; background:rgba(184,134,11,.1); color:#b8860b; }
+.langbtn.on { border-color:#7c3aed; background:rgba(124,58,237,.08); color:#7c3aed; }
+.ainput { flex:1; background:#fff; border:1.5px solid #d4c9b4; border-radius:5px; padding:8px 10px; color:#2d2418; font-size:12px; font-family:monospace; outline:none; min-width:0; }
+.ainput:focus { border-color:#b8860b; }
+.sbtn { background:#b8860b; color:#fff; border:none; border-radius:5px; padding:8px 13px; font-weight:700; cursor:pointer; font-size:11px; white-space:nowrap; }
+.keyok { color:#16a34a; font-size:10px; margin-top:5px; display:none; }
+.cinput { width:100%; background:#fff; border:1.5px solid #d4c9b4; border-radius:5px; padding:8px 10px; color:#2d2418; font-size:12px; outline:none; font-family:'Source Sans 3',sans-serif; }
+.cinput:focus { border-color:#b8860b; }
+textarea.cinput { resize:vertical; min-height:60px; }
+
+/* Author */
+.author-row { display:flex; gap:12px; align-items:center; margin-top:8px; }
+.author-photo-preview { width:56px; height:56px; border-radius:50%; border:2px solid #d4c9b4; background:#ede8dc; display:flex; align-items:center; justify-content:center; overflow:hidden; flex-shrink:0; }
+.author-photo-preview img { width:100%; height:100%; object-fit:cover; }
+.author-photo-preview .initials { color:#6b5640; font-size:18px; font-weight:900; font-family:'Playfair Display',serif; }
+.author-btns { display:flex; gap:5px; margin-top:6px; }
+.author-btns button { flex:1; padding:6px 4px; border-radius:5px; border:1.5px solid #d4c9b4; background:#fff; color:#6b5640; font-size:10px; font-weight:700; cursor:pointer; font-family:'Source Sans 3',sans-serif; transition:all .15s; }
+.author-btns button:hover { border-color:#b8860b; color:#b8860b; }
+.file-hidden { display:none; }
+
+/* Trending */
+.trend-item { padding:5px 6px; border-bottom:1px solid #1e293b; cursor:pointer; transition:all .1s; }
+.trend-item:hover { background:rgba(245,158,11,.08); }
+.trend-item .t-cat { font-size:7px; color:#f59e0b; font-weight:700; text-transform:uppercase; letter-spacing:.5px; }
+.trend-item .t-hl { font-size:10px; color:#cbd5e1; line-height:1.3; margin-top:1px; }
+.trend-item .t-src { font-size:7px; color:#475569; margin-top:1px; }
+#trendList::-webkit-scrollbar { width:2px; }
+#trendList::-webkit-scrollbar-thumb { background:#1e293b; }
+
+/* Gen */
+.gsec { padding:12px 16px; border-top:2px solid #d4c9b4; flex-shrink:0; background:#ede8dc; }
+.gbtn { width:100%; background:linear-gradient(135deg,#b8860b,#996e08); color:#fff; border:none; border-radius:7px; padding:13px; font-weight:900; cursor:pointer; font-size:14px; font-family:'Playfair Display',serif; box-shadow:0 4px 16px rgba(184,134,11,.3); transition:all .2s; }
+.gbtn:hover:not(:disabled) { transform:translateY(-1px); box-shadow:0 6px 24px rgba(184,134,11,.45); }
+.gbtn:disabled { background:#d4c9b4; color:#8b7d6b; box-shadow:none; transform:none; cursor:not-allowed; }
+.gnote { color:#334155; font-size:10px; text-align:center; margin-top:6px; }
+
+/* RIGHT */
+.right { padding:28px 24px; display:flex; flex-direction:column; align-items:center; gap:18px; overflow-y:auto; }
+
+/* ── NEWSPAPER COLUMN ── */
+.col-np { width:100%; max-width:960px; aspect-ratio:16/9; background:var(--cream); border:2px solid var(--dark); box-shadow:0 0 0 4px var(--cream),0 0 0 6px var(--dark),0 16px 48px rgba(0,0,0,.35); position:relative; display:flex; flex-direction:column; overflow:hidden; }
+.col-np.single-page { aspect-ratio:unset; overflow:visible; }
+.col-np.single-page .col-content { overflow:visible; }
+.col-mast { background:var(--cream); text-align:center; padding:10px 10px 8px; border-bottom:2px solid var(--dark); flex-shrink:0; display:flex; align-items:center; justify-content:center; gap:8px; }
+.col-mast svg.mast-logo { width:32px; height:32px; flex-shrink:0; }
+.col-mast h1 { font-size:clamp(18px,3.5vw,30px); font-weight:900; color:var(--dark); line-height:1; letter-spacing:-0.5px; font-family:'Playfair Display','Noto Sans Devanagari',serif; }
+.col-ibar { display:flex; justify-content:space-between; align-items:center; padding:3px 10px; border-bottom:1px solid var(--lb); background:var(--cream); flex-shrink:0; }
+.col-ibar span { font-size:7.5px; font-weight:600; color:var(--brown); font-family:'Source Sans 3',sans-serif; letter-spacing:.5px; text-transform:uppercase; }
+.col-ibar .it { font-weight:700; color:var(--dark); letter-spacing:1px; font-family:'Playfair Display',serif; font-size:8px; display:flex; align-items:center; gap:3px; }
+.col-ibar .it::before { content:''; }
+
+/* Main content area — 2-column equal newspaper grid */
+.col-content { display:grid; grid-template-columns:1fr 1fr; gap:0; flex:1; overflow:hidden; }
+
+/* Column sections */
+.col-main { grid-column:1; padding:5px 10px 8px; border-right:1px solid #c4b89a; }
+.col-sidebar { grid-column:2; padding:5px 8px 8px; }
+
+.col-section-label { font-family:'Source Sans 3',sans-serif; font-size:7.5px; color:var(--gold); text-transform:uppercase; letter-spacing:2.5px; font-weight:800; margin-bottom:3px; display:block; }
+.col-section-rule { width:50px; height:2.5px; background:var(--gold); margin-bottom:6px; }
+.col-headline { font-family:'Playfair Display','Noto Sans Devanagari',serif; font-size:clamp(14px,2.8vw,20px); font-weight:900; line-height:1.12; color:var(--dark); margin-bottom:3px; letter-spacing:-0.3px; }
+.col-subheadline { font-family:'Lora','Noto Sans Devanagari',Georgia,serif; font-size:9px; font-style:italic; color:var(--brown); line-height:1.35; margin-bottom:5px; border-bottom:1px solid var(--lb); padding-bottom:4px; }
+
+/* Author byline — newspaper columnist plate */
+.col-byline { display:flex; align-items:center; gap:6px; margin-bottom:4px; padding:4px 0; border-top:1px solid var(--lb); border-bottom:1px solid var(--lb); }
+.col-author-img { width:28px; height:28px; border-radius:50%; border:1.5px solid var(--dark); object-fit:cover; background:#d4c9b4; flex-shrink:0; }
+.col-author-img.initials-circle { display:flex; align-items:center; justify-content:center; font-family:'Playfair Display',serif; font-size:12px; font-weight:900; color:var(--dark); }
+.col-author-info { flex:1; display:flex; flex-direction:column; }
+.col-author-name { font-family:'Playfair Display',serif; font-size:10px; font-weight:900; color:var(--dark); line-height:1.2; letter-spacing:-.2px; }
+.col-author-desig { font-family:'Source Sans 3',sans-serif; font-size:7px; color:var(--brown); font-weight:600; letter-spacing:.3px; margin-top:1px; }
+.col-author-org { display:none; }
+
+/* Hero image — in sidebar */
+.col-hero { width:100%; max-height:140px; position:relative; overflow:hidden; margin-bottom:2px; border:1px solid var(--dark); }
+.col-hero img { width:100%; display:block; }
+.col-hero .lwrap { display:flex; align-items:center; justify-content:center; height:100px; background:#d4c9b4; }
+.col-hero .spin { width:18px; height:18px; border-radius:50%; border:2px solid rgba(100,60,30,.15); border-top-color:var(--brown); animation:spin .8s linear infinite; }
+.col-caption { font-family:'Source Sans 3',sans-serif; font-size:6.5px; color:#94856e; font-style:italic; padding:2px 0 4px; border-bottom:1px solid #c4b89a; margin-bottom:5px; }
+
+/* Article body */
+.col-text { font-family:'Lora','Noto Sans Devanagari',Georgia,serif; font-size:8.5px; line-height:1.5; color:var(--text); text-align:justify; hyphens:auto; }
+.col-text p { margin-bottom:3px; text-indent:.8em; }
+.col-text p:first-child { text-indent:0; }
+/* Drop cap only for English — Devanagari first-letter rendering is broken in most browsers */
+.col-text.en-text p:first-child::first-letter { font-family:'Playfair Display',serif; font-size:2.2em; float:left; line-height:.75; margin:1px 3px 0 0; padding-top:2px; color:var(--dark); font-weight:900; }
+
+/* Pull quote — sidebar highlight */
+.col-pullquote { border-left:3px solid var(--gold); padding:5px 8px; margin:5px 0; background:rgba(200,164,92,.06); }
+.col-pullquote p { font-family:'Playfair Display','Noto Sans Devanagari',serif; font-size:9px; font-style:italic; font-weight:700; color:var(--dark); line-height:1.35; text-indent:0 !important; margin:0; }
+.col-pullquote p::before { content:'\201C'; font-size:1.3em; color:var(--gold); margin-right:1px; }
+.col-pullquote p::after { content:'\201D'; font-size:1.3em; color:var(--gold); }
+
+/* Sidebar continuation text */
+.col-sidebar-text { font-family:'Lora','Noto Sans Devanagari',Georgia,serif; font-size:8.5px; line-height:1.5; color:var(--text); text-align:justify; hyphens:auto; }
+.col-sidebar-text p { margin-bottom:3px; text-indent:.8em; }
+
+/* Hindi text fixes — prevent word spacing issues with justify */
+.hindi-layout .col-text, .hindi-layout .col-sidebar-text { word-spacing:-0.5px; word-break:keep-all; overflow-wrap:break-word; hyphens:none; }
+.hindi-layout .col-headline { font-family:'Noto Sans Devanagari','Playfair Display',serif; letter-spacing:0; }
+.hindi-layout .col-subheadline { font-family:'Noto Sans Devanagari','Lora',serif; }
+
+/* Infographic box */
+.col-infographic { border:1.5px solid var(--dark); margin:4px 0; padding:4px 6px; background:rgba(245,158,11,.04); }
+.col-infographic .info-title { font-family:'Source Sans 3',sans-serif; font-size:7px; color:var(--dark); text-transform:uppercase; letter-spacing:2px; font-weight:800; margin-bottom:4px; border-bottom:1.5px solid var(--dark); padding-bottom:3px; }
+.col-infographic .info-items { display:flex; flex-direction:column; gap:4px; }
+.col-infographic .info-item { display:flex; align-items:center; gap:5px; }
+.col-infographic .info-icon { font-size:11px; width:18px; text-align:center; flex-shrink:0; }
+.col-infographic .info-val { font-family:'Playfair Display','Noto Sans Devanagari',serif; font-size:10px; font-weight:900; color:var(--dark); line-height:1.1; }
+.col-infographic .info-label { font-family:'Source Sans 3','Noto Sans Devanagari',sans-serif; font-size:7px; color:var(--brown); line-height:1.25; flex:1; }
+
+/* Ad box */
+.col-ad { border:1.5px solid var(--lb); margin:4px 0; padding:6px 8px; background:rgba(245,158,11,.03); text-align:center; }
+.col-ad .ad-label { font-family:'Source Sans 3',sans-serif; font-size:5px; color:var(--brown); text-transform:uppercase; letter-spacing:2px; font-weight:700; margin-bottom:3px; opacity:.6; }
+.col-ad .ad-brand { font-family:'Noto Sans Devanagari','Playfair Display',serif; font-size:14px; font-weight:900; color:var(--dark); line-height:1.1; }
+.col-ad .ad-tagline { font-family:'Lora','Noto Sans Devanagari',Georgia,serif; font-size:7px; font-style:italic; color:var(--brown); margin-top:2px; }
+.col-ad .ad-url { font-family:'Source Sans 3',sans-serif; font-size:6px; color:var(--db); margin-top:3px; font-weight:700; letter-spacing:.5px; }
+.col-ad .ad-line { width:30px; height:1.5px; background:var(--gold); margin:3px auto; }
+
+/* About Author box */
+.col-about-author { border-top:1.5px solid var(--dark); padding:3px 10px; background:rgba(245,158,11,.04); flex-shrink:0; }
+.col-about-author .about-label { font-family:'Source Sans 3',sans-serif; font-size:7px; color:var(--brown); text-transform:uppercase; letter-spacing:1.5px; font-weight:700; margin-bottom:2px; }
+.col-about-author .about-content { display:flex; align-items:flex-start; gap:8px; }
+.col-about-author .about-img { width:30px; height:30px; border-radius:50%; border:1.5px solid var(--dark); object-fit:cover; flex-shrink:0; }
+.col-about-author .about-img.initials-sm { display:flex; align-items:center; justify-content:center; font-family:'Playfair Display',serif; font-size:10px; font-weight:900; color:var(--dark); background:#d4c9b4; }
+.col-about-author .about-text { flex:1; }
+.col-about-author .about-name { font-family:'Playfair Display',serif; font-size:8px; font-weight:900; color:var(--dark); }
+.col-about-author .about-desig { font-family:'Source Sans 3',sans-serif; font-size:6.5px; color:var(--brown); font-weight:600; }
+.col-about-author .about-bio { font-family:'Lora','Noto Sans Devanagari',Georgia,serif; font-size:6.5px; color:var(--text); line-height:1.4; margin-top:1px; }
+
+/* Footer */
+.col-foot { display:grid; grid-template-columns:1fr 1fr 1fr; border-top:2px solid var(--dark); flex-shrink:0; }
+.fc { padding:3px 6px; display:flex; align-items:center; justify-content:center; gap:3px; font-size:7px; font-weight:700; font-family:'Source Sans 3',sans-serif; letter-spacing:.3px; }
+.fc.br { background:var(--dark); color:var(--cream); border-right:1px solid rgba(255,255,255,.15); }
+.fc.cr { background:var(--cream); color:var(--dark); border-right:1px solid var(--lb); font-family:'Playfair Display',serif; font-size:8px; letter-spacing:1px; }
+.fc.br2 { background:var(--dark); color:var(--cream); }
+
+/* DL row */
+.dlrow { width:100%; max-width:960px; display:flex; gap:8px; flex-wrap:wrap; margin-top:10px; }
+.dlbtn { flex:1; min-width:120px; background:var(--gold); color:var(--dark); border:none; border-radius:8px; padding:12px 10px; font-weight:700; cursor:pointer; font-size:13px; font-family:'Source Sans 3',sans-serif; transition:all .15s; }
+.dlbtn:hover { filter:brightness(1.1); transform:translateY(-1px); }
+.dlbtn:active { transform:translateY(0); }
+.dlbtn.sec-btn { background:var(--dark); color:var(--cream); border:2px solid #334155; }
+.dlbtn.sec-btn:hover { border-color:var(--gold); color:var(--gold); }
+.dlbtn.wa { background:#25D366; color:#fff; }
+.dlbtn.wa:hover { background:#1ebe5a; }
+.dlbtn.xbtn { background:#000; color:#fff; }
+.dlbtn.xbtn:hover { background:#1a1a1a; }
+
+/* Edit toolbar */
+.edit-bar { width:100%; max-width:960px; background:#f8f6f1; border:1.5px solid #d4c9b4; border-radius:8px; padding:10px 12px; margin-top:6px; }
+.edit-bar .eb-title { color:#8b7d6b; font-size:9px; text-transform:uppercase; letter-spacing:1.5px; font-weight:700; margin-bottom:8px; }
+.edit-bar .eb-row { display:flex; gap:6px; flex-wrap:wrap; }
+.edit-bar .eb-btn { background:#fff; border:1.5px solid #d4c9b4; color:#6b5640; border-radius:6px; padding:7px 12px; font-size:11px; font-weight:600; cursor:pointer; font-family:'Source Sans 3',sans-serif; transition:all .15s; }
+.edit-bar .eb-btn:hover { border-color:#b8860b; color:#b8860b; }
+.edit-bar .eb-btn.active { border-color:#b8860b; background:rgba(184,134,11,.1); color:#b8860b; }
+.edit-bar .eb-btn.img-btn { border-color:#2563eb; color:#2563eb; }
+.edit-bar .eb-btn.img-btn:hover { background:rgba(37,99,235,.08); }
+.author-edit-panel { display:none; margin-top:8px; padding:8px 0 0; border-top:1px solid #d4c9b4; }
+.author-edit-panel.show { display:block; }
+.author-edit-panel .irow { display:flex; gap:6px; }
+
+/* History */
+.hist-card { display:flex; gap:8px; padding:6px; border-radius:5px; border:1px solid #d4c9b4; cursor:pointer; transition:all .15s; align-items:center; background:#fff; }
+.hist-card:hover { background:#ede8dc; border-color:#b8860b; }
+.hist-thumb { width:48px; height:27px; border-radius:3px; object-fit:cover; background:#ede8dc; flex-shrink:0; }
+.hist-info { flex:1; min-width:0; }
+.hist-title { font-size:10px; color:#2d2418; font-weight:600; line-height:1.3; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.hist-date { font-size:8px; color:#8b7d6b; margin-top:1px; }
+.hist-del { background:none; border:none; color:#8b7d6b; font-size:12px; cursor:pointer; padding:2px 4px; flex-shrink:0; }
+.hist-del:hover { color:#ef4444; }
+#historyList::-webkit-scrollbar { width:2px; }
+#historyList::-webkit-scrollbar-thumb { background:#d4c9b4; }
+.img-insert-panel { display:none; margin-top:8px; padding:8px; background:#fff; border-radius:6px; border:1px solid #d4c9b4; }
+.img-insert-panel.show { display:block; }
+.img-insert-panel .irow { display:flex; gap:6px; align-items:center; margin-bottom:6px; }
+.img-insert-panel input[type="text"] { flex:1; background:#0d1117; border:1px solid #1e293b; border-radius:4px; padding:6px 8px; color:#e2e8f0; font-size:11px; font-family:'Source Sans 3',sans-serif; outline:none; }
+.img-insert-panel input[type="text"]:focus { border-color:#f59e0b; }
+.img-insert-panel .irow button { padding:6px 12px; border-radius:4px; border:none; font-weight:700; font-size:10px; cursor:pointer; font-family:'Source Sans 3',sans-serif; }
+.img-insert-panel .irow .ai-img-btn { background:#f59e0b; color:#1a1a2e; }
+.img-insert-panel .irow .upload-img-btn { background:#334155; color:#e2e8f0; }
+
+/* Multipage wrapper */
+#colNpWrap { display:flex; flex-direction:column; gap:24px; width:100%; max-width:960px; align-items:center; }
+#colNpWrap .col-np { max-width:960px; }
+.col-page-next { margin-top:0; }
+
+/* Photo grid */
+.photo-thumb { position:relative; width:56px; height:56px; border-radius:4px; overflow:hidden; border:1px solid #1e293b; }
+.photo-thumb img { width:100%; height:100%; object-fit:cover; }
+.photo-thumb .rm { position:absolute; top:1px; right:1px; background:rgba(0,0,0,.7); color:#fff; border:none; width:16px; height:16px; border-radius:50%; font-size:8px; cursor:pointer; display:flex; align-items:center; justify-content:center; line-height:1; }
+
+/* Theme toggle buttons */
+.theme-toggle { display:flex; gap:4px; }
+.theme-btn { flex:1; padding:8px 6px; border-radius:6px; border:1.5px solid #1e293b; background:transparent; color:#94a3b8; cursor:pointer; font-weight:700; font-size:10px; font-family:'Source Sans 3',sans-serif; transition:all .15s; }
+.theme-btn.on { border-color:var(--gold); color:var(--gold); background:rgba(245,158,11,.08); }
+.theme-btn .swatch { display:inline-block; width:12px; height:12px; border-radius:2px; vertical-align:middle; margin-right:4px; border:1px solid #475569; }
+
+/* White theme overrides */
+:root.white-theme .right { background:#e5e7eb; }
+:root.white-theme .col-np { box-shadow:0 0 0 4px #fff,0 0 0 6px #111,0 16px 48px rgba(0,0,0,.25); }
+
+/* Editable state */
+.col-text[contenteditable="true"], .col-sidebar-text[contenteditable="true"], .col-headline[contenteditable="true"], .col-subheadline[contenteditable="true"], .col-pullquote[contenteditable="true"] {
+  outline:2px dashed rgba(245,158,11,.3); outline-offset:2px; cursor:text;
+}
+.col-text[contenteditable="true"]:focus, .col-sidebar-text[contenteditable="true"]:focus, .col-headline[contenteditable="true"]:focus { outline-color:#f59e0b; }
+
+/* Empty */
+.empty { width:100%; max-width:960px; background:rgba(13,17,23,.7); border:2px dashed #1e293b; border-radius:12px; padding:52px 32px; text-align:center; }
+.empty .ico { font-size:48px; margin-bottom:14px; }
+.empty h3 { color:#64748b; font-family:'Playfair Display',serif; font-size:22px; margin-bottom:8px; }
+.empty p { color:#334155; font-size:13px; line-height:1.7; }
+.steps { display:flex; flex-direction:column; gap:8px; margin-top:18px; text-align:left; max-width:340px; margin-left:auto; margin-right:auto; }
+.step { display:flex; align-items:center; gap:10px; color:#475569; font-size:12px; }
+.step-n { background:#1e293b; color:var(--gold); width:22px; height:22px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:900; flex-shrink:0; }
+
+@keyframes spin { to { transform:rotate(360deg); } }
+@keyframes fadein { from { opacity:0;transform:translateY(10px); } to { opacity:1;transform:translateY(0); } }
+.fadein { animation:fadein .3s ease; }
+
+@media (max-width:860px) {
+  .app { grid-template-columns:1fr; }
+  .left { height:auto; position:static; border-right:none; border-bottom:3px solid var(--gold); }
+  .right { padding:12px 8px; }
+  .col-np { aspect-ratio:16/9; box-shadow:0 0 0 3px var(--cream),0 0 0 5px var(--dark),0 8px 24px rgba(0,0,0,.3); }
+  .col-content { grid-template-columns:1fr !important; }
+  .col-main { grid-column:1; border-right:none; border-bottom:1px solid #c4b89a; }
+  .col-sidebar { grid-column:1; }
+}
+@media (max-width:480px) {
+  .sec { padding:10px 12px; }
+  .lhead { padding:12px 14px 10px; }
+  .gsec { padding:10px 12px; }
+  .author-photo-preview { width:44px; height:44px; }
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+<!-- LEFT PANEL -->
+<div class="left">
+  <div class="nav-tabs">
+    <a href="/" title="Home">🏠</a>
+    <a href="/column.html" class="active">✍ Column</a>
+    <a href="/v21.html">📰 Classic</a>
+    <a href="/v24.html">🪷 Pro</a>
+    <a href="/video.html">🎬 Video</a>
+  </div>
+  <div class="lhead">
+    <h2>✍ Column Writer</h2>
+    <p>Write · Style · Publish</p>
+  </div>
+
+  <!-- API -->
+  <div class="sec">
+    <div class="slabel">Image API</div>
+    <div class="row2" style="margin-bottom:8px">
+      <button class="pvbtn on" id="pv-gemini" onclick="setProv('gemini')">🍌 Gemini</button>
+      <button class="pvbtn" id="pv-openai" onclick="setProv('openai')">⚡ OpenAI / Sora</button>
+    </div>
+    <div class="row2">
+      <input class="ainput" type="password" id="api-key" placeholder="AIza... (aistudio.google.com/apikey)" />
+      <button class="sbtn" onclick="saveKey()">SAVE</button>
+    </div>
+    <div class="keyok" id="keyok">✓ Key saved — ready!</div>
+  </div>
+
+  <!-- Language -->
+  <div class="sec">
+    <div class="slabel">Column Language</div>
+    <div class="row2">
+      <button class="langbtn" id="lg-hi" onclick="setLang('hi')">🇮🇳 Hindi</button>
+      <button class="langbtn on" id="lg-en" onclick="setLang('en')">🇬🇧 English</button>
+      <button class="langbtn" id="lg-bi" onclick="setLang('bi')">🔀 Bilingual</button>
+    </div>
+  </div>
+
+  <!-- Author -->
+  <div class="sec">
+    <div class="slabel">Author Details</div>
+    <div class="row2" style="margin-bottom:8px;gap:4px;flex-wrap:wrap">
+      <button class="pvbtn" style="flex:1;font-size:9px;padding:5px 4px" onclick="selectAuthorPreset('ashok')">👤 Ashok K.C.</button>
+      <button class="pvbtn" style="flex:1;font-size:9px;padding:5px 4px" onclick="selectAuthorPreset('aditya')">👤 Aditya A.</button>
+      <button class="pvbtn" style="flex:0 0 auto;font-size:9px;padding:5px 8px" onclick="selectAuthorPreset('custom')">✏ Custom</button>
+    </div>
+    <input class="cinput" type="text" id="authorName" placeholder="Author name (e.g., Rajesh Sharma)" style="margin-bottom:6px" />
+    <input class="cinput" type="text" id="authorDesig" placeholder="Designation (e.g., Senior Political Analyst)" style="margin-bottom:6px" />
+    <textarea class="cinput" id="authorAbout" placeholder="About the author (short bio)..." style="min-height:40px;font-size:11px"></textarea>
+    <div class="author-row">
+      <div class="author-photo-preview" id="authorPreview">
+        <span class="initials" id="authorInitials">?</span>
+      </div>
+      <div style="flex:1">
+        <div style="color:#64748b;font-size:10px;margin-bottom:4px">Author Photo</div>
+        <div class="author-btns">
+          <button onclick="document.getElementById('photoFile').click()">📷 Upload</button>
+          <button onclick="generateAuthorPhoto()">🤖 AI Generate</button>
+        </div>
+        <input type="file" accept="image/*" class="file-hidden" id="photoFile" onchange="handlePhotoUpload(event)" />
+      </div>
+    </div>
+  </div>
+
+  <!-- Content Source -->
+  <div class="sec">
+    <div class="slabel">Content Source</div>
+    <input class="cinput" type="url" id="sourceUrl" placeholder="Paste article URL or X/Twitter post link" style="margin-bottom:6px" oninput="detectXLink(this.value)" />
+    <div id="xDetected" style="display:none;color:#1d9bf0;font-size:10px;margin:-2px 0 4px;font-weight:700">𝕏 Post detected — author will be extracted automatically</div>
+    <div id="xVideoHint" style="display:none;color:#f59e0b;font-size:10px;margin:-2px 0 4px;font-weight:700">⚠ If this post has a VIDEO, describe what it's about below ↓</div>
+    <textarea class="cinput" id="sourceTopic" placeholder="Or type topic / headline / talking points...&#10;e.g., India's foreign policy shift in 2026" style="min-height:100px"></textarea>
+  </div>
+
+  <!-- Data & Facts for Infographic -->
+  <div class="sec">
+    <div class="slabel">Data & Facts (for Infographic)</div>
+    <textarea class="cinput" id="userFacts" placeholder="Add data, themes, or key messages...&#10;e.g., Ancient Wisdom: Nalanda, Vikramshila&#10;GDP Growth: 10.6%&#10;Leverage Potential: IT, Agriculture&#10;Youth Power: 54% under 25" style="min-height:80px"></textarea>
+    <div style="color:#8b7d6b;font-size:8px;margin-top:3px">Stats, themes, or key messages for the sidebar infographic</div>
+  </div>
+
+  <!-- Trending News -->
+  <div class="sec">
+    <div class="slabel" style="display:flex;justify-content:space-between;align-items:center">
+      <span>Trending Today</span>
+      <button onclick="fetchTrending()" id="trendBtn" style="background:#fff;border:1px solid #d4c9b4;color:#6b5640;font-size:8px;padding:3px 8px;border-radius:4px;cursor:pointer;font-family:'Source Sans 3',sans-serif;font-weight:700">Fetch News</button>
+    </div>
+    <div id="trendList" style="max-height:160px;overflow-y:auto;margin-top:4px">
+      <div style="color:#334155;font-size:10px;font-style:italic">Click "Fetch News" to load today's trending topics</div>
+    </div>
+  </div>
+
+  <!-- Section Type -->
+  <div class="sec" style="padding:8px 16px">
+    <div class="slabel">Section</div>
+    <div class="row2">
+      <button class="langbtn on" id="sec-opinion" onclick="setSection('opinion')">Opinion</button>
+      <button class="langbtn" id="sec-editorial" onclick="setSection('editorial')">Editorial</button>
+      <button class="langbtn" id="sec-analysis" onclick="setSection('analysis')">Analysis</button>
+    </div>
+  </div>
+
+  <!-- Tone -->
+  <div class="sec" style="padding:8px 16px">
+    <div class="slabel">Editorial Tone</div>
+    <div class="row2" style="flex-wrap:wrap;gap:5px">
+      <button class="langbtn on" id="tone-nationalist" onclick="setTone('nationalist')">🇮🇳 Nationalist</button>
+      <button class="langbtn" id="tone-probjp" onclick="setTone('probjp')">🪷 Pro-BJP</button>
+      <button class="langbtn" id="tone-neutral" onclick="setTone('neutral')">⚖ Neutral</button>
+      <button class="langbtn" id="tone-antigov" onclick="setTone('antigov')">🔍 Anti-Govt</button>
+    </div>
+  </div>
+
+  <!-- Article Length -->
+  <div class="sec" style="padding:8px 16px">
+    <div class="slabel">Article Length</div>
+    <div class="row2" style="gap:4px">
+      <button class="langbtn on" id="len-medium" onclick="setLength('medium')">📝 1500w</button>
+      <button class="langbtn" id="len-long" onclick="setLength('long')">📄 2000w</button>
+      <button class="langbtn" id="len-xlong" onclick="setLength('xlong')">📰 3000w</button>
+    </div>
+  </div>
+
+  <!-- Paper Theme -->
+  <div class="sec" style="padding:8px 16px">
+    <div class="slabel">Paper Theme</div>
+    <div class="theme-toggle">
+      <button class="theme-btn on" id="th-classic" onclick="setTheme('classic')"><span class="swatch" style="background:#f5f0e6"></span>Classic</button>
+      <button class="theme-btn" id="th-white" onclick="setTheme('white')"><span class="swatch" style="background:#ffffff"></span>White</button>
+    </div>
+  </div>
+
+  <!-- Page Layout -->
+  <div class="sec" style="padding:8px 16px">
+    <div class="slabel">Page Layout</div>
+    <div class="row2">
+      <button class="pvbtn on" id="lay-multi" onclick="setLayout('multi')">📄 Multi-Page</button>
+      <button class="pvbtn" id="lay-single" onclick="setLayout('single')">📜 Single Page</button>
+    </div>
+    <div style="color:#475569;font-size:8px;margin-top:3px" id="layoutNote">16:9 ratio · overflows to page 2+</div>
+  </div>
+
+  <!-- Ad Toggle -->
+  <div class="sec" style="padding:8px 16px">
+    <div class="slabel">Advertisement</div>
+    <div class="row2">
+      <button class="pvbtn on" id="ad-on" onclick="setAd(true)">Show Ad</button>
+      <button class="pvbtn" id="ad-off" onclick="setAd(false)">No Ad</button>
+    </div>
+  </div>
+
+  <!-- Article Photos (Optional) -->
+  <div class="sec">
+    <div class="slabel">Article Photos (Optional)</div>
+    <div class="row2">
+      <button class="pvbtn" onclick="document.getElementById('photoUpload').click()" style="font-size:10px">📷 Add Photos</button>
+      <input type="file" id="photoUpload" accept="image/*" multiple style="display:none" onchange="handleArticlePhotos(event)" />
+    </div>
+    <div id="photoGrid" style="display:none;margin-top:8px;flex-wrap:wrap;gap:6px"></div>
+    <div style="color:#475569;font-size:9px;margin-top:4px">Upload images to include in the article body</div>
+  </div>
+
+  <!-- History -->
+  <div class="sec" id="historySec" style="display:none">
+    <div class="slabel" style="display:flex;justify-content:space-between;align-items:center">History <span id="historyCount" style="font-size:8px;color:#334155"></span></div>
+    <div id="historyList" style="max-height:180px;overflow-y:auto;display:flex;flex-direction:column;gap:4px"></div>
+  </div>
+
+  <!-- Generate -->
+  <div class="gsec">
+    <button class="gbtn" id="gbtn" onclick="generateColumn()">✍ Generate Newspaper Column</button>
+    <button class="gbtn" id="saveHistBtn" style="display:none;background:#1e293b;color:#94a3b8;font-size:11px;padding:8px;margin-top:6px;box-shadow:none;font-family:'Source Sans 3',sans-serif" onclick="saveToHistory()">💾 Save to History</button>
+    <p class="gnote" id="gnote">Enter author details & topic to begin</p>
+  </div>
+</div>
+
+<!-- RIGHT PANEL -->
+<div class="right" id="right">
+  <div class="empty">
+    <div class="ico">✍</div>
+    <h3>Your Column Appears Here</h3>
+    <p>Create an authentic newspaper editorial column in seconds.</p>
+    <div class="steps">
+      <div class="step"><div class="step-n">1</div> Add your Gemini or OpenAI API key</div>
+      <div class="step"><div class="step-n">2</div> Enter author name, designation & photo</div>
+      <div class="step"><div class="step-n">3</div> Paste an article URL or type a topic</div>
+      <div class="step"><div class="step-n">4</div> Click Generate — full column auto-creates!</div>
+    </div>
+  </div>
+</div>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script>
+// ── STATE ─────────────────────────────────────────────────────────────────────
+let prov = 'gemini', apiKey = '', lang = 'en', section = 'opinion', tone = 'nationalist', articleLength = 'medium';
+const USE_PROXY = true;
+let _serverKey = '';
+let _hasOpenAI = false;
+let authorPhoto = null; // base64
+let columnData = null;  // generated column content
+let heroImg = null;     // generated hero image
+let articlePhotos = [];  // user-uploaded article photos (base64)
+let authorAbout = '';    // author bio text
+
+// ── LOCALSTORAGE HELPERS ─────────────────────────────────────────────────────
+function smSave(k,v){ try{localStorage.setItem(k,JSON.stringify(v))}catch(e){} }
+function smLoad(k,d){ try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d} }
+
+// ── HISTORY ──────────────────────────────────────────────────────────────────
+const HIST_KEY = 'lv_hist_col', HIST_MAX = 20;
+
+function resizeImg(b64, maxW, q) {
+  return new Promise(r => {
+    if (!b64) { r(null); return; }
+    const img = new Image();
+    img.onload = () => {
+      const s = Math.min(1, maxW / img.width);
+      const c = document.createElement('canvas');
+      c.width = img.width * s; c.height = img.height * s;
+      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+      r(c.toDataURL('image/jpeg', q));
+    };
+    img.onerror = () => r(null);
+    img.src = b64;
+  });
+}
+
+function getHistory() { return smLoad(HIST_KEY, []); }
+function _saveHist(list) { try { smSave(HIST_KEY, list); } catch(e) { if (list.length > 1) { list.pop(); _saveHist(list); } } }
+
+async function saveToHistory() {
+  if (!columnData) return;
+  const thumb = await resizeImg(heroImg, 150, 0.5);
+  const sHero = await resizeImg(heroImg, 400, 0.6);
+  const sAuthor = await resizeImg(authorPhoto, 100, 0.6);
+  const sPhotos = await Promise.all(articlePhotos.map(p => resizeImg(p, 300, 0.6)));
+  const list = getHistory();
+  list.unshift({
+    id: Date.now(),
+    title: columnData.headline || columnData.authorName || 'Untitled',
+    thumb,
+    ts: new Date().toISOString(),
+    state: { columnData: {...columnData}, authorAbout, lang, section, tone, articleLength, paperTheme },
+    images: { heroImg: sHero, authorPhoto: sAuthor, articlePhotos: sPhotos }
+  });
+  while (list.length > HIST_MAX) list.pop();
+  _saveHist(list);
+  renderHistoryUI();
+  const btn = document.getElementById('saveHistBtn');
+  btn.textContent = '✅ Saved!';
+  setTimeout(() => { btn.textContent = '💾 Save to History'; }, 1500);
+}
+
+function loadFromHistory(id) {
+  const entry = getHistory().find(h => h.id === id);
+  if (!entry) return;
+  columnData = entry.state.columnData;
+  authorAbout = entry.state.authorAbout || '';
+  lang = entry.state.lang || 'en';
+  section = entry.state.section || 'opinion';
+  tone = entry.state.tone || 'nationalist';
+  articleLength = entry.state.articleLength || 'medium';
+  paperTheme = entry.state.paperTheme || 'classic';
+  heroImg = entry.images?.heroImg || null;
+  authorPhoto = entry.images?.authorPhoto || null;
+  articlePhotos = entry.images?.articlePhotos || [];
+  // Update UI toggles
+  document.querySelectorAll('.langbtn').forEach(b => b.classList.toggle('on', b.dataset.lang === lang));
+  document.querySelectorAll('[data-sec]').forEach(b => b.classList.toggle('on', b.dataset.sec === section));
+  document.querySelectorAll('[data-tone]').forEach(b => b.classList.toggle('on', b.dataset.tone === tone));
+  document.querySelectorAll('[data-len]').forEach(b => b.classList.toggle('on', b.dataset.len === articleLength));
+  if (columnData.authorName) document.getElementById('authorName').value = columnData.authorName;
+  if (columnData.authorDesig) document.getElementById('authorDesig').value = columnData.authorDesig;
+  if (authorAbout) { const el = document.getElementById('authorAbout'); if (el) el.value = authorAbout; }
+  // Set theme
+  document.documentElement.classList.toggle('white-theme', paperTheme === 'white');
+  renderColumn();
+  document.getElementById('saveHistBtn').style.display = '';
+  document.getElementById('gbtn').textContent = '↺ Regenerate Column';
+}
+
+function deleteFromHistory(id) {
+  const list = getHistory().filter(h => h.id !== id);
+  _saveHist(list);
+  renderHistoryUI();
+}
+
+function renderHistoryUI() {
+  const list = getHistory();
+  const sec = document.getElementById('historySec');
+  const container = document.getElementById('historyList');
+  const count = document.getElementById('historyCount');
+  if (!list.length) { sec.style.display = 'none'; return; }
+  sec.style.display = '';
+  count.textContent = list.length + '/' + HIST_MAX;
+  container.innerHTML = list.map(h => {
+    const d = new Date(h.ts);
+    const ds = d.toLocaleDateString('en-IN',{day:'numeric',month:'short'}) + ' ' + d.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
+    const timg = h.thumb ? `<img class="hist-thumb" src="${h.thumb}" alt=""/>` : `<div class="hist-thumb"></div>`;
+    return `<div class="hist-card" onclick="loadFromHistory(${h.id})">
+      ${timg}
+      <div class="hist-info">
+        <div class="hist-title">${(h.title||'Untitled').replace(/</g,'&lt;')}</div>
+        <div class="hist-date">${ds}</div>
+      </div>
+      <button class="hist-del" onclick="event.stopPropagation();deleteFromHistory(${h.id})" title="Delete">✕</button>
+    </div>`;
+  }).join('');
+}
+
+const AUTHOR_PRESETS = {
+  ashok: {
+    name: 'Ashok Kumar Choudhary',
+    desig: 'Former Chairman, Regional Advisory Committee, Dattopant Thengadi National Board for Workers Education & Development',
+    about: 'Formerly Vice President of Bharatiya Mazdoor Sangh Bihar. Retired Sr Banker.',
+    nameHi: 'अशोक कुमार चौधरी',
+    desigHi: 'पूर्व अध्यक्ष, क्षेत्रीय सलाहकार समिति, दत्तोपंत ठेंगड़ी राष्ट्रीय श्रमिक शिक्षा एवं विकास बोर्ड',
+    aboutHi: 'भारतीय मज़दूर संघ बिहार के पूर्व उपाध्यक्ष। सेवानिवृत्त वरिष्ठ बैंकर।'
+  },
+  aditya: {
+    name: 'Aditya Ashok',
+    desig: 'Public Policy Consultant',
+    about: 'IIM Mumbai, IIIT Bangalore & Manipal CSE. 10 years of experience in MNC and government advisory.',
+    nameHi: 'आदित्य अशोक',
+    desigHi: 'लोक नीति सलाहकार',
+    aboutHi: 'IIM मुंबई, IIIT बेंगलुरु और मणिपाल CSE। MNC और सरकारी सलाहकार में 10 वर्षों का अनुभव।'
+  }
+};
+
+// Load history on start
+renderHistoryUI();
+
+// Fetch server keys
+const _keyReady = fetch('/api/lok-post/key').then(r=>r.json()).then(d=>{
+  if(d.key) _serverKey=d.key;
+  if(d.openai) _hasOpenAI=true;
+}).catch(()=>{});
+
+// ── PROXY FUNCTIONS (same as v24) ────────────────────────────────────────────
+const IMAGE_MODELS = ['imagen-4.0-generate-001','gemini-3.1-flash-image-preview'];
+
+async function geminiProxy(model, body, action='generateContent') {
+  const key = apiKey || _serverKey;
+  if (IMAGE_MODELS.includes(model) && key) {
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:${action}?key=${key}`;
+    const r = await fetch(url, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) });
+    return r.json();
+  }
+  if (USE_PROXY && (!apiKey || prov === 'gemini')) {
+    const r = await fetch('/api/lok-post/gemini', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ model, action, body }) });
+    return r.json();
+  }
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:${action}?key=${key}`;
+  const r = await fetch(url, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) });
+  return r.json();
+}
+
+async function openaiProxy(url, body) {
+  if (USE_PROXY && _hasOpenAI && !apiKey) {
+    const r = await fetch('/api/lok-post/openai', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ url, body }) });
+    return { resp: r, data: await r.json() };
+  }
+  const r = await fetch(url, { method:'POST', headers:{'Content-Type':'application/json','Authorization':`Bearer ${apiKey}`}, body:JSON.stringify(body) });
+  return { resp: r, data: await r.json() };
+}
+
+async function gemImg(prompt) {
+  try {
+    const d = await geminiProxy('imagen-4.0-generate-001', {instances:[{prompt:prompt+' Bold editorial newspaper illustration style. No text.'}],parameters:{sampleCount:1,aspectRatio:'16:9'}}, 'predict');
+    if (!d.error) { const b = d?.predictions?.[0]?.bytesBase64Encoded; if (b) return `data:image/png;base64,${b}`; }
+  } catch(e){}
+  try {
+    const d = await geminiProxy('gemini-3.1-flash-image-preview', {contents:[{parts:[{text:prompt+' Bold editorial newspaper illustration. No text.'}]}],generationConfig:{responseModalities:['IMAGE','TEXT']}});
+    if (!d.error) { const p = d?.candidates?.[0]?.content?.parts?.find(p=>p.inlineData); if (p) return `data:${p.inlineData.mimeType};base64,${p.inlineData.data}`; }
+  } catch(e){}
+  throw new Error('Image generation failed');
+}
+
+async function oaiImg(prompt) {
+  const styledPrompt = prompt + ' Newspaper editorial illustration style.';
+  const url = 'https://api.openai.com/v1/images/generations';
+  try {
+    const {resp, data: d} = await openaiProxy(url, {model:'gpt-image-1',prompt:styledPrompt,n:1,size:'1536x1024',quality:'medium'});
+    if (resp.ok || !d.error) { const b = d?.data?.[0]?.b64_json; if (b) return `data:image/png;base64,${b}`; }
+  } catch(e){}
+  for (const {m,sz} of [{m:'dall-e-3',sz:'1792x1024'},{m:'dall-e-2',sz:'512x512'}]) {
+    try {
+      const {resp, data: d} = await openaiProxy(url, {model:m,prompt:styledPrompt,n:1,size:sz,response_format:'b64_json'});
+      if (resp.ok || !d.error){ const b = d?.data?.[0]?.b64_json; if (b) return `data:image/png;base64,${b}`; }
+    } catch(e){}
+  }
+  throw new Error('Image generation failed');
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+if (USE_PROXY) { document.getElementById('keyok').textContent = '✓ Server key active'; document.getElementById('keyok').style.display = 'block'; }
+
+// Update author initials live
+document.getElementById('authorName').addEventListener('input', function() {
+  const name = this.value.trim();
+  const initials = name ? name.split(/\s+/).map(w=>w[0]).join('').toUpperCase().slice(0,2) : '?';
+  const el = document.getElementById('authorInitials');
+  if (el) el.textContent = initials;
+});
+
+// ── CONTROLS ──────────────────────────────────────────────────────────────────
+function setProv(p) {
+  prov = p;
+  document.getElementById('pv-gemini').classList.toggle('on', p==='gemini');
+  document.getElementById('pv-openai').classList.toggle('on', p==='openai');
+  document.getElementById('api-key').placeholder = p==='gemini' ? 'AIza... (aistudio.google.com/apikey)' : 'sk-... (platform.openai.com)';
+}
+
+function setLang(l) {
+  lang = l;
+  ['hi','en','bi'].forEach(x => document.getElementById('lg-'+x).classList.toggle('on', x===l));
+}
+
+function saveKey() {
+  apiKey = document.getElementById('api-key').value.trim();
+  document.getElementById('keyok').style.display = apiKey ? 'block' : 'none';
+}
+
+function setSection(s) {
+  section = s;
+  ['opinion','editorial','analysis'].forEach(x => document.getElementById('sec-'+x).classList.toggle('on', x===s));
+}
+function setTone(t) {
+  tone = t;
+  ['nationalist','probjp','neutral','antigov'].forEach(x => document.getElementById('tone-'+x).classList.toggle('on', x===t));
+}
+
+function setLength(l) {
+  articleLength = l;
+  ['medium','long','xlong'].forEach(x => document.getElementById('len-'+x).classList.toggle('on', x===l));
+}
+
+let paperTheme = 'classic';
+let showAd = true;
+let pageLayout = 'multi'; // 'multi' = 16:9 multipage, 'single' = fit all on 1 page
+let page2Img = null; // generated image for page 2
+
+function setLayout(v) {
+  pageLayout = v;
+  document.getElementById('lay-multi').classList.toggle('on', v === 'multi');
+  document.getElementById('lay-single').classList.toggle('on', v === 'single');
+  document.getElementById('layoutNote').textContent = v === 'single'
+    ? 'Auto height · entire article on 1 page'
+    : '16:9 ratio · overflows to page 2+';
+  if (columnData) renderColumn();
+}
+function setAd(v) {
+  showAd = v;
+  document.getElementById('ad-on').classList.toggle('on', v);
+  document.getElementById('ad-off').classList.toggle('on', !v);
+  if (columnData) renderColumn();
+}
+function setTheme(t) {
+  paperTheme = t;
+  document.getElementById('th-classic').classList.toggle('on', t==='classic');
+  document.getElementById('th-white').classList.toggle('on', t==='white');
+  document.documentElement.classList.toggle('white-theme', t==='white');
+}
+
+function detectXLink(url) {
+  const isX = /^https?:\/\/(x\.com|twitter\.com)\/\w+\/status\/\d+/.test(url.trim());
+  document.getElementById('xDetected').style.display = isX ? 'block' : 'none';
+  document.getElementById('xVideoHint').style.display = isX ? 'block' : 'none';
+  if (isX) {
+    document.getElementById('sourceTopic').placeholder = 'Describe the video/post content here (helps AI write accurately)...\ne.g., PM Modi addressing rally about Make in India initiative';
+    document.getElementById('sourceTopic').style.borderColor = '#f59e0b';
+  } else {
+    document.getElementById('sourceTopic').placeholder = 'Or type topic / headline / talking points...\ne.g., India\'s foreign policy shift in 2026';
+    document.getElementById('sourceTopic').style.borderColor = '';
+  }
+}
+
+// ── TRENDING NEWS ────────────────────────────────────────────────────────────
+async function fetchTrending() {
+  const btn = document.getElementById('trendBtn');
+  const list = document.getElementById('trendList');
+  btn.textContent = '⏳ Loading...';
+  btn.disabled = true;
+
+  try {
+    await _keyReady;
+    const today = new Date().toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'});
+    const prompt = `You are a news editor. Today is ${today}.
+
+Using Google Search, find the TOP 8 trending/breaking news stories from India in the LAST 24 HOURS ONLY.
+Focus on: Politics, Economy, International, Defence, Sports, Technology, Social Issues.
+ONLY real, current, verifiable news. NO old news. NO fabricated stories.
+
+Return ONLY valid JSON array:
+[{"cat":"Politics","hl":"short punchy headline max 12 words","src":"source name"}]
+Exactly 8 items.`;
+
+    const d = await geminiProxy('gemini-2.0-flash', {
+      contents:[{parts:[{text:prompt}]}],
+      tools:[{google_search:{}}],
+      generationConfig:{temperature:0.3}
+    });
+    const parts = d?.candidates?.[0]?.content?.parts || [];
+    const txt = parts.filter(p=>p.text).map(p=>p.text).join('\n');
+    const m = txt.match(/\[\s*\{[\s\S]*\}\s*\]/);
+    if (!m) throw new Error('No JSON in response');
+    const items = JSON.parse(m[0]);
+
+    list.innerHTML = items.map(item => `
+      <div class="trend-item" onclick="useTrending(this)" data-hl="${(item.hl||'').replace(/"/g,'&quot;')}">
+        <div class="t-cat">${item.cat||'News'}</div>
+        <div class="t-hl">${item.hl}</div>
+        <div class="t-src">${item.src||''}</div>
+      </div>
+    `).join('');
+    btn.textContent = '↻ Refresh';
+  } catch(e) {
+    console.warn('Trending fetch failed:', e);
+    list.innerHTML = '<div style="color:#ef4444;font-size:10px">Failed to load — try again</div>';
+    btn.textContent = 'Retry';
+  }
+  btn.disabled = false;
+}
+
+function useTrending(el) {
+  const hl = el.dataset.hl;
+  document.getElementById('sourceTopic').value = hl;
+  // Highlight selected
+  document.querySelectorAll('.trend-item').forEach(i => i.style.background = '');
+  el.style.background = 'rgba(245,158,11,.15)';
+}
+
+// ── AUTHOR PRESETS ───────────────────────────────────────────────────────────
+function selectAuthorPreset(key) {
+  if (key === 'custom') {
+    document.getElementById('authorName').value = '';
+    document.getElementById('authorDesig').value = '';
+    document.getElementById('authorAbout').value = '';
+    authorAbout = '';
+    document.getElementById('authorName').focus();
+    return;
+  }
+  const p = AUTHOR_PRESETS[key];
+  if (!p) return;
+  const isHi = lang === 'hi';
+  document.getElementById('authorName').value = isHi ? p.nameHi : p.name;
+  document.getElementById('authorDesig').value = isHi ? p.desigHi : p.desig;
+  document.getElementById('authorAbout').value = isHi ? p.aboutHi : p.about;
+  authorAbout = isHi ? p.aboutHi : p.about;
+}
+
+// ── AUTHOR PHOTO ─────────────────────────────────────────────────────────────
+function handlePhotoUpload(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(ev) {
+    authorPhoto = ev.target.result;
+    const preview = document.getElementById('authorPreview');
+    preview.innerHTML = `<img src="${authorPhoto}" alt="author"/>`;
+  };
+  reader.readAsDataURL(file);
+}
+
+// ── ARTICLE PHOTOS ──
+function handleArticlePhotos(e) {
+  const files = Array.from(e.target.files);
+  files.forEach(file => {
+    const reader = new FileReader();
+    reader.onload = function(ev) {
+      articlePhotos.push(ev.target.result);
+      renderPhotoGrid();
+    };
+    reader.readAsDataURL(file);
+  });
+  e.target.value = ''; // allow re-selecting same files
+}
+
+function removeArticlePhoto(idx) {
+  articlePhotos.splice(idx, 1);
+  renderPhotoGrid();
+}
+
+function renderPhotoGrid() {
+  const grid = document.getElementById('photoGrid');
+  if (!articlePhotos.length) { grid.style.display = 'none'; return; }
+  grid.style.display = 'flex';
+  grid.innerHTML = articlePhotos.map((src, i) =>
+    `<div class="photo-thumb"><img src="${src}" alt="photo ${i+1}"/><button class="rm" onclick="removeArticlePhoto(${i})">✕</button></div>`
+  ).join('');
+}
+
+async function generateAuthorPhoto() {
+  const name = document.getElementById('authorName').value.trim() || 'journalist';
+  const btn = document.querySelector('.author-btns button:last-child');
+  btn.textContent = '⏳'; btn.disabled = true;
+  try {
+    const prompt = `Professional headshot portrait photograph of an Indian ${section === 'opinion' ? 'opinion columnist' : 'journalist'} named ${name}. Formal attire, neutral background, newspaper staff photo style. Photorealistic.`;
+    authorPhoto = prov === 'openai' ? await oaiImg(prompt) : await gemImg(prompt);
+    document.getElementById('authorPreview').innerHTML = `<img src="${authorPhoto}" alt="author"/>`;
+  } catch(e) {
+    console.warn('Author photo failed:', e);
+    alert('Author photo generation failed. Try uploading instead.');
+  }
+  btn.textContent = '🤖 AI Generate'; btn.disabled = false;
+}
+
+// ── GENERATE COLUMN ──────────────────────────────────────────────────────────
+async function generateColumn() {
+  const authorName = document.getElementById('authorName').value.trim();
+  const authorDesig = document.getElementById('authorDesig').value.trim();
+  authorAbout = document.getElementById('authorAbout').value.trim();
+  const sourceUrl = document.getElementById('sourceUrl').value.trim();
+  const sourceTopic = document.getElementById('sourceTopic').value.trim();
+  const userFacts = document.getElementById('userFacts').value.trim();
+
+  const isXUrl = /^https?:\/\/(x\.com|twitter\.com)\/\w+\/status\/\d+/.test((sourceUrl||'').trim());
+  if (!authorName && !isXUrl) { alert('Please enter an author name.'); return; }
+  if (!sourceUrl && !sourceTopic) { alert('Please enter a URL or topic.'); return; }
+  if (!apiKey && !USE_PROXY) { alert('Please add an API key.'); return; }
+
+  const btn = document.getElementById('gbtn');
+  const note = document.getElementById('gnote');
+  btn.disabled = true; btn.textContent = '⏳ Writing column...';
+  note.textContent = 'Generating article content...';
+
+  try {
+    // Step 1: Generate column text
+    columnData = await getColumnContent(sourceUrl, sourceTopic, userFacts);
+    // If X post detected and AI returned author info, use it
+    const isXPost = /^https?:\/\/(x\.com|twitter\.com)\/\w+\/status\/\d+/.test((sourceUrl||'').trim());
+    if (isXPost && columnData.xAuthorName) {
+      columnData.authorName = columnData.xAuthorName;
+      columnData.authorDesig = columnData.xAuthorDesig || 'X (Twitter)';
+      // Update the input fields too
+      document.getElementById('authorName').value = columnData.authorName;
+      document.getElementById('authorDesig').value = columnData.authorDesig;
+    } else {
+      columnData.authorName = authorName;
+      columnData.authorDesig = authorDesig || section.charAt(0).toUpperCase() + section.slice(1) + ' Writer';
+    }
+
+    // Auto-translate author to Hindi if language is Hindi
+    if (lang === 'hi') {
+      try {
+        const hiPrompt = `Transliterate/translate to Hindi (Devanagari). For names, transliterate phonetically. For titles/bio, use Hindi equivalent.
+Return ONLY JSON: {"name":"hindi","desig":"hindi","about":"hindi"}
+Name: ${columnData.authorName}
+Designation: ${columnData.authorDesig}
+About: ${authorAbout || 'N/A'}`;
+        let hiTxt = '';
+        if (prov === 'openai') {
+          const {data: d} = await openaiProxy('https://api.openai.com/v1/chat/completions',
+            {model:'gpt-4o-mini',messages:[{role:'user',content:hiPrompt}],max_tokens:200});
+          hiTxt = d?.choices?.[0]?.message?.content || '';
+        } else {
+          const d = await geminiProxy('gemini-2.0-flash', {
+            contents:[{parts:[{text:hiPrompt}]}],
+            generationConfig:{temperature:0.3}
+          });
+          hiTxt = (d?.candidates?.[0]?.content?.parts || []).filter(p=>p.text).map(p=>p.text).join('\n');
+        }
+        hiTxt = hiTxt.replace(/```json\s*/g,'').replace(/```/g,'').trim();
+        const hiMatch = hiTxt.match(/\{[\s\S]*\}/);
+        const hiParsed = JSON.parse(hiMatch ? hiMatch[0] : hiTxt);
+        if (hiParsed.name) columnData.authorName = hiParsed.name;
+        if (hiParsed.desig) columnData.authorDesig = hiParsed.desig;
+        if (hiParsed.about && authorAbout) authorAbout = hiParsed.about;
+        document.getElementById('authorName').value = columnData.authorName;
+        document.getElementById('authorDesig').value = columnData.authorDesig;
+        document.getElementById('authorAbout').value = authorAbout;
+      } catch(e) { console.warn('Hindi author translation skipped:', e); }
+    }
+
+    // Render with placeholder image
+    heroImg = null;
+    renderColumn();
+
+    // Step 2: Generate hero image
+    note.textContent = 'Generating illustration...';
+    btn.textContent = '⏳ Creating illustration...';
+    try {
+      heroImg = prov === 'openai' ? await oaiImg(columnData.imagePrompt) : await gemImg(columnData.imagePrompt);
+    } catch(e) {
+      console.warn('Hero image failed:', e);
+    }
+    renderColumn();
+
+    btn.textContent = '↺ Regenerate Column';
+    btn.disabled = false;
+    note.textContent = 'Column ready! Download or regenerate.';
+    document.getElementById('saveHistBtn').style.display = '';
+  } catch(e) {
+    console.error('Generation failed:', e);
+    btn.textContent = '✍ Generate Newspaper Column';
+    btn.disabled = false;
+    note.textContent = 'Generation failed — try again.';
+    alert('Column generation failed: ' + e.message);
+  }
+}
+
+async function getColumnContent(sourceUrl, sourceTopic, userFacts) {
+  const langInst = {
+    hi: 'Write the ENTIRE column in Hindi (Devanagari script). Headline, subheadline, all paragraphs, pull quote — everything in Hindi.',
+    en: 'Write the ENTIRE column in English.',
+    bi: 'Write the headline in Hindi (Devanagari). Write the subheadline and all body paragraphs in English. Pull quote in English.',
+  }[lang];
+
+  const sectionName = {opinion:'Opinion',editorial:'Editorial',analysis:'Analysis'}[section];
+
+  const isXPost = /^https?:\/\/(x\.com|twitter\.com)\/\w+\/status\/\d+/.test((sourceUrl||'').trim());
+
+  let sourceContext = '';
+  if (isXPost) {
+    const xHandle = sourceUrl.match(/(?:x\.com|twitter\.com)\/(\w+)\/status/)?.[1] || '';
+    sourceContext = `\n\nSOURCE: X (Twitter) post URL: ${sourceUrl}
+HANDLE: @${xHandle}
+
+STEP 1: Search Google for this EXACT post. Try these searches in order:
+  - "site:x.com ${xHandle}" + keywords from the URL
+  - "${xHandle} twitter" + today's date
+  - "x.com/status/${sourceUrl.match(/status\/(\d+)/)?.[1] || ''}"
+Also search for: "@${xHandle}" to find their full name and designation.
+
+STEP 2: If the post contains a VIDEO that you cannot view directly:
+  - Search for news articles, replies, and quotes about this specific post
+  - Search "${xHandle} video" with recent date to find what the video is about
+  - Use the post text, replies, quote tweets, and news coverage to understand the video content
+  - Write the column based on the TOPIC and CONTEXT of the video, not just the caption
+
+STEP 3: Extract:
+1. The author's REAL full name (not just the handle)
+2. Their official designation/title (politician, journalist, actor, etc.)
+3. The full text/content of the post
+4. If video: the topic/subject based on news coverage and context
+
+IMPORTANT: Write the column AS IF written by that X account's person. Use their real name as the author. Base the column entirely on the content/stance expressed in that post. If the person is a politician, use their real designation (e.g., "Prime Minister of India", "Member of Parliament"). If unknown, use "Public Commentator".
+
+In the JSON response, you MUST include:
+"xAuthorName": "real full name of the X account owner",
+"xAuthorDesig": "their official designation/title"`;
+  } else if (sourceUrl) {
+    sourceContext = `\n\nSource article URL: ${sourceUrl}\nRead this article thoroughly using the URL and base your column on its content, facts, and developments. Add your own analysis and perspective.`;
+  }
+  if (sourceTopic) {
+    const isXContext = /^https?:\/\/(x\.com|twitter\.com)\/\w+\/status\/\d+/.test((sourceUrl||'').trim());
+    sourceContext += isXContext
+      ? `\n\nUSER-PROVIDED VIDEO/POST DESCRIPTION (USE THIS AS PRIMARY CONTENT SOURCE — this is what the video/post is about): ${sourceTopic}`
+      : `\n\nTopic/talking points: ${sourceTopic}`;
+  }
+
+  const sectionStyle = {
+    opinion: `STYLE: Personal, argumentative, first-person voice. Take a clear stance. Use rhetorical questions, personal anecdotes, and moral reasoning. Think Tavleen Singh, Shekhar Gupta, or Arun Shourie columns.`,
+    editorial: `STYLE: Institutional voice — authoritative, measured, balanced but firm. Write as "the newspaper's view" (no first person). Reference policy implications, institutional frameworks, and governance. Think TOI/Hindu editorials. Start with "THE" or a definitive statement.`,
+    analysis: `STYLE: Expert analytical voice — data-driven, objective, explanatory. Use statistics, expert quotes, comparative examples from other countries. Explain the "why" behind events. Think Mint or IE analysis pieces.`
+  }[section];
+
+  const toneInst = {
+    nationalist: `EDITORIAL TONE: Strongly nationalist, pro-India. Champion India's civilizational greatness, cultural pride, military strength, economic rise, and global stature. Reference India's ancient wisdom, Vedic heritage, and modern achievements. Frame everything through "Bharat first" lens. Use phrases like "our great nation", "India's rightful place". Celebrate Indian achievements in space (ISRO), defense (indigenous systems), sports, and technology. Be patriotic and inspiring.`,
+    probjp: `EDITORIAL TONE: Pro-BJP/NDA, supportive of PM Modi's governance. Highlight BJP government achievements: Digital India, Make in India, Swachh Bharat, Ayushman Bharat, PM Awas Yojana, Article 370 abrogation, Ram Mandir, UPI revolution, Chandrayaan, defense modernization. Frame opposition as obstructionist. Use "Modi government has delivered" type framing. Reference Viksit Bharat 2047 vision. Be supportive but maintain journalistic credibility.`,
+    neutral: `EDITORIAL TONE: Balanced, centrist, fact-based journalism. Present multiple perspectives fairly. Acknowledge government successes AND failures objectively. No political leaning. Quote diverse sources — government officials, opposition leaders, independent experts, civil society. Let the reader draw their own conclusions. Think The Hindu or Indian Express editorial standards.`,
+    antigov: `EDITORIAL TONE: Critical of the ruling government. Hold power to account. Highlight governance failures, broken promises, economic challenges (unemployment, inflation, inequality), press freedom concerns, institutional erosion. Use sharp, questioning language. Reference RTI data, parliamentary disruptions, GDP concerns, farmer distress where relevant. Think opposition editorial — constructive criticism, not mudslinging. Demand accountability and transparency.`
+  }[tone];
+
+  const lengthConfig = {
+    medium: {
+      wordRange: '1300-1500 words',
+      paraGuide: `    "Opening paragraph — hook with striking fact or observation (120-150 words)",
+    "Context paragraph — background and key developments (120-150 words)",
+    "Core argument / analysis paragraph (120-150 words)",
+    "Evidence and examples — data, quotes to support (120-150 words)",
+    "Deeper analysis — implications and connections (120-150 words)",
+    "Broader perspective or counterpoint (100-130 words)",
+    "Historical context or comparison (100-130 words)",
+    "Expert opinion or policy angle (80-100 words)",
+    "Conclusion — forward-looking, call to action (80-100 words)"`,
+      maxTokens: 3000
+    },
+    long: {
+      wordRange: '1800-2200 words',
+      paraGuide: `    "Opening paragraph — powerful hook with striking fact (120-150 words)",
+    "Context and background — set the stage (120-150 words)",
+    "Historical context — how we got here (120-150 words)",
+    "Core argument part 1 — first major point (120-150 words)",
+    "Core argument part 2 — second major point (120-150 words)",
+    "Evidence and data — statistics, studies, expert quotes (120-150 words)",
+    "Counterpoint — acknowledge other perspectives (100-130 words)",
+    "Deeper analysis — implications and connections (120-150 words)",
+    "International comparison — global perspective (100-130 words)",
+    "Policy angle — what should be done (100-130 words)",
+    "Expert opinion — quotes and analysis (100-120 words)",
+    "Broader perspective — societal impact (100-120 words)",
+    "Future outlook — what lies ahead (80-100 words)",
+    "Conclusion — call to action, final thought (80-100 words)"`,
+      maxTokens: 4000
+    },
+    xlong: {
+      wordRange: '2800-3200 words',
+      paraGuide: `    "Opening paragraph — dramatic hook with striking fact or scene (150-180 words)",
+    "Scene setting — vivid context and background (150-180 words)",
+    "Historical roots — deep historical context (150-180 words)",
+    "The turning point — what changed and when (120-150 words)",
+    "Core argument part 1 — first pillar of analysis (150-180 words)",
+    "Core argument part 2 — second pillar with evidence (150-180 words)",
+    "Core argument part 3 — third pillar with data (150-180 words)",
+    "The human angle — real stories and impact (120-150 words)",
+    "Counterpoint 1 — opposing view fairly presented (120-150 words)",
+    "Counterpoint 2 — another perspective (100-130 words)",
+    "Expert voices — quotes from multiple authorities (120-150 words)",
+    "International comparison — lessons from abroad (120-150 words)",
+    "Economic impact — financial and economic dimensions (120-150 words)",
+    "Social fabric — cultural and societal implications (120-150 words)",
+    "Policy deep dive — detailed policy analysis (120-150 words)",
+    "The road ahead — future scenarios (100-130 words)",
+    "What must change — concrete recommendations (100-130 words)",
+    "Broader vision — the bigger picture (100-120 words)",
+    "Conclusion — powerful closing, call to action (100-120 words)"`,
+      maxTokens: 6000
+    }
+  }[articleLength];
+
+  const prompt = `You are a senior newspaper columnist writing for "लोकतंत्र वाणी", a prestigious Indian newspaper.
+
+${langInst}
+
+SECTION: ${sectionName}
+${sectionStyle}
+
+${toneInst}
+${sourceContext}
+
+CRITICAL: Do NOT hallucinate or fabricate quotes, statistics, or attributions. Never write "According to X" or "As Y said" unless you found that exact quote from your search. Do NOT invent expert names, study results, or data points. If you don't have real data, use general reasoning and analysis instead of fake citations. Only use REAL, VERIFIED facts and quotes.
+
+Write a compelling newspaper ${sectionName.toLowerCase()} column (${lengthConfig.wordRange}). The writing must feel like a REAL printed newspaper — authoritative, incisive, polished. Write LONG, substantial paragraphs.
+
+Return ONLY valid JSON (no markdown, no extra text):
+{
+  "headline": "powerful attention-grabbing headline, max 10 words, newspaper style ALL CAPS feel",
+  "subheadline": "one-line context subtitle, 10-15 words",
+  "paragraphs": [
+${lengthConfig.paraGuide}
+  ],
+  "pullQuote": "one powerful sentence that deserves to stand out, max 20 words",
+  "infographic": [
+    {"label": "short stat label (3-5 words)", "value": "number or short value", "icon": "single emoji"},
+    {"label": "another stat", "value": "value", "icon": "emoji"},
+    {"label": "third stat", "value": "value", "icon": "emoji"}
+  ],
+  "imagePrompt": "vivid editorial illustration description — symbolic, dramatic lighting, Indian context",
+  "caption": "short illustration caption, 6-10 words"${isXPost ? `,
+  "xAuthorName": "real full name of the X/Twitter account owner (REQUIRED)",
+  "xAuthorDesig": "their official designation or title (REQUIRED)"` : ''}
+}
+
+INFOGRAPHIC: Include 3-4 items for the sidebar infographic. These can be DATA POINTS (stats, numbers, percentages) OR THEMATIC POINTS (key messages, themes, highlights). Each item needs: a short label (3-6 words), a value (number OR short phrase 2-4 words), and a relevant emoji icon.${userFacts ? `\n\nUSER-PROVIDED DATA & THEMES (USE THESE EXACTLY for the infographic — format each as label/value/icon):\n${userFacts}` : ' Use REAL statistics or key thematic points relevant to the topic.'}`;
+
+  let txt = '';
+  if (prov === 'gemini') {
+    const gemModel = articleLength === 'xlong' ? 'gemini-2.5-flash-preview-05-20' : 'gemini-2.0-flash';
+    const d = await geminiProxy(gemModel, {
+      contents:[{parts:[{text:prompt}]}],
+      tools:[{google_search:{}}],
+      generationConfig:{temperature:0.6, maxOutputTokens: lengthConfig.maxTokens}
+    });
+    console.log('Column Gemini response:', JSON.stringify(d).slice(0,500));
+    if (d?.error) throw new Error(d.error.message || 'Gemini API error');
+    txt = (d?.candidates?.[0]?.content?.parts || []).filter(p=>p.text).map(p=>p.text).join('\n');
+  } else {
+    const {data: d} = await openaiProxy('https://api.openai.com/v1/chat/completions',
+      {model:'gpt-4o-mini',messages:[{role:'user',content:prompt}],max_tokens:lengthConfig.maxTokens});
+    if (d?.error) throw new Error(d.error.message || 'OpenAI API error');
+    txt = d?.choices?.[0]?.message?.content || '';
+  }
+
+  if (!txt || txt.trim().length === 0) throw new Error('Empty response from AI — please try again');
+  console.log('Column text:', txt.slice(0,300));
+
+  const jsonMatch = txt.match(/\{[\s\S]*\}/);
+  if (jsonMatch) {
+    try { return JSON.parse(jsonMatch[0]); } catch(e) {
+      console.warn('JSON parse attempt 1 failed:', e);
+      // Try to repair common JSON issues
+      try {
+        let fixed = jsonMatch[0];
+        // Fix unescaped quotes inside strings by finding paragraphs array and escaping inner quotes
+        fixed = fixed.replace(/:\s*"((?:[^"\\]|\\.)*)"/g, (m, content) => {
+          // Re-escape any unescaped quotes that aren't at boundaries
+          return m;
+        });
+        // Fix trailing commas before ] or }
+        fixed = fixed.replace(/,\s*([}\]])/g, '$1');
+        // Fix missing commas between array elements "..." "..."
+        fixed = fixed.replace(/"\s*\n\s*"/g, '",\n"');
+        return JSON.parse(fixed);
+      } catch(e2) { console.warn('JSON repair failed:', e2); }
+    }
+  }
+  const cleaned = txt.replace(/```json|```/g,'').trim();
+  if (!cleaned) throw new Error('No valid JSON in AI response — please try again');
+  try { return JSON.parse(cleaned); } catch(e) {
+    // Last resort: try to extract fields manually
+    console.warn('All JSON parse failed, trying field extraction');
+    const hl = cleaned.match(/"headline"\s*:\s*"([^"]+)"/)?.[1] || 'Untitled';
+    const sub = cleaned.match(/"subheadline"\s*:\s*"([^"]+)"/)?.[1] || '';
+    const pq = cleaned.match(/"pullQuote"\s*:\s*"([^"]+)"/)?.[1] || '';
+    const ip = cleaned.match(/"imagePrompt"\s*:\s*"([^"]+)"/)?.[1] || hl;
+    const cap = cleaned.match(/"caption"\s*:\s*"([^"]+)"/)?.[1] || '';
+    // Extract paragraphs array
+    const paraMatch = cleaned.match(/"paragraphs"\s*:\s*\[([\s\S]*?)\]/);
+    let paras = [];
+    if (paraMatch) {
+      const raw = paraMatch[1];
+      // Split by "..." pattern
+      const matches = raw.match(/"((?:[^"\\]|\\.)*)"/g);
+      if (matches) paras = matches.map(m => m.slice(1,-1).replace(/\\"/g,'"'));
+    }
+    if (!paras.length) throw new Error('Could not parse AI response — please try again');
+    return { headline: hl, subheadline: sub, paragraphs: paras, pullQuote: pq, imagePrompt: ip, caption: cap };
+  }
+}
+
+// ── RENDER ────────────────────────────────────────────────────────────────────
+function renderColumn() {
+  if (!columnData) return;
+  const today = new Date().toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'});
+  const sectionLabel = {opinion:'OPINION',editorial:'EDITORIAL',analysis:'ANALYSIS'}[section];
+  const isHindi = lang === 'hi' || lang === 'bi';
+
+  // Author photo HTML
+  let authorImgHTML;
+  if (authorPhoto) {
+    authorImgHTML = `<img class="col-author-img" src="${authorPhoto}" alt="${columnData.authorName}"/>`;
+  } else {
+    const initials = columnData.authorName.split(/\s+/).map(w=>w[0]).join('').toUpperCase().slice(0,2);
+    authorImgHTML = `<div class="col-author-img initials-circle">${initials}</div>`;
+  }
+
+  // Hero image HTML
+  let heroHTML;
+  if (heroImg) {
+    heroHTML = `<div class="col-hero"><img src="${heroImg}" alt="illustration"/></div>
+    <div class="col-caption">${columnData.caption || ''}</div>`;
+  } else {
+    heroHTML = `<div class="col-hero"><div class="lwrap"><div class="spin"></div></div></div>
+    <div class="col-caption">Generating illustration...</div>`;
+  }
+
+  // All paragraphs
+  const paras = columnData.paragraphs || [];
+  const layoutClass = isHindi ? 'hindi-layout' : '';
+
+  // Sidebar extras
+  const hasPullQuote = !!columnData.pullQuote;
+  const infoItems = columnData.infographic || [];
+  const infographicHTML = infoItems.length ? `<div class="col-infographic">
+    <div class="info-title">${isHindi ? 'प्रमुख आँकड़े' : 'KEY FACTS'}</div>
+    <div class="info-items">
+      ${infoItems.map(it => `<div class="info-item">
+        <span class="info-icon">${it.icon || '📊'}</span>
+        <span class="info-val">${it.value}</span>
+        <span class="info-label">${it.label}</span>
+      </div>`).join('')}
+    </div>
+  </div>` : '';
+  const pullHTML = hasPullQuote ? `<div class="col-pullquote"><p>${columnData.pullQuote}</p></div>` : '';
+  const photosHTML = articlePhotos.map((src, i) => `<div style="margin:6px 0"><img src="${src}" style="width:100%;display:block;border:1px solid #c4b89a" alt="photo ${i+1}"/></div>`).join('');
+
+  // Ad HTML
+  const adHTML = showAd ? `<div class="col-ad">
+    <div class="ad-label">Advertisement</div>
+    <div class="ad-line"></div>
+    <div class="ad-brand">लोकतंत्र वाणी</div>
+    <div class="ad-tagline">${isHindi ? 'सत्य • निष्पक्षता • जनहित' : 'Truth • Integrity • Public Interest'}</div>
+    <div class="ad-line"></div>
+    <div class="ad-url">loktantra-vaani.vercel.app</div>
+  </div>` : '';
+
+  // Give main column more text when sidebar has images/infographic
+  const sidebarWeight = 2 + (hasPullQuote ? 1 : 0) + (infoItems.length ? 1 : 0) + articlePhotos.length;
+  const mainRatio = sidebarWeight > 2 ? 0.65 : 0.5;
+
+  // Build ALL paragraphs tagged with indices
+  const allMainBody = paras.map((p,i) => `<p data-pi="${i}">${p}</p>`).join('');
+  const splitAt = Math.max(1, Math.round(paras.length * mainRatio));
+  const mainBody = paras.slice(0, splitAt).map((p,i) => `<p data-pi="${i}">${p}</p>`).join('');
+  const sideBody = paras.slice(splitAt).map((p,i) => `<p data-pi="${splitAt+i}">${p}</p>`).join('');
+
+  // Masthead SVG
+  const mastSVG = `<svg class="mast-logo" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="40" cy="50" r="22" stroke="#1a1a2e" stroke-width="2.5" fill="none"/>
+    <circle cx="40" cy="50" r="5" fill="#1a1a2e"/>
+    <g stroke="#1a1a2e" stroke-width="1.2">
+      <line x1="40" y1="28" x2="40" y2="72"/><line x1="18" y1="50" x2="62" y2="50"/>
+      <line x1="24.4" y1="34.4" x2="55.6" y2="65.6"/><line x1="55.6" y1="34.4" x2="24.4" y2="65.6"/>
+      <line x1="40" y1="28" x2="40" y2="72" transform="rotate(22.5 40 50)"/>
+      <line x1="40" y1="28" x2="40" y2="72" transform="rotate(67.5 40 50)"/>
+      <line x1="40" y1="28" x2="40" y2="72" transform="rotate(112.5 40 50)"/>
+      <line x1="40" y1="28" x2="40" y2="72" transform="rotate(157.5 40 50)"/>
+    </g>
+    <path d="M66 38 Q76 50 66 62" stroke="#FF9933" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+    <path d="M72 32 Q85 50 72 68" stroke="#e8d9c0" stroke-width="2" fill="none" stroke-linecap="round" opacity=".6"/>
+    <path d="M78 26 Q94 50 78 74" stroke="#138808" stroke-width="1.8" fill="none" stroke-linecap="round" opacity=".5"/>
+  </svg>`;
+  const footerHTML = `<div class="col-foot">
+    <div class="fc br">✉ enquiry@kautilya.world</div>
+    <div class="fc cr" style="font-family:'Source Sans 3';font-weight:900;letter-spacing:.5px">🪷 Kautilya World</div>
+    <div class="fc br2">🌐 kautilya.world</div>
+  </div>`;
+
+  // About Author HTML
+  let aboutAuthorHTML = '';
+  if (authorAbout) {
+    let aboutImgEl;
+    if (authorPhoto) {
+      aboutImgEl = `<img class="about-img" src="${authorPhoto}" alt="${columnData.authorName}"/>`;
+    } else {
+      const ini = columnData.authorName.split(/\s+/).map(w=>w[0]).join('').toUpperCase().slice(0,2);
+      aboutImgEl = `<div class="about-img initials-sm">${ini}</div>`;
+    }
+    aboutAuthorHTML = `<div class="col-about-author">
+      <div class="about-label">${isHindi ? 'लेखक के बारे में' : 'About The Author'}</div>
+      <div class="about-content">
+        ${aboutImgEl}
+        <div class="about-text">
+          <div class="about-name">${columnData.authorName}</div>
+          <div class="about-desig">${columnData.authorDesig}</div>
+          <div class="about-bio">${authorAbout}</div>
+        </div>
+      </div>
+    </div>`;
+  }
+
+  // Render page 1 with ALL content
+  const page1HTML = `
+  <div class="col-np fadein${pageLayout === 'single' ? ' single-page' : ''}" id="colNp">
+    <div class="col-mast">${mastSVG}<h1>लोकतंत्र वाणी</h1></div>
+    <div class="col-ibar">
+      <span>Bharat Edition</span>
+      <span class="it">सत्यं वद · धर्मं चर</span>
+      <span>${today}</span>
+    </div>
+    <div class="col-content ${layoutClass}">
+      <div class="col-main">
+        <div class="col-section-label">${sectionLabel}</div>
+        <div class="col-section-rule"></div>
+        <h2 class="col-headline">${columnData.headline}</h2>
+        <div class="col-subheadline">${columnData.subheadline || ''}</div>
+        <div class="col-byline">
+          ${authorImgHTML}
+          <div class="col-author-info">
+            <span class="col-author-name">${columnData.authorName}</span>
+            <span class="col-author-desig">${columnData.authorDesig}</span>
+          </div>
+        </div>
+        <div class="col-text${lang === 'en' ? ' en-text' : ''}">
+          ${mainBody}
+        </div>
+      </div>
+      <div class="col-sidebar">
+        ${heroHTML}
+        ${pullHTML}
+        ${infographicHTML}
+        ${photosHTML}
+        <div class="col-sidebar-text">
+          ${sideBody}
+        </div>
+      </div>
+    </div>
+    ${aboutAuthorHTML}
+    ${footerHTML}
+  </div>`;
+
+  document.getElementById('right').innerHTML = `
+    <div id="colNpWrap">${page1HTML}</div>
+    <div class="dlrow">
+      <button class="dlbtn" onclick="dlPNG()">⬇ Download PNG</button>
+      <button class="dlbtn wa" onclick="shareWhatsApp()">📲 WhatsApp</button>
+      <button class="dlbtn xbtn" onclick="shareOnX()">𝕏 Share</button>
+      <button class="dlbtn sec-btn" onclick="generateColumn()">↺ Regenerate</button>
+    </div>
+    <div class="edit-bar">
+      <div class="eb-title">Edit & Enhance</div>
+      <div class="eb-row">
+        <button class="eb-btn" id="editToggle" onclick="toggleEdit()">✏️ Edit Text</button>
+        <button class="eb-btn" id="authorEditToggle" onclick="toggleAuthorEdit()">👤 Edit Author</button>
+        <button class="eb-btn img-btn" id="imgToggle" onclick="toggleImgPanel()">🖼️ Add Image</button>
+        <button class="eb-btn" onclick="regenImageOnly()" style="border-color:#16a34a;color:#16a34a">🔄 Regen Image</button>
+      </div>
+      <div class="author-edit-panel" id="authorEditPanel">
+        <div class="irow" style="margin-bottom:6px;">
+          <input type="text" id="editAuthorName" placeholder="Author Name" value="${columnData.authorName||''}" style="flex:1;background:#fff;border:1.5px solid #d4c9b4;border-radius:5px;padding:7px 10px;color:#2d2418;font-size:12px;outline:none;font-family:'Source Sans 3',sans-serif;"/>
+        </div>
+        <div class="irow" style="margin-bottom:6px;">
+          <input type="text" id="editAuthorDesig" placeholder="Designation" value="${columnData.authorDesig||''}" style="flex:1;background:#fff;border:1.5px solid #d4c9b4;border-radius:5px;padding:7px 10px;color:#2d2418;font-size:12px;outline:none;font-family:'Source Sans 3',sans-serif;"/>
+        </div>
+        <div class="irow" style="margin-bottom:6px;">
+          <textarea id="editAuthorAbout" placeholder="About the author..." style="flex:1;background:#fff;border:1.5px solid #d4c9b4;border-radius:5px;padding:7px 10px;color:#2d2418;font-size:11px;outline:none;font-family:'Source Sans 3',sans-serif;min-height:36px;resize:vertical;">${authorAbout||''}</textarea>
+        </div>
+        <div class="irow" style="gap:6px;">
+          <button class="eb-btn" onclick="applyAuthorEdit()" style="flex:1;">✅ Apply</button>
+          <button class="eb-btn" onclick="translateAuthorHindi()" style="flex:1;border-color:#a78bfa;color:#a78bfa;">🇮🇳 Hindi</button>
+        </div>
+      </div>
+      <div class="img-insert-panel" id="imgPanel">
+        <div class="irow">
+          <input type="text" id="imgPrompt" placeholder="Describe image to generate with AI..."/>
+          <button class="ai-img-btn" onclick="insertAIImage()">🤖 Generate</button>
+        </div>
+        <div class="irow">
+          <input type="file" id="imgUpload" accept="image/*" style="font-size:10px;color:#94a3b8;" onchange="insertUploadImage(event)"/>
+        </div>
+        <div style="color:#475569;font-size:9px;margin-top:4px;">Image will be added below the article in the sidebar column.</div>
+      </div>
+    </div>`;
+
+  // Post-render reflow: detect overflow and move excess paragraphs to new pages
+  if (pageLayout !== 'single') {
+    requestAnimationFrame(() => reflowPages());
+  }
+}
+
+function reflowPages() {
+  const wrap = document.getElementById('colNpWrap');
+  if (!wrap) return;
+  const page1 = document.getElementById('colNp');
+  if (!page1) return;
+
+  const isHi = lang === 'hi';
+  const today = new Date().toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'});
+  const lc = isHi ? 'hindi-layout' : '';
+  const textCls = lang === 'en' ? ' en-text' : '';
+
+  // Collect overflow paragraphs from BOTH columns
+  // Strategy: clone the page off-screen with no overflow:hidden, measure, find what fits
+  function getOverflowParas(page) {
+    const overflow = [];
+    // Get the rendered page height (from 16:9 aspect ratio)
+    const pageH = page.getBoundingClientRect().height;
+    // Get fixed elements height
+    const mast = page.querySelector('.col-mast');
+    const ibar = page.querySelector('.col-ibar');
+    const foot = page.querySelector('.col-foot');
+    const about = page.querySelector('.col-about-author');
+    const fixedH = (mast ? mast.offsetHeight : 0) + (ibar ? ibar.offsetHeight : 0) +
+                   (foot ? foot.offsetHeight : 0) + (about ? about.offsetHeight : 0) + 8;
+    const availH = pageH - fixedH;
+
+    ['col-main','col-sidebar'].forEach(cls => {
+      const col = page.querySelector('.' + cls);
+      if (!col) return;
+      const textDiv = col.querySelector('.col-text, .col-sidebar-text');
+      if (!textDiv) return;
+      const allP = Array.from(textDiv.querySelectorAll('p[data-pi]'));
+      if (!allP.length) return;
+
+      // Measure total content height needed by summing paragraph positions
+      // Use the last paragraph's bottom relative to column top
+      const colRect = col.getBoundingClientRect();
+      const lastP = allP[allP.length - 1];
+      const lastPRect = lastP.getBoundingClientRect();
+      const totalNeeded = lastPRect.bottom - colRect.top;
+
+      if (totalNeeded <= availH) return; // fits fine
+
+      // Remove paragraphs from bottom until it fits
+      for (let i = allP.length - 1; i >= 0; i--) {
+        overflow.unshift({idx: parseInt(allP[i].dataset.pi), text: allP[i].innerHTML});
+        allP[i].remove();
+        // Re-check after removal
+        const remaining = Array.from(textDiv.querySelectorAll('p[data-pi]'));
+        if (!remaining.length) break;
+        const newLast = remaining[remaining.length - 1];
+        const newBottom = newLast.getBoundingClientRect().bottom - colRect.top;
+        if (newBottom <= availH) break;
+      }
+    });
+
+    return overflow.sort((a,b) => a.idx - b.idx);
+  }
+
+  // Also move About Author box out temporarily
+  const aboutBox = page1.querySelector('.col-about-author');
+  let aboutHTML = '';
+  if (aboutBox) { aboutHTML = aboutBox.outerHTML; aboutBox.remove(); }
+
+  // Check page1 overflow
+  let overflowed = getOverflowParas(page1);
+
+  // Insert ad in blank space on page 1 if room
+  if (showAd) {
+    const sideCol = page1.querySelector('.col-sidebar');
+    if (sideCol && sideCol.scrollHeight < sideCol.clientHeight - 30) {
+      const adDiv = document.createElement('div');
+      adDiv.innerHTML = `<div class="col-ad">
+        <div class="ad-label">Advertisement</div>
+        <div class="ad-line"></div>
+        <div class="ad-brand">लोकतंत्र वाणी</div>
+        <div class="ad-tagline">${isHi ? 'सत्य · निष्पक्षता · जनहित' : 'Truth · Integrity · Public Interest'}</div>
+        <div class="ad-line"></div>
+        <div class="ad-url">loktantra-vaani.vercel.app</div>
+      </div>`;
+      const sideText = sideCol.querySelector('.col-sidebar-text');
+      if (sideText) sideText.after(adDiv.firstElementChild);
+      else sideCol.appendChild(adDiv.firstElementChild);
+    }
+  }
+
+  // Build additional pages from overflow
+  let pgNum = 2;
+  while (overflowed.length > 0) {
+    const split = Math.ceil(overflowed.length / 2);
+    const pgMain = overflowed.slice(0, split);
+    const pgSide = overflowed.slice(split);
+
+    const pgDiv = document.createElement('div');
+    pgDiv.className = 'col-np fadein col-page-next';
+    pgDiv.id = 'colNp' + pgNum;
+    pgDiv.innerHTML = `
+      <div class="col-ibar" style="border-top:1.5px solid var(--lb)">
+        <span>लोकतंत्र वाणी</span>
+        <span class="it">Page ${pgNum}</span>
+        <span>${today}</span>
+      </div>
+      <div class="col-content ${lc}">
+        <div class="col-main">
+          <div style="font-family:'Source Sans 3','Noto Sans Devanagari',sans-serif;font-size:7px;color:var(--brown);text-transform:uppercase;letter-spacing:1.5px;font-weight:700;margin-bottom:4px">${isHi ? 'जारी...' : 'CONTINUED'}</div>
+          <div class="col-text${textCls}">
+            ${pgMain.map(p => `<p data-pi="${p.idx}">${p.text}</p>`).join('')}
+          </div>
+        </div>
+        <div class="col-sidebar">
+          <div class="col-hero pg2-hero" id="pg2Hero${pgNum}"><div class="lwrap"><div class="spin"></div></div></div>
+          <div class="col-sidebar-text">
+            ${pgSide.map(p => `<p data-pi="${p.idx}">${p.text}</p>`).join('')}
+          </div>
+        </div>
+      </div>
+      <div class="col-foot">
+        <div class="fc br">✉ enquiry@kautilya.world</div>
+        <div class="fc cr" style="font-family:'Source Sans 3';font-weight:900;letter-spacing:.5px">🪷 Kautilya World</div>
+        <div class="fc br2">🌐 kautilya.world</div>
+      </div>`;
+    wrap.appendChild(pgDiv);
+
+    // Check if this new page also overflows
+    overflowed = getOverflowParas(pgDiv);
+
+    // Add ad to blank space on this page
+    if (showAd) {
+      const sc = pgDiv.querySelector('.col-sidebar');
+      if (sc && sc.scrollHeight < sc.clientHeight - 30) {
+        const ad2 = document.createElement('div');
+        ad2.innerHTML = `<div class="col-ad">
+          <div class="ad-label">Advertisement</div>
+          <div class="ad-line"></div>
+          <div class="ad-brand">लोकतंत्र वाणी</div>
+          <div class="ad-tagline">${isHi ? 'सत्य · निष्पक्षता · जनहित' : 'Truth · Integrity · Public Interest'}</div>
+          <div class="ad-line"></div>
+          <div class="ad-url">loktantra-vaani.vercel.app</div>
+        </div>`;
+        const st = sc.querySelector('.col-sidebar-text');
+        if (st) st.after(ad2.firstElementChild);
+        else sc.appendChild(ad2.firstElementChild);
+      }
+    }
+
+    pgNum++;
+    if (pgNum > 5) break; // safety limit
+  }
+
+  // Add About Author to the last page
+  if (aboutHTML) {
+    const allPages = wrap.querySelectorAll('.col-np');
+    const lastPage = allPages[allPages.length - 1];
+    const foot = lastPage.querySelector('.col-foot');
+    const aboutDiv = document.createElement('div');
+    aboutDiv.innerHTML = aboutHTML;
+    if (foot) foot.before(aboutDiv.firstElementChild);
+    else lastPage.appendChild(aboutDiv.firstElementChild);
+  }
+
+  // Generate new contextual images for page 2+ sidebars
+  generatePage2Images();
+}
+
+async function generatePage2Images() {
+  const heroes = document.querySelectorAll('.pg2-hero');
+  if (!heroes.length || !columnData) return;
+  for (const el of heroes) {
+    try {
+      // Build a prompt based on the page's text content
+      const page = el.closest('.col-np');
+      const texts = Array.from(page.querySelectorAll('.col-text p, .col-sidebar-text p')).map(p => p.textContent).join(' ').slice(0, 300);
+      const prompt = `Editorial newspaper illustration for article continuation about: ${texts.slice(0, 200)}. Different perspective from the main image. Bold, symbolic, Indian context.`;
+      const img = prov === 'openai' ? await oaiImg(prompt) : await gemImg(prompt);
+      if (img) {
+        el.innerHTML = `<img src="${img}" alt="illustration" style="width:100%;display:block"/>`;
+      } else {
+        el.innerHTML = heroImg ? `<img src="${heroImg}" alt="illustration" style="width:100%;display:block"/>` : '';
+      }
+    } catch(e) {
+      console.warn('Page 2 image failed, using hero:', e);
+      // Fallback to hero image
+      if (heroImg) el.innerHTML = `<img src="${heroImg}" alt="illustration" style="width:100%;display:block"/>`;
+      else el.innerHTML = '';
+    }
+  }
+}
+
+async function dlPNG() {
+  const pages = document.querySelectorAll('#colNpWrap .col-np');
+  if (!pages.length) return;
+  const bg = paperTheme === 'white' ? '#ffffff' : '#f5f0e6';
+  const date = new Date().toISOString().slice(0,10);
+  const total = pages.length;
+  try {
+    for (let i = 0; i < total; i++) {
+      const canvas = await html2canvas(pages[i], {scale:2, useCORS:true, backgroundColor: bg});
+      const a = document.createElement('a');
+      a.download = total === 1
+        ? `loktantra-vaani-column-${date}.png`
+        : `loktantra-vaani-column-${date}-${i+1}of${total}.png`;
+      a.href = canvas.toDataURL('image/png');
+      a.click();
+      if (total > 1) await new Promise(r => setTimeout(r, 500)); // small delay between downloads
+    }
+  } catch(e) { alert('Download error: '+e.message); }
+}
+
+async function shareWhatsApp() {
+  const pages = document.querySelectorAll('#colNpWrap .col-np');
+  if (!pages.length) return;
+
+  const sectionNames = {
+    en: {opinion:'OpEd', editorial:'Editorial', analysis:'Analysis'},
+    hi: {opinion:'ओपिनियन', editorial:'संपादकीय', analysis:'विश्लेषण'}
+  };
+  const sLang = lang === 'hi' ? 'hi' : 'en';
+  const sName = sectionNames[sLang][section] || section;
+  const total = pages.length;
+
+  let msg;
+  if (lang === 'hi') {
+    msg = `*${columnData.headline}*\n\n- ${columnData.authorName}\n\nLoktantra Vaani | Kautilya World`;
+  } else {
+    msg = `*${columnData.headline}*\n\n- ${columnData.authorName}\n\nLoktantra Vaani | Kautilya World`;
+  }
+  if (total > 1) {
+    msg += `\n(${total} pages)`;
+  }
+
+  // Capture all pages as separate images
+  const bg = paperTheme === 'white' ? '#ffffff' : '#f5f0e6';
+  const files = [];
+  try {
+    for (let i = 0; i < total; i++) {
+      const canvas = await html2canvas(pages[i], {scale:2, useCORS:true, backgroundColor: bg});
+      const blob = await new Promise(r => canvas.toBlob(r, 'image/png'));
+      const fname = total === 1
+        ? 'loktantra-vaani-column.png'
+        : `loktantra-vaani-column-${i+1}of${total}.png`;
+      files.push(new File([blob], fname, {type:'image/png'}));
+    }
+  } catch(e) { console.warn('Image capture failed:', e); }
+
+  // Try 1: Share all files together
+  if (files.length > 0 && navigator.canShare) {
+    try {
+      if (navigator.canShare({files})) {
+        await navigator.share({text: msg, files});
+        return;
+      }
+    } catch(e) { console.warn('Multi-file share failed:', e); }
+
+    // Try 2: Share one file at a time (some devices only support single file)
+    for (let i = 0; i < files.length; i++) {
+      try {
+        const pageMsg = total === 1 ? msg : msg + `\n\nPage ${i+1}/${total}`;
+        if (navigator.canShare({files:[files[i]]})) {
+          await navigator.share({text: pageMsg, files:[files[i]]});
+          continue;
+        }
+      } catch(e) { console.warn(`Page ${i+1} share failed:`, e); break; }
+    }
+    return;
+  }
+
+  // Fallback: download images + open WhatsApp with text
+  if (files.length > 0) {
+    for (let i = 0; i < files.length; i++) {
+      const a = document.createElement('a');
+      a.download = files[i].name;
+      a.href = URL.createObjectURL(files[i]);
+      a.click();
+      URL.revokeObjectURL(a.href);
+      if (files.length > 1) await new Promise(r => setTimeout(r, 400));
+    }
+    alert(lang === 'hi'
+      ? `${files.length} चित्र डाउनलोड हो गए। WhatsApp खुल रहा है — कृपया चित्र अटैच करें।`
+      : `${files.length} image(s) downloaded. Opening WhatsApp — please attach the images.`);
+  }
+  const waUrl = `https://wa.me/?text=${encodeURIComponent(msg)}`;
+  window.open(waUrl, '_blank');
+}
+
+function shareOnX() {
+  if (!columnData) return;
+  const text = encodeURIComponent(`${columnData.headline}\n\n✍ ${columnData.authorName}\n\nLoktantra Vaani | Kautilya World\nloktantra-vaani.vercel.app`);
+  window.open(`https://twitter.com/intent/tweet?text=${text}`, '_blank');
+}
+
+// ── EDIT TEXT ────────────────────────────────────────────────────────────────
+let editMode = false;
+function toggleEdit() {
+  editMode = !editMode;
+  const btn = document.getElementById('editToggle');
+  btn.classList.toggle('active', editMode);
+  btn.textContent = editMode ? '✅ Done Editing' : '✏️ Edit Text';
+
+  const editables = document.querySelectorAll('.col-headline, .col-subheadline, .col-text, .col-sidebar-text, .col-pullquote');
+  editables.forEach(el => {
+    if (editMode) {
+      el.setAttribute('contenteditable', 'true');
+    } else {
+      el.removeAttribute('contenteditable');
+    }
+  });
+}
+
+// ── EDIT AUTHOR ──────────────────────────────────────────────────────────────
+function toggleAuthorEdit() {
+  const panel = document.getElementById('authorEditPanel');
+  const btn = document.getElementById('authorEditToggle');
+  const show = !panel.classList.contains('show');
+  panel.classList.toggle('show', show);
+  btn.classList.toggle('active', show);
+}
+
+function applyAuthorEdit() {
+  const newName = document.getElementById('editAuthorName').value.trim();
+  const newDesig = document.getElementById('editAuthorDesig').value.trim();
+  const newAbout = document.getElementById('editAuthorAbout').value.trim();
+  if (!newName) { alert('Author name cannot be empty.'); return; }
+  columnData.authorName = newName;
+  columnData.authorDesig = newDesig || columnData.authorDesig;
+  authorAbout = newAbout;
+  // Update left panel inputs too
+  document.getElementById('authorName').value = newName;
+  document.getElementById('authorDesig').value = newDesig;
+  document.getElementById('authorAbout').value = newAbout;
+  // Update rendered name/desig in all pages
+  document.querySelectorAll('.col-author-name').forEach(el => el.textContent = newName);
+  document.querySelectorAll('.col-author-desig').forEach(el => el.textContent = columnData.authorDesig);
+  // Update About Author box
+  document.querySelectorAll('.about-name').forEach(el => el.textContent = newName);
+  document.querySelectorAll('.about-desig').forEach(el => el.textContent = columnData.authorDesig);
+  document.querySelectorAll('.about-bio').forEach(el => el.textContent = authorAbout);
+  // Update initials if no photo
+  if (!authorPhoto) {
+    const initials = newName.split(/\s+/).map(w=>w[0]).join('').toUpperCase().slice(0,2);
+    document.querySelectorAll('.col-author-img.initials-circle').forEach(el => el.textContent = initials);
+    document.querySelectorAll('.about-img.initials-sm').forEach(el => el.textContent = initials);
+  }
+}
+
+async function translateAuthorHindi() {
+  const nameEl = document.getElementById('editAuthorName');
+  const desigEl = document.getElementById('editAuthorDesig');
+  const aboutEl = document.getElementById('editAuthorAbout');
+  const name = nameEl.value.trim();
+  const desig = desigEl.value.trim();
+  const about = aboutEl ? aboutEl.value.trim() : '';
+  if (!name) { alert('Enter author name first.'); return; }
+
+  const btn = document.querySelector('#authorEditPanel .irow:last-child button:last-child');
+  const origText = btn.textContent;
+  btn.textContent = '⏳ Translating...';
+  btn.disabled = true;
+
+  try {
+    const prompt = `Transliterate/translate the following to Hindi (Devanagari script). For proper names, transliterate phonetically. For designations/titles/bio, translate to Hindi equivalent.
+Return ONLY a JSON object: {"name":"hindi name","desig":"hindi designation","about":"hindi about"}
+Name: ${name}
+Designation: ${desig || 'Columnist'}
+About: ${about || 'N/A'}`;
+
+    let txt = '';
+    if (prov === 'openai') {
+      const {data: d} = await openaiProxy('https://api.openai.com/v1/chat/completions',
+        {model:'gpt-4o-mini',messages:[{role:'user',content:prompt}],max_tokens:300});
+      txt = d?.choices?.[0]?.message?.content || '';
+    } else {
+      const d = await geminiProxy('gemini-2.0-flash', {
+        contents:[{parts:[{text:prompt}]}],
+        generationConfig:{temperature:0.3}
+      });
+      txt = (d?.candidates?.[0]?.content?.parts || []).filter(p=>p.text).map(p=>p.text).join('\n');
+    }
+    txt = txt.replace(/```json\s*/g,'').replace(/```/g,'').trim();
+    const jsonMatch = txt.match(/\{[\s\S]*\}/);
+    const parsed = JSON.parse(jsonMatch ? jsonMatch[0] : txt);
+    nameEl.value = parsed.name || name;
+    desigEl.value = parsed.desig || desig;
+    if (aboutEl && parsed.about && about) aboutEl.value = parsed.about;
+  } catch(e) {
+    console.warn('Hindi translation failed:', e);
+    alert('Translation failed. Please type Hindi manually.');
+  } finally {
+    btn.textContent = origText;
+    btn.disabled = false;
+  }
+}
+
+// ── ADD IMAGE ────────────────────────────────────────────────────────────────
+function toggleImgPanel() {
+  const panel = document.getElementById('imgPanel');
+  const btn = document.getElementById('imgToggle');
+  const show = !panel.classList.contains('show');
+  panel.classList.toggle('show', show);
+  btn.classList.toggle('active', show);
+}
+
+async function regenImageOnly() {
+  if (!columnData) { alert('Generate an article first.'); return; }
+  const heroEl = document.querySelector('#colNp .col-hero');
+  if (heroEl) heroEl.innerHTML = '<div class="lwrap"><div class="spin"></div></div>';
+  try {
+    const prompt = columnData.imagePrompt || columnData.headline;
+    heroImg = prov === 'openai' ? await oaiImg(prompt) : await gemImg(prompt);
+    if (heroEl && heroImg) heroEl.innerHTML = `<img src="${heroImg}" alt="illustration" style="width:100%;display:block"/>`;
+  } catch(e) {
+    console.warn('Image regen failed:', e);
+    alert('Image generation failed. Try again.');
+    if (heroEl) heroEl.innerHTML = '<div style="padding:8px;color:#8b7d6b;font-size:9px;text-align:center">Image generation failed</div>';
+  }
+}
+
+function insertImageToArticle(src, caption) {
+  const sidebar = document.querySelector('.col-sidebar-text');
+  if (!sidebar) { alert('Generate an article first.'); return; }
+  const imgHTML = document.createElement('div');
+  imgHTML.style.cssText = 'margin:6px 0;border:1px solid #c4b89a;';
+  imgHTML.innerHTML = `<img src="${src}" style="width:100%;display:block;" alt="illustration"/>`;
+  sidebar.parentNode.insertBefore(imgHTML, sidebar);
+  if (caption) {
+    const capEl = document.createElement('div');
+    capEl.className = 'col-caption';
+    capEl.textContent = caption;
+    sidebar.parentNode.insertBefore(capEl, sidebar);
+  }
+}
+
+async function insertAIImage() {
+  const prompt = document.getElementById('imgPrompt').value.trim();
+  if (!prompt) { alert('Please describe the image to generate.'); return; }
+  const btn = document.querySelector('.ai-img-btn');
+  btn.textContent = '⏳...'; btn.disabled = true;
+  try {
+    const imgSrc = prov === 'openai' ? await oaiImg(prompt) : await gemImg(prompt);
+    insertImageToArticle(imgSrc, prompt.slice(0, 60));
+    document.getElementById('imgPrompt').value = '';
+  } catch(e) {
+    alert('Image generation failed: ' + e.message);
+  }
+  btn.textContent = '🤖 Generate'; btn.disabled = false;
+}
+
+function insertUploadImage(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(ev) {
+    insertImageToArticle(ev.target.result, file.name.replace(/\.[^.]+$/, ''));
+  };
+  reader.readAsDataURL(file);
+}
+</script>
+</body>
+</html>

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useState, useCallback } from "react";
+import React, { createContext, useContext, useState, useCallback, useEffect } from "react";
 
 type Lang = "en" | "hi";
 
@@ -9,6 +9,7 @@ interface LanguageContextValue {
   setLang: (lang: Lang) => void;
   toggleLang: () => void;
   t: (en: string, hi?: string) => string;
+  isHindiDomain: boolean;
 }
 
 const LanguageContext = createContext<LanguageContextValue>({
@@ -16,10 +17,28 @@ const LanguageContext = createContext<LanguageContextValue>({
   setLang: () => {},
   toggleLang: () => {},
   t: (en) => en,
+  isHindiDomain: false,
 });
 
 export function LanguageProvider({ children }: { children: React.ReactNode }) {
+  const [isHindiDomain, setIsHindiDomain] = useState(false);
+
+  // Detect Hindi subdomain from cookie or hostname
+  const getInitialLang = (): Lang => {
+    if (typeof window !== "undefined") {
+      if (window.location.hostname.startsWith("hindi.")) return "hi";
+      if (document.cookie.includes("lang=hi")) return "hi";
+    }
+    return "en";
+  };
+
   const [lang, setLang] = useState<Lang>("en");
+
+  useEffect(() => {
+    const detected = getInitialLang();
+    setLang(detected);
+    setIsHindiDomain(typeof window !== "undefined" && window.location.hostname.startsWith("hindi."));
+  }, []);
 
   const toggleLang = useCallback(() => {
     setLang((prev) => (prev === "en" ? "hi" : "en"));
@@ -34,7 +53,7 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
   );
 
   return (
-    <LanguageContext.Provider value={{ lang, setLang, toggleLang, t }}>
+    <LanguageContext.Provider value={{ lang, setLang, toggleLang, t, isHindiDomain }}>
       {children}
     </LanguageContext.Provider>
   );

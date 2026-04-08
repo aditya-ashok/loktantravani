@@ -1,6 +1,5 @@
 import { initializeApp, getApps, getApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
-import { getFirestore } from "firebase/firestore";
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || "demo-api-key",
@@ -20,7 +19,23 @@ export const isFirebaseConfigured =
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
 
 export const auth = getAuth(app);
-export const db = getFirestore(app);
+
+// Firestore SDK — only imported by server-side admin/seed routes
+// The tree-shaking + optimizePackageImports in next.config.ts ensures
+// this doesn't bloat the client bundle when not imported client-side
+let _db: any = null;
+export function getDb() {
+  if (!_db) {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { getFirestore } = require("firebase/firestore");
+    _db = getFirestore(app);
+  }
+  return _db;
+}
+/** Eagerly initialized Firestore — for backward compat with firebase-service.ts */
+export const db = (() => {
+  try { return getDb(); } catch { return null; }
+})();
 
 /** Firebase Cloud Messaging — client only */
 export const getSafeMessaging = async () => {

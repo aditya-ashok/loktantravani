@@ -62,7 +62,7 @@ export default function AboutPage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-20">
             {[
               { icon: Globe, en: "Geopolitical Depth", hi: "भू-राजनीतिक गहराई", descEn: "Analysis rooted in India's strategic autonomy and civilizational perspective on global affairs.", descHi: "भारत की रणनीतिक स्वायत्तता और वैश्विक मामलों पर सभ्यतागत दृष्टिकोण में निहित विश्लेषण।" },
-              { icon: Sparkles, en: "Satirical Courage", hi: "व्यंग्यात्मक साहस", descEn: "Cartoons that challenge power with humor. The Cartoon Mandala tradition of democratic dissent.", descHi: "कार्टून जो हास्य से सत्ता को चुनौती देते हैं। लोकतांत्रिक असहमति की कार्टून मंडला परंपरा।" },
+              { icon: Sparkles, en: "Satirical Courage", hi: "व्यंग्यात्मक साहस", descEn: "Cartoons that challenge power with humor. The Lok Post tradition of democratic dissent.", descHi: "कार्टून जो हास्य से सत्ता को चुनौती देते हैं। लोकतांत्रिक असहमति की कार्टून मंडला परंपरा।" },
               { icon: Zap, en: "GenZ Bridge", hi: "जेनज़ी सेतु", descEn: "Bridging ancient dharma with digital disruption. Content for the generation rewriting the rules.", descHi: "प्राचीन धर्म को डिजिटल व्यवधान से जोड़ना। नियमों को फिर से लिखने वाली पीढ़ी के लिए सामग्री।" },
             ].map((pillar) => (
               <div key={pillar.en} className="border-t-4 border-primary pt-6 space-y-4">

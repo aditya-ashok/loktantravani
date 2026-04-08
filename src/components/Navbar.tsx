@@ -1,351 +1,435 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, lazy, Suspense } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import {
-  Globe,
-  Search,
-  Menu,
-  X,
-  Bell,
-  Zap,
-  History,
-  Sun,
-  Moon,
-  Bookmark,
-  PenSquare,
-  LayoutDashboard,
-  LogIn,
-  LogOut,
-} from "lucide-react";
+import { Search, Menu, X, Sun, Moon, Bookmark, PenSquare, LayoutDashboard, LogIn, LogOut } from "lucide-react";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/lib/language-context";
 import { useAuth } from "@/lib/auth-context";
-import type { UserRole } from "@/lib/types";
+// UserRole used internally by auth context
 import { useTheme } from "next-themes";
 import NotificationBell from "./NotificationBell";
 
-const topNavItems = {
+const AuthModal = lazy(() => import("./AuthModal"));
+
+// NYT-style sections (Indian edition — GenZ wording)
+const SECTIONS = {
   en: [
-    { label: "Live TV", href: "#" },
-    { label: "Latest News", href: "/blog" },
-    { label: "Elections 2026", href: "/category/Politics" },
-    { label: "Loktantra Hub", href: "/daily" },
+    { label: "Bharat Pulse",     href: "/category/India" },
+    { label: "Globe Drop",       href: "/category/World" },
+    { label: "Neta Watch",       href: "/category/Politics" },
+    { label: "Power Moves",      href: "/category/Geopolitics" },
+    { label: "Paisa Talk",       href: "/category/Economy" },
+    { label: "Game On",          href: "/category/Sports" },
+    { label: "Tech Bro",         href: "/category/Tech" },
+    { label: "Shield & Sword",   href: "/category/Defence" },
+    { label: "Hot Takes",        href: "/category/Opinion" },
+    { label: "City Vibes",       href: "/category/Cities" },
+    { label: "West Asia ⚡",     href: "/west-asia", special: true },
   ],
   hi: [
-    { label: "लाइव टीवी", href: "#" },
-    { label: "ताज़ा ख़बर", href: "/blog" },
-    { label: "चुनाव 2026", href: "/category/Politics" },
-    { label: "लोकतंत्र हब", href: "/daily" },
+    { label: "भारत पल्स",       href: "/category/India" },
+    { label: "ग्लोब ड्रॉप",     href: "/category/World" },
+    { label: "नेता वॉच",        href: "/category/Politics" },
+    { label: "पावर मूव्स",      href: "/category/Geopolitics" },
+    { label: "पैसा टॉक",        href: "/category/Economy" },
+    { label: "गेम ऑन",          href: "/category/Sports" },
+    { label: "टेक ब्रो",        href: "/category/Tech" },
+    { label: "शील्ड & स्वॉर्ड",  href: "/category/Defence" },
+    { label: "हॉट टेक्स",       href: "/category/Opinion" },
+    { label: "सिटी वाइब्स",     href: "/category/Cities" },
+    { label: "पश्चिम एशिया ⚡",  href: "/west-asia", special: true },
   ],
 };
 
-const mainNavItems = {
-  en: [
-    { label: "IR", href: "/category/IR", icon: null },
-    { label: "Politics", href: "/category/Politics", icon: null },
-    { label: "Tech", href: "/category/Tech", icon: null },
-    { label: "Geopolitics", href: "/category/Geopolitics", icon: null },
-    { label: "GenZ", href: "/category/GenZ", icon: Zap },
-    { label: "Ancient India", href: "/category/Ancient India", icon: History },
-  ],
-  hi: [
-    { label: "अंतर्राष्ट्रीय", href: "/category/IR", icon: null },
-    { label: "राजनीति", href: "/category/Politics", icon: null },
-    { label: "टेक", href: "/category/Tech", icon: null },
-    { label: "भू-राजनीति", href: "/category/Geopolitics", icon: null },
-    { label: "जेन-ज़ी", href: "/category/GenZ", icon: Zap },
-    { label: "प्राचीन भारत", href: "/category/Ancient India", icon: History },
-  ],
-};
+function formatNavDate(lang: string): { main: string; sub?: string } {
+  const d = new Date();
+  if (lang === "hi") {
+    const { toVikramSamvat } = require("@/lib/utils");
+    const vs = toVikramSamvat(d);
+    const gregorian = d.toLocaleDateString("hi-IN", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+    return {
+      main: `${vs.monthHi} ${vs.tithi}, विक्रम संवत ${vs.year}`,
+      sub: gregorian,
+    };
+  }
+  const { toVikramSamvat } = require("@/lib/utils");
+  const vs = toVikramSamvat(d);
+  const gregorian = d.toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" }).toUpperCase();
+  return {
+    main: `${vs.month} ${vs.tithi}, Vikram Samvat ${vs.year}`,
+    sub: gregorian,
+  };
+}
 
 export default function Navbar() {
-  const { lang, toggleLang } = useLanguage();
-  const { userRole, setUserRole, isLoggedIn, userName, userPhotoUrl, signInWithGoogle, signOut } = useAuth();
+  const { lang, toggleLang, t, isHindiDomain } = useLanguage();
+  const { userRole, isLoggedIn, userName, userEmail, userPhotoUrl, signOut } = useAuth();
   const { theme, setTheme } = useTheme();
-  const [scrolled, setScrolled] = useState(false);
-  const [showRoles, setShowRoles] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
+  const [showAccount, setShowAccount] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
 
   useEffect(() => {
     setMounted(true);
-    const handleScroll = () => setScrolled(window.scrollY > 20);
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
+    const onScroll = () => setScrolled(window.scrollY > 60);
+    window.addEventListener("scroll", onScroll);
+    return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
+  const sections = SECTIONS[lang];
+
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 bg-white dark:bg-[#0a0a0a]">
-      {/* Top Banner */}
-      <div className="bg-[#1a1c1c] text-white py-1.5 px-8 md:px-16 flex justify-between items-center text-[10px] uppercase font-inter font-black tracking-widest border-b border-white/5">
-        <div className="flex gap-6 items-center">
-          {topNavItems[lang].map((item) => (
-            <Link key={item.label} href={item.href} className="hover:text-primary transition-colors hidden sm:block">
-              {item.label}
-            </Link>
-          ))}
-        </div>
-        <div className="flex items-center gap-6">
-          <span className="text-primary flex items-center gap-2 font-black">
-            <div className="w-1.5 h-1.5 bg-primary rounded-full animate-pulse" />
-            LIVE STREAM
+    <nav className={cn(
+      "fixed top-0 left-0 right-0 z-50 transition-all duration-300",
+      scrolled ? "frosted-nav shadow-lg shadow-black/[0.03] dark:shadow-black/20" : "bg-white dark:bg-[#0d0d0d]"
+    )}>
+
+      {/* ── Row 1: Thin utility bar ───────────────────────────────── */}
+      <div className="border-b border-[var(--nyt-border)] dark:border-[var(--nyt-border)] px-4 md:px-8 h-8 flex items-center relative">
+        {/* Left: date — visible on all screens */}
+        <span className="font-inter text-[var(--nyt-gray)] flex items-baseline gap-1 sm:gap-2 tracking-wide min-w-0">
+          {(() => {
+            const d = formatNavDate(lang);
+            return d.sub ? (
+              <>
+                <span className="text-[9px] sm:text-[11px] font-bold text-[var(--nyt-black)] dark:text-white truncate">{d.main}</span>
+                <span className="text-[8px] sm:text-[9px] opacity-60 hidden sm:inline">{d.sub}</span>
+              </>
+            ) : (
+              <span className="text-[9px] sm:text-[10px] truncate">{d.main}</span>
+            );
+          })()}
+        </span>
+
+        {/* Center: Live tag — absolute center */}
+        <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-1.5">
+          <span className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse" />
+          <span className="text-[9px] font-inter font-bold uppercase tracking-widest text-red-500">
+            {t("Live Updates", "लाइव अपडेट")}
           </span>
-          <div className="h-3 w-px bg-white/20 mx-2 hidden sm:block" />
-          <span className="opacity-60 hidden sm:block">MARCH 21, 2026</span>
+        </div>
+
+        {/* Right: utilities */}
+        <div className="flex items-center gap-2 sm:gap-4 ml-auto">
+          <button
+            onClick={toggleLang}
+            className="text-[9px] font-inter font-bold uppercase tracking-widest text-[var(--nyt-gray)] dark:text-white/50 hover:text-primary transition-colors"
+          >
+            {lang === "en" ? "हिन्दी" : "EN"}
+          </button>
+          {mounted && (
+            <button onClick={() => setTheme(theme === "dark" ? "light" : "dark")} className="text-[var(--nyt-gray)] dark:text-white/60 hover:text-primary transition-colors">
+              {theme === "dark" ? <Sun className="w-3.5 h-3.5" /> : <Moon className="w-3.5 h-3.5" />}
+            </button>
+          )}
+          {isLoggedIn ? (
+            <button onClick={signOut} className="hidden sm:flex text-[9px] font-inter font-bold uppercase tracking-widest text-[var(--nyt-gray)] dark:text-white/50 hover:text-red-500 transition-colors items-center gap-1">
+              <LogOut className="w-3 h-3" /> {t("Sign out", "साइन आउट")}
+            </button>
+          ) : (
+            <button onClick={() => setShowAuthModal(true)} className="hidden sm:flex text-[9px] font-inter font-bold uppercase tracking-widest text-[var(--nyt-gray)] dark:text-white/50 hover:text-primary transition-colors items-center gap-1">
+              <LogIn className="w-3 h-3" /> {t("Sign In", "साइन इन")}
+            </button>
+          )}
+          <Link href="/write" className="hidden md:block text-[9px] font-inter font-bold uppercase tracking-widest text-primary hover:underline">
+            ✍️ {t("Write With Us", "हमारे साथ लिखें")}
+          </Link>
+          <Link href="/premium" className="hidden md:block bg-gradient-to-r from-purple-600 via-pink-600 to-orange-500 text-white text-[9px] font-inter font-black uppercase tracking-widest px-4 py-1.5 rounded-sm hover:shadow-lg hover:shadow-purple-500/30 transition-all">
+            ⚡ {t("GO ULTRA", "अल्ट्रा")}
+          </Link>
         </div>
       </div>
 
-      {/* Main Brand Area */}
-      <div className="border-b border-black dark:border-white/20 py-8 px-8 md:px-16 flex items-center justify-between relative">
-        <div className="flex-1 hidden md:flex items-center gap-8">
-          <Link href="/search">
-            <Search className="w-5 h-5 text-black dark:text-white cursor-pointer hover:text-primary transition-colors" />
+      {/* ── Row 2: Masthead ───────────────────────────────────────── */}
+      <div className="border-b border-[var(--nyt-border)] dark:border-[var(--nyt-border)] px-4 md:px-8 py-2 md:py-1 relative flex items-center min-h-[44px] md:min-h-0">
+        {/* Left: search + notifications + bookmarks */}
+        <div className="flex-1 hidden md:flex items-center gap-5">
+          <Link href="/search" className="text-[var(--nyt-gray)] dark:text-white/60 hover:text-primary transition-colors">
+            <Search className="w-4 h-4" />
           </Link>
           <NotificationBell />
-          <Link href="/bookmarks">
-            <Bookmark className="w-5 h-5 text-black dark:text-white cursor-pointer hover:text-primary transition-colors" />
+          <Link href="/bookmarks" className="text-[var(--nyt-gray)] dark:text-white/60 hover:text-primary transition-colors">
+            <Bookmark className="w-4 h-4" />
           </Link>
-        </div>
-
-        <Link href="/" className="flex flex-col items-center">
-          <h1 className="text-4xl md:text-7xl font-newsreader font-black tracking-tighter text-black dark:text-white uppercase select-none">
-            Loktantra<span className="text-primary">Vani</span>
-          </h1>
-          <div className="flex items-center gap-3 mt-2">
-            <span className="h-px w-8 bg-black/20 dark:bg-white/20" />
-            <p className="text-[9px] font-inter font-black tracking-[0.5em] opacity-40 uppercase">
-              NEO BHARAT EDITORIAL
-            </p>
-            <span className="h-px w-8 bg-black/20 dark:bg-white/20" />
-          </div>
-        </Link>
-
-        <div className="flex-1 flex justify-end items-center gap-6">
-          {/* Dark Mode Toggle */}
-          {mounted && (
-            <button
-              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-              className="p-2 hover:bg-primary/10 transition-colors"
-            >
-              {theme === "dark" ? (
-                <Sun className="w-5 h-5 text-primary" />
-              ) : (
-                <Moon className="w-5 h-5 text-black" />
-              )}
-            </button>
-          )}
-
-          {/* Role-based quick links */}
           {userRole === "admin" && (
-            <Link href="/admin" className="hidden md:flex items-center gap-2 text-xs font-inter font-black uppercase tracking-widest text-primary hover:underline">
-              <LayoutDashboard className="w-4 h-4" />
-              Dashboard
+            <Link href="/admin" className="flex items-center gap-1 text-[9px] font-inter font-bold uppercase tracking-widest text-primary hover:underline">
+              <LayoutDashboard className="w-3.5 h-3.5" /> Admin
             </Link>
           )}
           {userRole === "author" && (
-            <Link href="/author/dashboard" className="hidden md:flex items-center gap-2 text-xs font-inter font-black uppercase tracking-widest text-primary hover:underline">
-              <PenSquare className="w-4 h-4" />
-              Write
+            <Link href="/author/dashboard" className="flex items-center gap-1 text-[9px] font-inter font-bold uppercase tracking-widest text-primary hover:underline">
+              <PenSquare className="w-3.5 h-3.5" /> Write
             </Link>
           )}
+        </div>
 
-          {/* Google Sign-In / Out */}
+        {/* Center: Logo — absolutely centered on all screens */}
+        <Link href="/" className="absolute left-1/2 -translate-x-1/2">
+          {isHindiDomain || lang === "hi" ? (
+            <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-black tracking-tight text-[var(--nyt-black)] dark:text-white select-none leading-none whitespace-nowrap hindi">
+              लोकतंत्र<span className="text-primary">वाणी</span>
+            </h1>
+          ) : (
+            <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-newsreader font-black tracking-tight text-[var(--nyt-black)] dark:text-white select-none leading-none whitespace-nowrap">
+              Loktantra<span className="text-primary">Vani</span>
+            </h1>
+          )}
+        </Link>
+
+        {/* Right: account */}
+        <div className="flex-1 hidden md:flex items-center justify-end gap-4">
           {isLoggedIn ? (
-            <div className="hidden md:flex items-center gap-2">
-              {userPhotoUrl ? (
-                <div className="w-8 h-8 rounded-full overflow-hidden border-2 border-primary/30">
-                  <Image src={userPhotoUrl} alt={userName} width={32} height={32} className="w-full h-full object-cover" unoptimized />
-                </div>
-              ) : (
-                <div className="w-8 h-8 bg-primary text-white flex items-center justify-center font-inter font-black text-sm">
-                  {userName[0].toUpperCase()}
-                </div>
-              )}
+            <div className="relative">
               <button
-                onClick={signOut}
-                title="Sign out"
-                className="flex items-center gap-1 text-[10px] font-inter font-black uppercase tracking-widest opacity-40 hover:opacity-100 hover:text-primary transition-all dark:text-white"
+                onClick={() => setShowAccount(!showAccount)}
+                className="flex items-center gap-2 hover:opacity-80 transition-opacity"
               >
-                <LogOut className="w-4 h-4" />
+                {userPhotoUrl ? (
+                  <div className="w-7 h-7 rounded-full overflow-hidden border border-[var(--nyt-border)]">
+                    <Image src={userPhotoUrl} alt={userName} width={28} height={28} className="w-full h-full object-cover" unoptimized />
+                  </div>
+                ) : (
+                  <div className="w-7 h-7 bg-primary text-white rounded-full flex items-center justify-center font-inter font-bold text-xs">
+                    {userName[0]?.toUpperCase()}
+                  </div>
+                )}
+                <span className="text-[10px] font-inter text-[var(--nyt-gray)] dark:text-white/50">{userName.split(" ")[0]}</span>
+                <span className="text-[8px] text-[var(--nyt-gray)]">▾</span>
               </button>
+              <AnimatePresence>
+                {showAccount && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 6 }}
+                    className="absolute top-full right-0 mt-2 w-48 bg-white dark:bg-[#1a1a1a] border border-[var(--nyt-border)] shadow-lg z-50"
+                  >
+                    <div className="px-4 py-3 border-b border-[var(--nyt-border)]">
+                      <p className="text-[11px] font-inter font-bold dark:text-white truncate">{userName}</p>
+                      <p className="text-[9px] font-inter text-[var(--nyt-gray)] dark:text-white/40 truncate">{userEmail}</p>
+                      {(userRole === "admin" || userRole === "author") && (
+                        <span className="inline-block mt-1.5 text-[8px] font-inter font-black uppercase tracking-widest text-primary bg-primary/10 px-1.5 py-0.5">
+                          {userRole}
+                        </span>
+                      )}
+                    </div>
+                    {userRole === "admin" && (
+                      <Link href="/admin" onClick={() => setShowAccount(false)} className="block px-4 py-2.5 text-[10px] font-inter font-bold hover:bg-[var(--nyt-light-gray)] dark:hover:bg-white/5 dark:text-white transition-colors">
+                        Admin Panel
+                      </Link>
+                    )}
+                    {(userRole === "admin" || userRole === "author") && (
+                      <Link href="/author/dashboard" onClick={() => setShowAccount(false)} className="block px-4 py-2.5 text-[10px] font-inter font-bold hover:bg-[var(--nyt-light-gray)] dark:hover:bg-white/5 dark:text-white transition-colors">
+                        My Dashboard
+                      </Link>
+                    )}
+                    <Link href="/bookmarks" onClick={() => setShowAccount(false)} className="block px-4 py-2.5 text-[10px] font-inter font-bold hover:bg-[var(--nyt-light-gray)] dark:hover:bg-white/5 dark:text-white transition-colors">
+                      Saved Articles
+                    </Link>
+                    <button
+                      onClick={() => { signOut(); setShowAccount(false); }}
+                      className="w-full text-left px-4 py-2.5 text-[10px] font-inter font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-900/10 border-t border-[var(--nyt-border)] flex items-center gap-2"
+                    >
+                      <LogOut className="w-3 h-3" /> Sign Out
+                    </button>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           ) : (
             <button
-              onClick={signInWithGoogle}
-              className="hidden md:flex items-center gap-2 text-[10px] font-inter font-black uppercase tracking-widest text-black dark:text-white hover:text-primary transition-colors"
+              onClick={() => setShowAuthModal(true)}
+              className="text-[9px] font-inter font-bold uppercase tracking-widest text-[var(--nyt-gray)] dark:text-white/50 hover:text-primary transition-colors"
             >
-              <LogIn className="w-4 h-4" />
-              <span className="hidden lg:inline">{lang === "hi" ? "साइन इन" : "Sign In"}</span>
+              {t("Account", "खाता")}
             </button>
           )}
-
-          {/* Account Dropdown */}
-          <div className="relative">
-            <button
-              onClick={() => setShowRoles(!showRoles)}
-              className="flex items-center gap-2 group cursor-pointer"
-            >
-              <div className="text-right hidden sm:block">
-                <p className="text-[9px] font-inter font-black tracking-widest opacity-40 uppercase leading-none">
-                  Access Level
-                </p>
-                <p className="text-sm font-newsreader font-bold italic leading-none mt-1 dark:text-white capitalize">
-                  {isLoggedIn ? userName.split(" ")[0] : userRole}
-                </p>
-              </div>
-              <div className="w-10 h-10 bg-black dark:bg-white text-white dark:text-black flex items-center justify-center font-newsreader font-bold text-lg hover:bg-primary hover:text-white transition-colors overflow-hidden">
-                {isLoggedIn && userPhotoUrl ? (
-                  <Image src={userPhotoUrl} alt={userName} width={40} height={40} className="w-full h-full object-cover" unoptimized />
-                ) : (
-                  (isLoggedIn ? userName[0] : userRole[0]).toUpperCase()
-                )}
-              </div>
-            </button>
-            <AnimatePresence>
-              {showRoles && (
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: 10 }}
-                  className="absolute top-full right-0 mt-4 w-48 bg-white dark:bg-[#1a1a1a] border-2 border-black dark:border-white/20 shadow-2xl p-2 z-50 ring-4 ring-primary/5"
-                >
-                  {/* Google auth row */}
-                  {isLoggedIn ? (
-                    <div className="px-4 py-3 border-b border-black/10 dark:border-white/10 mb-1">
-                      <p className="text-[10px] font-inter font-black dark:text-white truncate">{userName}</p>
-                      <button
-                        onClick={() => { signOut(); setShowRoles(false); }}
-                        className="text-[10px] font-inter font-bold text-red-500 hover:underline mt-1 flex items-center gap-1"
-                      >
-                        <LogOut className="w-3 h-3" /> Sign out
-                      </button>
-                    </div>
-                  ) : (
-                    <button
-                      onClick={() => { signInWithGoogle(); setShowRoles(false); }}
-                      className="w-full text-left px-4 py-3 text-xs font-inter font-black uppercase tracking-widest hover:bg-primary hover:text-white transition-all flex items-center gap-2 border-b border-black/10 dark:border-white/10 mb-1 dark:text-white"
-                    >
-                      <LogIn className="w-3.5 h-3.5" /> Sign in with Google
-                    </button>
-                  )}
-                  {(["admin", "author", "guest"] as UserRole[]).map((role) => (
-                    <button
-                      key={role}
-                      onClick={() => {
-                        setUserRole(role);
-                        setShowRoles(false);
-                      }}
-                      className={cn(
-                        "w-full text-left px-4 py-3 text-xs font-inter font-black uppercase tracking-widest hover:bg-primary hover:text-white transition-all dark:text-white",
-                        userRole === role && "bg-black text-white dark:bg-white dark:text-black"
-                      )}
-                    >
-                      {role === "admin" ? "Admin Dashboard" : role === "author" ? "Author Panel" : "Guest Reader"}
-                    </button>
-                  ))}
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
-
-          <div className="h-8 w-px bg-black/10 dark:bg-white/10 mx-2 hidden sm:block" />
-
-          <button
-            onClick={toggleLang}
-            className="px-4 py-1.5 border-2 border-black dark:border-white font-inter font-black text-xs uppercase transition-all hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black whitespace-nowrap dark:text-white"
-          >
-            {lang === "en" ? "हिन्दी" : "Eng"}
-          </button>
-
-          <button
-            className="md:hidden"
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          >
-            {mobileMenuOpen ? (
-              <X className="w-6 h-6 text-black dark:text-white" />
-            ) : (
-              <Menu className="w-6 h-6 text-black dark:text-white" />
-            )}
-          </button>
         </div>
+
+        {/* Mobile: hamburger — pushed to right edge */}
+        <button className="md:hidden ml-auto z-10" onClick={() => setMobileOpen(!mobileOpen)}>
+          {mobileOpen ? <X className="w-5 h-5 dark:text-white" /> : <Menu className="w-5 h-5 dark:text-white" />}
+        </button>
       </div>
 
-      {/* Navigation Sub-Menu */}
-      <div className="border-b-[6px] border-black dark:border-white/20 border-double py-4 px-8 md:px-16 hidden md:flex justify-between items-center bg-white/80 dark:bg-[#0a0a0a]/80 backdrop-blur-md">
-        <div className="flex gap-16 font-inter font-black text-xs uppercase tracking-widest text-black dark:text-white">
-          {mainNavItems[lang].map((item) => (
+      {/* ── Row 3: Section nav ─────────────────────────────────────── */}
+      <div className="border-b-2 border-[var(--nyt-black)] dark:border-white/80 hidden md:block bg-white/95 dark:bg-[#0d0d0d]/95 backdrop-blur-sm">
+        <div className="px-4 md:px-8 flex items-center justify-between overflow-x-auto">
+          <div className="flex items-center">
+            {sections.map((s) => (
+              <Link
+                key={s.label}
+                href={s.href}
+                className={cn(
+                  "text-[9px] font-inter font-bold uppercase tracking-wider px-2.5 py-1.5 whitespace-nowrap transition-colors hover:text-primary relative group",
+                  "special" in s && s.special ? "text-red-600 dark:text-red-400" : "text-[var(--nyt-black)] dark:text-white/90"
+                )}
+              >
+                {s.label}
+                <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-primary group-hover:w-full transition-all" />
+              </Link>
+            ))}
             <Link
-              key={item.label}
-              href={item.href}
-              className="hover:text-primary relative group flex items-center gap-2"
+              href="/lok-post"
+              className="text-[9px] font-inter font-bold uppercase tracking-wider px-2.5 py-1.5 whitespace-nowrap text-primary hover:underline"
             >
-              {item.icon && <item.icon className="w-3.5 h-3.5 text-primary" />}
-              {item.label}
-              <span className="absolute -bottom-1 left-0 w-0 h-1 bg-primary transition-all group-hover:w-full" />
+              {t("Lok Post", "कार्टून मंडला")}
             </Link>
-          ))}
-          <Link href="/cartoon-mandala" className="hover:text-primary relative group flex items-center gap-2">
-            Cartoon Mandala
-            <span className="absolute -bottom-1 left-0 w-0 h-1 bg-primary transition-all group-hover:w-full" />
+            <Link
+              href="/opposition-tracker"
+              className="text-[9px] font-inter font-bold uppercase tracking-wider px-2.5 py-1.5 whitespace-nowrap text-red-600 dark:text-red-400 hover:underline"
+            >
+              {t("🎯 Fact Check", "🎯 फैक्ट चेक")}
+            </Link>
+            <Link
+              href="/modi-scorecard"
+              className="text-[9px] font-inter font-bold uppercase tracking-wider px-2.5 py-1.5 whitespace-nowrap text-[#FF9933] hover:underline"
+            >
+              {t("📊 Govt Report Card", "📊 सरकार रिपोर्ट कार्ड")}
+            </Link>
+            <Link
+              href="/talking-points"
+              className="text-[9px] font-inter font-bold uppercase tracking-wider px-2.5 py-1.5 whitespace-nowrap text-orange-500 hover:underline"
+            >
+              {t("🔥 Daily Brief", "🔥 डेली ब्रीफ")}
+            </Link>
+          </div>
+          <Link
+            href="/epaper"
+            className="text-[9px] font-inter font-bold uppercase tracking-widest text-primary border-l border-[var(--nyt-border)] pl-3 py-1.5 whitespace-nowrap hover:underline flex items-center gap-1.5"
+          >
+            <span className="w-1.5 h-1.5 bg-primary rounded-full animate-pulse" />
+            {t("E-Paper", "ई-पेपर")}
           </Link>
         </div>
-        <Link href="/daily" className="flex items-center gap-3">
-          <span className="text-[10px] font-inter font-black text-primary animate-pulse tracking-widest">
-            TODAY&apos;S EDITION
-          </span>
-          <div className="w-1.5 h-1.5 bg-black dark:bg-white rotate-45" />
-        </Link>
       </div>
 
-      {/* Mobile Menu */}
+      {/* ── Mobile menu — premium slide-in drawer ─────────────────── */}
       <AnimatePresence>
-        {mobileMenuOpen && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
-            className="md:hidden bg-white dark:bg-[#0a0a0a] border-b-4 border-black dark:border-white/20 overflow-hidden"
-          >
-            <div className="px-8 py-6 space-y-4">
-              {mainNavItems[lang].map((item) => (
-                <Link
-                  key={item.label}
-                  href={item.href}
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="block text-sm font-inter font-black uppercase tracking-widest py-3 border-b border-black/10 dark:border-white/10 dark:text-white"
-                >
-                  {item.label}
+        {mobileOpen && (
+          <>
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40 md:hidden"
+              onClick={() => setMobileOpen(false)}
+            />
+            {/* Drawer */}
+            <motion.div
+              initial={{ x: "-100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "-100%" }}
+              transition={{ type: "spring", damping: 28, stiffness: 300 }}
+              className="fixed left-0 top-0 bottom-0 w-[85%] max-w-[320px] z-50 md:hidden bg-white dark:bg-[#0d0d0d] overflow-y-auto shadow-2xl"
+            >
+              {/* Drawer header */}
+              <div className="sticky top-0 bg-white dark:bg-[#0d0d0d] border-b border-[var(--nyt-border)] px-5 py-4 flex items-center justify-between">
+                <div>
+                  <p className="font-newsreader font-black text-lg tracking-tight dark:text-white">
+                    Loktantra<span className="text-primary">Vani</span>
+                  </p>
+                  <p className="text-[8px] font-inter font-bold uppercase tracking-[0.2em] text-[var(--nyt-gray)]">
+                    {t("India's 1st AI Newspaper", "भारत का प्रथम AI अखबार")}
+                  </p>
+                </div>
+                <button onClick={() => setMobileOpen(false)} className="p-2 hover:bg-gray-100 dark:hover:bg-white/10 rounded-full transition-colors">
+                  <X className="w-5 h-5 dark:text-white" />
+                </button>
+              </div>
+
+              {/* Quick actions */}
+              <div className="flex gap-2 px-5 py-3 border-b border-[var(--nyt-border)]">
+                <Link href="/search" onClick={() => setMobileOpen(false)} className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-gray-50 dark:bg-white/5 rounded-lg text-[10px] font-inter font-bold uppercase tracking-wider dark:text-white">
+                  <Search className="w-3.5 h-3.5" /> {t("Search", "खोजें")}
                 </Link>
-              ))}
-              <Link
-                href="/cartoon-mandala"
-                onClick={() => setMobileMenuOpen(false)}
-                className="block text-sm font-inter font-black uppercase tracking-widest py-3 border-b border-black/10 dark:border-white/10 text-primary"
-              >
-                Cartoon Mandala
-              </Link>
-              <Link
-                href="/daily"
-                onClick={() => setMobileMenuOpen(false)}
-                className="block text-sm font-inter font-black uppercase tracking-widest py-3 text-primary"
-              >
-                Today&apos;s Edition
-              </Link>
-              <div className="flex gap-4 pt-4">
-                <Link href="/search" className="p-3 border-2 border-black dark:border-white">
-                  <Search className="w-5 h-5 dark:text-white" />
-                </Link>
-                <Link href="/bookmarks" className="p-3 border-2 border-black dark:border-white">
-                  <Bookmark className="w-5 h-5 dark:text-white" />
+                <Link href="/bookmarks" onClick={() => setMobileOpen(false)} className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-gray-50 dark:bg-white/5 rounded-lg text-[10px] font-inter font-bold uppercase tracking-wider dark:text-white">
+                  <Bookmark className="w-3.5 h-3.5" /> {t("Saved", "सेव्ड")}
                 </Link>
               </div>
-            </div>
-          </motion.div>
+
+              {/* Sections */}
+              <div className="px-5 py-3">
+                <p className="text-[9px] font-inter font-bold uppercase tracking-[0.2em] text-[var(--nyt-gray)] mb-2">{t("Sections", "सेक्शन")}</p>
+                {sections.map((s) => (
+                  <Link
+                    key={s.label}
+                    href={s.href}
+                    onClick={() => setMobileOpen(false)}
+                    className={cn(
+                      "block text-[13px] font-inter font-bold uppercase tracking-wider py-3 border-b border-[var(--nyt-border)]/50 active:bg-gray-50 dark:active:bg-white/5 transition-colors",
+                      "special" in s && s.special ? "text-red-500" : "text-[var(--nyt-black)] dark:text-white"
+                    )}
+                  >
+                    {s.label}
+                  </Link>
+                ))}
+              </div>
+
+              {/* Special sections */}
+              <div className="px-5 py-3 border-t border-[var(--nyt-border)]">
+                <p className="text-[9px] font-inter font-bold uppercase tracking-[0.2em] text-[var(--nyt-gray)] mb-2">{t("Special", "विशेष")}</p>
+                <Link href="/opposition-tracker" onClick={() => setMobileOpen(false)} className="flex items-center gap-2 text-[13px] font-inter font-bold uppercase tracking-wider py-3 border-b border-[var(--nyt-border)]/50 text-red-500">
+                  🎯 {t("Fact Check", "फैक्ट चेक")}
+                </Link>
+                <Link href="/modi-scorecard" onClick={() => setMobileOpen(false)} className="flex items-center gap-2 text-[13px] font-inter font-bold uppercase tracking-wider py-3 border-b border-[var(--nyt-border)]/50 text-[#FF9933]">
+                  📊 {t("Govt Report Card", "सरकार रिपोर्ट कार्ड")}
+                </Link>
+                <Link href="/talking-points" onClick={() => setMobileOpen(false)} className="flex items-center gap-2 text-[13px] font-inter font-bold uppercase tracking-wider py-3 border-b border-[var(--nyt-border)]/50 text-orange-500">
+                  🔥 {t("Daily Brief", "डेली ब्रीफ")}
+                </Link>
+                <Link href="/lok-post" onClick={() => setMobileOpen(false)} className="flex items-center gap-2 text-[13px] font-inter font-bold uppercase tracking-wider py-3 border-b border-[var(--nyt-border)]/50 text-primary">
+                  {t("Lok Post", "कार्टून मंडला")}
+                </Link>
+                <Link href="/daily" onClick={() => setMobileOpen(false)} className="flex items-center gap-2 text-[13px] font-inter font-bold uppercase tracking-wider py-3 border-b border-[var(--nyt-border)]/50 text-primary">
+                  {t("Today's Paper", "आज का अखबार")}
+                </Link>
+                <Link href="/epaper" onClick={() => setMobileOpen(false)} className="flex items-center gap-2 text-[13px] font-inter font-bold uppercase tracking-wider py-3 border-b border-[var(--nyt-border)]/50 text-primary">
+                  {t("E-Paper", "ई-पेपर")}
+                </Link>
+                <Link href="/write" onClick={() => setMobileOpen(false)} className="flex items-center gap-2 text-[13px] font-inter font-bold uppercase tracking-wider py-3 border-b border-[var(--nyt-border)]/50 text-primary">
+                  ✍️ {t("Write With Us", "हमारे साथ लिखें")}
+                </Link>
+              </div>
+
+              {/* Bottom actions */}
+              <div className="px-5 py-4 border-t border-[var(--nyt-border)] space-y-3">
+                <div className="flex gap-3">
+                  <button onClick={() => { toggleLang(); setMobileOpen(false); }} className="flex-1 py-2.5 text-[10px] font-inter font-bold uppercase tracking-wider border-2 border-[var(--nyt-border)] rounded-lg dark:text-white text-center">
+                    {lang === "en" ? "हिन्दी" : "English"}
+                  </button>
+                  {isLoggedIn ? (
+                    <button onClick={() => { signOut(); setMobileOpen(false); }} className="flex-1 py-2.5 text-[10px] font-inter font-bold uppercase tracking-wider text-red-500 border-2 border-red-200 rounded-lg flex items-center justify-center gap-1">
+                      <LogOut className="w-3 h-3" /> Sign out
+                    </button>
+                  ) : (
+                    <button onClick={() => { setShowAuthModal(true); setMobileOpen(false); }} className="flex-1 py-2.5 text-[10px] font-inter font-bold uppercase tracking-wider bg-primary text-white rounded-lg flex items-center justify-center gap-1">
+                      <LogIn className="w-3 h-3" /> Sign In
+                    </button>
+                  )}
+                </div>
+                <Link href="/premium" onClick={() => setMobileOpen(false)} className="block w-full py-3 text-center text-[10px] font-inter font-black uppercase tracking-widest bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-lg">
+                  ⚡ {t("GO ULTRA", "अल्ट्रा")}
+                </Link>
+              </div>
+            </motion.div>
+          </>
         )}
       </AnimatePresence>
+
+      {/* Auth Modal — lazy loaded */}
+      {showAuthModal && (
+        <Suspense fallback={null}>
+          <AuthModal open={showAuthModal} onClose={() => setShowAuthModal(false)} />
+        </Suspense>
+      )}
     </nav>
   );
 }
