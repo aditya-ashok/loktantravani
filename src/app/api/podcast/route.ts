@@ -409,7 +409,10 @@ export async function POST(req: NextRequest) {
       const vid = VOICES[audioVoice as keyof typeof VOICES] || VOICES.male;
       try {
         audioBuffer = await textToSpeech(preScript, vid);
-      } catch {
+      } catch { /* ElevenLabs failed */ }
+
+      // Fallback to Gemini TTS if ElevenLabs returned null or failed
+      if (!audioBuffer) {
         audioSource = "gemini";
         const geminiResult = await geminiTTS(preScript);
         if (geminiResult) {
@@ -490,8 +493,12 @@ export async function POST(req: NextRequest) {
       audioBuffer = await textToSpeech(script, voiceId);
       console.log("[Podcast] ElevenLabs success, size:", audioBuffer?.length);
     } catch (elevenErr) {
-      console.log("[Podcast] ElevenLabs failed:", String(elevenErr).slice(0, 200), "— trying Gemini TTS");
-      // Fallback to Gemini TTS (free)
+      console.log("[Podcast] ElevenLabs failed:", String(elevenErr).slice(0, 200));
+    }
+
+    // Fallback to Gemini TTS if ElevenLabs returned null or failed
+    if (!audioBuffer) {
+      console.log("[Podcast] Using Gemini TTS fallback");
       audioSource = "gemini";
       const geminiResult = await geminiTTS(script);
       if (geminiResult) {
