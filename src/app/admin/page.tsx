@@ -5495,27 +5495,54 @@ function PodcastStudio() {
 
   // Generate audio with cloned voice
   const createClonedAudio = async () => {
-    if (!script || !selectedCloneVoice) return;
+    if (!selectedCloneVoice) {
+      setError("Please select a cloned voice first.");
+      return;
+    }
+    if (!selectedPost) {
+      setError("Please select an article first.");
+      return;
+    }
     setGenerating(true);
     setError("");
+    setCloneMessage("");
     try {
+      // Step 1: Generate script if not done yet
+      let podScript = script;
+      if (!podScript) {
+        setCloneMessage("Step 1/2: Generating script...");
+        const scriptRes = await fetch("/api/podcast", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "generate-script-only", title: selectedPost.title, content: selectedPost.content, category: selectedPost.category, language: podcastLang, anchorName: anchorName || selectedPost.author || "" }),
+        });
+        const scriptData = await scriptRes.json();
+        if (!scriptRes.ok || !scriptData.script) throw new Error(scriptData.error || "Script generation failed");
+        podScript = scriptData.script;
+        setScript(podScript);
+      }
+
+      // Step 2: Generate cloned voice audio
+      setCloneMessage("Step 2/2: Cloning your voice & generating audio... (may take 30-60s)");
       const res = await fetch("/api/voice-clone", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           action: "tts-with-clone",
-          text: script,
+          text: podScript,
           voiceId: selectedCloneVoice,
           language: cloneLanguage,
         }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || data.tip || "Clone TTS failed");
-      setAudioUrl(data.audioUrl || "");
-      setCloneMessage(data.message || "Audio generated!");
+      if (!data.audioUrl) throw new Error(data.message || "No audio generated");
+      setAudioUrl(data.audioUrl);
+      setCloneMessage(data.message || "Audio generated with your cloned voice!");
       setStep("done");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Cloned voice generation failed");
+      setCloneMessage("");
     } finally {
       setGenerating(false);
     }
@@ -5732,14 +5759,25 @@ function PodcastStudio() {
               </div>
             </div>
 
-            <button
-              onClick={generateScript}
-              disabled={generating}
-              className="px-6 py-3 bg-black text-white font-inter font-bold text-xs uppercase tracking-widest flex items-center gap-2 disabled:opacity-50"
-            >
-              {generating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
-              Generate {podcastLang === "hi" ? "Hindi" : "English"} Podcast Script
-            </button>
+            {mode === "clone" ? (
+              <button
+                onClick={createClonedAudio}
+                disabled={generating || !selectedCloneVoice}
+                className="px-6 py-3 bg-emerald-600 text-white font-inter font-bold text-xs uppercase tracking-widest flex items-center gap-2 disabled:opacity-50 hover:bg-emerald-700 transition"
+              >
+                {generating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                {generating ? "Generating..." : !selectedCloneVoice ? "Select a Voice First ↑" : `Generate with Cloned Voice (${podcastLang === "hi" ? "Hindi" : "English"})`}
+              </button>
+            ) : (
+              <button
+                onClick={generateScript}
+                disabled={generating}
+                className="px-6 py-3 bg-black text-white font-inter font-bold text-xs uppercase tracking-widest flex items-center gap-2 disabled:opacity-50"
+              >
+                {generating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                Generate {podcastLang === "hi" ? "Hindi" : "English"} Podcast Script
+              </button>
+            )}
           </div>
         )}
       </div>
