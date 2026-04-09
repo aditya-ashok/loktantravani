@@ -61,9 +61,16 @@ async function downloadAudio(url: string): Promise<Buffer> {
 // Params: [text, speaker_wav (FileData), language]
 // Returns: [output audio FileData with url]
 async function voiceCloneTTS(text: string, referenceAudioUrl: string, language = "english"): Promise<Buffer> {
-  // Step 1: Download reference audio
+  // Step 1: Download reference audio and detect format
   const refAudio = await downloadAudio(referenceAudioUrl);
+  const header = refAudio.slice(0, 4).toString();
+  const isOgg = header === "OggS";
+  const isWavFile = header === "RIFF";
+  const mimeType = isOgg ? "audio/ogg" : isWavFile ? "audio/wav" : "audio/mpeg";
+  const ext = isOgg ? "ogg" : isWavFile ? "wav" : "mp3";
   const refBase64 = refAudio.toString("base64");
+
+  console.log("[VoiceClone] Ref audio:", refAudio.length, "bytes, format:", header, "mime:", mimeType);
 
   // Step 2: Map language
   const langMap: Record<string, string> = {
@@ -73,21 +80,35 @@ async function voiceCloneTTS(text: string, referenceAudioUrl: string, language =
   };
   const lang = langMap[language.toLowerCase()] || "en";
 
-  console.log("[VoiceClone] Calling XTTS v2, lang:", lang, "textLen:", text.length, "refSize:", refAudio.length);
+  console.log("[VoiceClone] Calling XTTS v2, lang:", lang, "textLen:", text.length, "refSize:", refAudio.length, "format:", header);
 
-  // Step 3: Call /call/predict (Gradio 5.x async API)
+  // Step 3: Upload reference audio to HuggingFace Space first (required by Gradio 5.x)
+  const uploadForm = new FormData();
+  uploadForm.append("files", new Blob([new Uint8Array(refAudio)], { type: mimeType }), `reference.${ext}`);
+
+  const uploadRes = await fetch(`${HF_SPACES.voiceClone}/upload`, {
+    method: "POST",
+    body: uploadForm,
+  });
+
+  if (!uploadRes.ok) {
+    throw new Error(`HF upload failed: ${uploadRes.status}`);
+  }
+
+  const uploadPaths = await uploadRes.json() as string[];
+  const uploadedPath = uploadPaths?.[0];
+  if (!uploadedPath) throw new Error("HF upload returned no file path");
+
+  console.log("[VoiceClone] Uploaded reference to HF:", uploadedPath);
+
+  // Step 4: Call /call/predict with uploaded file path
   const callRes = await fetch(`${HF_SPACES.voiceClone}/call/predict`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       data: [
         text.slice(0, 3000),
-        {
-          path: "reference.wav",
-          url: `data:audio/wav;base64,${refBase64}`,
-          orig_name: "reference.wav",
-          meta: { _type: "gradio.FileData" },
-        },
+        { path: uploadedPath, orig_name: `reference.${ext}`, meta: { _type: "gradio.FileData" } },
         lang,
       ],
     }),
@@ -113,13 +134,23 @@ async function voiceCloneTTS(text: string, referenceAudioUrl: string, language =
 
   // Find the last data line with actual content
   let audioUrl = "";
+  let sseError = "";
   for (const line of lines) {
+    // Check for event: error
+    if (line.startsWith("event:") && line.includes("error")) {
+      sseError = "HuggingFace Space returned an error";
+    }
     if (!line.startsWith("data:")) continue;
     const payload = line.slice(5).trim();
     if (payload === "null" || !payload) continue;
 
     try {
       const parsed = JSON.parse(payload);
+      // Check if it's an error string
+      if (typeof parsed === "string" && sseError) {
+        sseError = parsed;
+        continue;
+      }
       // Response is an array — first element is the output audio FileData
       if (Array.isArray(parsed) && parsed.length > 0) {
         const audioFile = parsed[0];
@@ -131,8 +162,12 @@ async function voiceCloneTTS(text: string, referenceAudioUrl: string, language =
     } catch { continue; }
   }
 
+  if (sseError && !audioUrl) {
+    throw new Error(`XTTS v2 error: ${sseError}`);
+  }
+
   if (!audioUrl) {
-    throw new Error("No audio URL in Voice Clone response");
+    throw new Error("No audio URL in Voice Clone response. Raw: " + resultText.slice(0, 300));
   }
 
   // Step 5: Download the generated audio from the Space
