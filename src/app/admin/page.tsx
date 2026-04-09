@@ -5696,14 +5696,12 @@ function PodcastStudio() {
 
           {/* How it works */}
           <div className="bg-white/50 dark:bg-white/5 border border-emerald-200/50 dark:border-emerald-700/20 p-3">
-            <p className="text-[10px] font-inter font-bold text-emerald-800 dark:text-emerald-300 mb-1">How Voice Cloning Works (100% FREE)</p>
+            <p className="text-[10px] font-inter font-bold text-emerald-800 dark:text-emerald-300 mb-1">2 Simple Steps</p>
             <ol className="text-[10px] font-inter text-emerald-700 dark:text-emerald-400 space-y-0.5 list-decimal ml-4">
-              <li>Upload a 10-30s audio sample of your voice (clear speech, no background noise)</li>
-              <li>Select an article and generate the podcast script with AI</li>
-              <li>OpenVoice V2 (HuggingFace) clones your voice and reads the script</li>
-              <li>Audio is saved to Firebase — ready to publish!</li>
+              <li><strong>Step 1:</strong> Upload a 10-30s audio sample of your voice (clear speech, no background noise)</li>
+              <li><strong>Step 2:</strong> Select article → Click &quot;Generate with Cloned Voice&quot; → Done!</li>
             </ol>
-            <p className="text-[9px] font-inter opacity-40 mt-1 dark:text-white/30">Powered by MyShell OpenVoice V2 · Fallback: Gemini TTS</p>
+            <p className="text-[9px] font-inter opacity-40 mt-1 dark:text-white/30">Powered by XTTS v2 (HuggingFace) · Fallback: ElevenLabs → Gemini TTS</p>
           </div>
         </div>
       )}
