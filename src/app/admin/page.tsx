@@ -1684,14 +1684,49 @@ function ApprovalQueue() {
                       ) : (
                         <div className="w-full h-full flex items-center justify-center"><ImageIcon className="w-8 h-8 opacity-20" /></div>
                       )}
-                      <button
-                        onClick={() => regenerateImage(post.id, editingPost.title)}
-                        disabled={regenImageId === post.id}
-                        className="absolute bottom-1 right-1 px-2 py-1 bg-black/80 text-white text-[7px] font-inter font-black uppercase opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1"
-                      >
-                        {regenImageId === post.id ? <Loader2 className="w-2.5 h-2.5 animate-spin" /> : <RefreshCw className="w-2.5 h-2.5" />}
-                        AI Regen
-                      </button>
+                      <div className="absolute bottom-1 right-1 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button
+                          onClick={() => {
+                            const input = document.createElement("input");
+                            input.type = "file";
+                            input.accept = "image/*";
+                            input.onchange = async () => {
+                              const file = input.files?.[0];
+                              if (!file) return;
+                              if (file.size > 4 * 1024 * 1024) { alert("Max 4MB"); return; }
+                              setRegenImageId(post.id);
+                              try {
+                                const formData = new FormData();
+                                formData.append("file", file);
+                                const res = await fetch("/api/admin/upload-image", { method: "POST", body: formData });
+                                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                                const data = await res.json();
+                                if (data.imageUrl) {
+                                  setEditingPost({ ...editingPost, imageUrl: data.imageUrl });
+                                  const { setDoc } = await import("@/lib/firestore-rest");
+                                  await setDoc(`posts/${post.id}`, { imageUrl: data.imageUrl });
+                                  setDrafts(prev => prev.map(p => p.id === post.id ? { ...p, imageUrl: data.imageUrl } : p));
+                                } else alert("Upload failed");
+                              } catch (err) { alert("Upload error: " + String(err)); }
+                              setRegenImageId(null);
+                            };
+                            input.click();
+                          }}
+                          disabled={regenImageId === post.id}
+                          className="px-2 py-1 bg-blue-600/90 text-white text-[7px] font-inter font-black uppercase flex items-center gap-1"
+                        >
+                          {regenImageId === post.id ? <Loader2 className="w-2.5 h-2.5 animate-spin" /> : <Upload className="w-2.5 h-2.5" />}
+                          Upload
+                        </button>
+                        <button
+                          onClick={() => regenerateImage(post.id, editingPost.title)}
+                          disabled={regenImageId === post.id}
+                          className="px-2 py-1 bg-black/80 text-white text-[7px] font-inter font-black uppercase flex items-center gap-1"
+                        >
+                          {regenImageId === post.id ? <Loader2 className="w-2.5 h-2.5 animate-spin" /> : <RefreshCw className="w-2.5 h-2.5" />}
+                          AI Regen
+                        </button>
+                      </div>
                     </div>
                     <div className="flex-1 space-y-2">
                       <div>
