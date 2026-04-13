@@ -62,7 +62,7 @@ export async function GET(req: NextRequest) {
     const structuredQuery: Record<string, unknown> = {
       from: [{ collectionId: "posts" }],
       orderBy: [{ field: { fieldPath: "createdAt" }, direction: "DESCENDING" }],
-      limit: 300,
+      limit: 1000,
     };
 
     if (filters.length > 0) {
@@ -80,7 +80,7 @@ export async function GET(req: NextRequest) {
       // If index not ready, try without orderBy
       const fallbackQuery: Record<string, unknown> = {
         from: [{ collectionId: "posts" }],
-        limit: 300,
+        limit: 1000,
       };
       if (filters.length > 0) {
         fallbackQuery.where = filters.length === 1 ? filters[0] : { compositeFilter: { op: "AND", filters } };
