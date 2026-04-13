@@ -1,12 +1,14 @@
 "use client";
 
-import React, { useMemo } from "react";
+import React from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { ArrowRight } from "lucide-react";
 import BlogCard from "@/components/BlogCard";
 import { HouseAd } from "@/components/GoogleAd";
 import { useLanguage } from "@/lib/language-context";
+import { getAuthorHiName } from "@/lib/authors";
+import { timeAgo } from "@/lib/utils";
 import ForYouFeed from "@/components/ForYouFeed";
 import type { Post } from "@/lib/types";
 
@@ -29,11 +31,6 @@ function SectionHeader({ en, hi, href }: { en: string; hi: string; href?: string
 export default function LandingContent({ allPosts }: { allPosts: Post[] }) {
   const { lang, t } = useLanguage();
 
-  const breakingNews = useMemo(() => 
-    allPosts.filter(p => p.isBreaking).map(p => p.title),
-    [allPosts]
-  );
-
   const geoPosts    = allPosts.filter(p => ["Geopolitics","IR","World"].includes(p.category));
   const politicsPosts = allPosts.filter(p => p.category === "Politics");
   const indiaPosts = allPosts.filter(p => p.category === "India");
@@ -49,28 +46,80 @@ export default function LandingContent({ allPosts }: { allPosts: Post[] }) {
 
   if (!featuredPost) return null;
 
+  const featuredAuthor = lang === "hi" ? getAuthorHiName(featuredPost.author) : featuredPost.author;
+  const featuredCategory = lang === "hi" ? featuredPost.category : featuredPost.category;
+
   return (
     <>
-      {/* ── Breaking News Ticker ───────────── */}
-      {breakingNews.length > 0 && (
-        <div className="border-b border-[var(--nyt-border)] bg-red-50 dark:bg-red-950/30">
-          <div className="max-w-screen-xl mx-auto px-4 md:px-8 py-1.5 flex items-center gap-4 overflow-hidden">
-            <span className="bg-red-600 text-white text-[8px] font-inter font-black uppercase tracking-widest px-2 py-1 shrink-0 animate-pulse">
-              {t("Breaking", "ब्रेकिंग")}
-            </span>
-            <div className="overflow-hidden relative flex-1">
-              <div className="flex gap-12 text-xs font-inter text-red-800 dark:text-red-300 whitespace-nowrap animate-[marquee_40s_linear_infinite]">
-                {breakingNews.map((headline, i) => (
-                  <React.Fragment key={i}>
-                    <span className="font-bold">{headline}</span>
-                    {i < breakingNews.length - 1 && <span className="text-red-400">·</span>}
-                  </React.Fragment>
-                ))}
+      <div className="max-w-screen-xl mx-auto px-4 md:px-8 py-6">
+        <div className="grid gap-5 lg:grid-cols-[1.4fr_0.6fr] mb-6">
+          <Link
+            href={`/${featuredPost.category.toLowerCase().replace(/\s+/g, "-")}/${featuredPost.slug}`}
+            className="group rounded-[2rem] border border-[var(--nyt-border)] bg-white/95 dark:bg-[#111] overflow-hidden shadow-[0_32px_90px_-55px_rgba(0,0,0,0.35)] transition hover:shadow-[0_40px_120px_-70px_rgba(0,0,0,0.35)] flex flex-col"
+          >
+            {/* Hero image */}
+            {featuredPost.imageUrl && (
+              <div className="relative w-full aspect-[2/1] overflow-hidden">
+                <Image
+                  src={featuredPost.imageUrl}
+                  alt={featuredPost.title}
+                  fill
+                  sizes="(max-width: 768px) 100vw, 60vw"
+                  className="object-cover transition-transform duration-500 group-hover:scale-105"
+                  priority
+                  unoptimized
+                />
+              </div>
+            )}
+            <div className="p-8">
+              <p className="text-[10px] uppercase tracking-[0.35em] font-black text-primary mb-4">
+                {t("Featured article", "फ़ीचर्ड लेख")}
+              </p>
+              <p className="text-[9px] uppercase tracking-[0.28em] font-semibold text-[var(--nyt-gray)] dark:text-white/50 mb-3">
+                {featuredCategory}
+              </p>
+              <h2 className="font-newsreader text-3xl md:text-4xl font-black tracking-tight text-[var(--nyt-black)] dark:text-white">
+                {lang === "hi" && featuredPost.titleHi ? featuredPost.titleHi : featuredPost.title}
+              </h2>
+              <p className="mt-5 max-w-3xl text-[0.98rem] leading-8 text-[var(--nyt-gray)] dark:text-white/70">
+                {lang === "hi" && featuredPost.summaryHi ? featuredPost.summaryHi : featuredPost.summary}
+              </p>
+              <div className="mt-8 flex flex-wrap gap-4 text-[10px] font-semibold uppercase tracking-[0.25em] text-[var(--nyt-gray)] dark:text-white/50">
+                <span>{featuredAuthor}</span>
+                <span>·</span>
+                <span>{timeAgo(featuredPost.createdAt as Date)}</span>
+                <span>·</span>
+                <span>{featuredPost.readingTimeMin} {t("min read", "मिनट पढ़ें")}</span>
+              </div>
+              <div className="mt-8 inline-flex rounded-full border border-black/10 bg-black text-white px-6 py-3 font-bold uppercase tracking-[0.18em] transition group-hover:bg-primary">
+                {t("Read story", "कहानी पढ़ें")}
+              </div>
+            </div>
+          </Link>
+
+          <div className="rounded-[2rem] border border-[var(--nyt-border)] bg-[var(--secondary)] dark:bg-[#111] p-6">
+            <p className="text-[9px] uppercase tracking-[0.35em] font-black text-primary mb-4">
+              {t("Why it matters", "क्यों महत्वपूर्ण है")}
+            </p>
+            <p className="text-sm leading-7 text-[var(--nyt-gray)] dark:text-white/70">
+              {t(
+                "Every day we surface the top headlines, analysis, and opinion that matter most for India and the world.",
+                "हम हर दिन भारत और दुनिया के लिए सबसे महत्वपूर्ण शीर्ष कहानियाँ, विश्लेषण और राय प्रस्तुत करते हैं।"
+              )}
+            </p>
+            <div className="mt-6 space-y-4 text-[10px] font-medium text-[var(--nyt-black)] dark:text-white/70">
+              <div className="rounded-xl border border-[var(--nyt-border)] bg-white/90 dark:bg-[#090909] p-4">
+                <p className="font-black uppercase tracking-[0.25em]">{t("Top category", "शीर्ष श्रेणी")}</p>
+                <p className="mt-2">{featuredCategory}</p>
+              </div>
+              <div className="rounded-xl border border-[var(--nyt-border)] bg-white/90 dark:bg-[#090909] p-4">
+                <p className="font-black uppercase tracking-[0.25em]">{t("Editorial note", "संपादकीय नोट")}</p>
+                <p className="mt-2">{t("Trusted reporting, concise briefing, and a bold opinion voice.", "विश्वसनीय रिपोर्टिंग, संक्षिप्त ब्रीफिंग, और एक साहसी विचारधारा।")}</p>
               </div>
             </div>
           </div>
         </div>
-      )}
+      </div>
 
       <div className="max-w-screen-xl mx-auto px-4 md:px-8">
         <div className="grid grid-cols-12 gap-0 pt-0 pb-6 border-b border-[var(--nyt-border)]">

@@ -1,36 +1,41 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Loktantra Vani
 
-## Getting Started
+Loktantra Vani is a bilingual news website built with Next.js and Tailwind CSS. It delivers AI-enhanced editorial coverage across politics, geopolitics, economy, sports, tech, defence, and culture in both English and Hindi.
 
-First, run the development server:
+## Project Overview
+
+- Next.js 16 app with the App Router
+- Tailwind CSS for styling and responsive layout
+- Firebase-powered auth, data, and notifications
+- SEO-ready metadata, Open Graph, and structured data
+- AI-curated news, editorial labels, and premium content
+
+## Run Locally
+
+Install dependencies and start the project:
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000). If port 3000 is occupied, Next.js will automatically pick the next available port.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Commands
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- `npm run dev` — start development server
+- `npm run build` — create a production build
+- `npm run start` — run the production build
+- `npm run lint` — run ESLint
 
-## Learn More
+## Key Files
 
-To learn more about Next.js, take a look at the following resources:
+- `src/app/page.tsx` — homepage entry point
+- `src/components/LandingContent.tsx` — homepage content layout
+- `src/components/Navbar.tsx` — top navigation
+- `src/components/Footer.tsx` — footer and newsletter section
+- `src/app/layout.tsx` — global metadata and theme provider
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Notes
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+This project is designed for fast news delivery with editorial structure, bilingual support, and a premium experience for readers.

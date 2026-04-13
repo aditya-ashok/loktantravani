@@ -5333,9 +5333,17 @@ function PodcastStudio() {
   const [videoId, setVideoId] = useState("");
   const [videoStatus, setVideoStatus] = useState<{ status: string; videoUrl?: string; thumbnail?: string } | null>(null);
   const [audioUrl, setAudioUrl] = useState("");
-  const [mode, setMode] = useState<"audio" | "video" | "clone">("audio");
+  const [mode, setMode] = useState<"audio" | "video" | "clone" | "free-video">("audio");
   const [avatarId, setAvatarId] = useState("");
   const [voiceId, setVoiceId] = useState("");
+  const [heygenAvatars, setHeygenAvatars] = useState<Array<{ avatar_id: string; avatar_name: string; gender: string; preview_image_url?: string }>>([]);
+  const [heygenVoices, setHeygenVoices] = useState<Array<{ voice_id: string; name: string; language: string; gender: string; preview_audio?: string }>>([]);
+  const [heygenLoading, setHeygenLoading] = useState(false);
+
+  // Free video state
+  const [scenes, setScenes] = useState<Array<{ scene: number; description: string; visualPrompt: string; duration: number; imageUrl?: string; videoUrl?: string; videoEventId?: string; videoStatus?: string; videoProvider?: string; videoProgress?: number; streamUrl?: string; videoMessage?: string }>>([]);
+  const [videoGenerating, setVideoGenerating] = useState<Record<number, boolean>>({});
+  const [scenesGenerating, setScenesGenerating] = useState(false);
   const [error, setError] = useState("");
   const [step, setStep] = useState<"select" | "script" | "generate" | "done">("select");
   const [podcastLang, setPodcastLang] = useState<"en" | "hi">("en");
@@ -5425,6 +5433,47 @@ function PodcastStudio() {
       setGenerating(false);
     }
   };
+
+  // Load HeyGen avatars & voices
+  const loadHeygenOptions = async () => {
+    if (heygenAvatars.length > 0) return; // already loaded
+    setHeygenLoading(true);
+    try {
+      const [avRes, voRes] = await Promise.all([
+        fetch("/api/podcast", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "heygen-list-avatars" }) }),
+        fetch("/api/podcast", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "heygen-list-voices" }) }),
+      ]);
+      const avData = await avRes.json();
+      const voData = await voRes.json();
+      if (avData.avatars) {
+        // Filter to Indian/news-friendly avatars and sort by name
+        const sorted = avData.avatars.sort((a: { avatar_name: string }, b: { avatar_name: string }) => a.avatar_name.localeCompare(b.avatar_name));
+        setHeygenAvatars(sorted);
+        if (!avatarId && sorted.length > 0) {
+          // Auto-select an Indian avatar if available
+          const indian = sorted.find((a: { avatar_name: string }) => /aditya|priya|arjun|anita|raj|sharma|neha|amit|sanjay/i.test(a.avatar_name));
+          setAvatarId(indian?.avatar_id || sorted[0].avatar_id);
+        }
+      }
+      if (voData.voices) {
+        // Filter to Hindi voices first, then English
+        const hindi = voData.voices.filter((v: { language: string }) => /hindi/i.test(v.language));
+        const english = voData.voices.filter((v: { language: string }) => /english/i.test(v.language)).slice(0, 20);
+        setHeygenVoices([...hindi, ...english]);
+        if (!voiceId && hindi.length > 0) setVoiceId(hindi[0].voice_id);
+      }
+    } catch (err) {
+      console.error("Failed to load HeyGen options:", err);
+    } finally {
+      setHeygenLoading(false);
+    }
+  };
+
+  // Auto-load HeyGen options when video mode is selected
+  useEffect(() => {
+    if (mode === "video") loadHeygenOptions();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode]);
 
   const createVideo = async () => {
     if (!script) return;
@@ -5561,6 +5610,97 @@ function PodcastStudio() {
     } catch {}
   };
 
+  // ── Free Video: Generate scenes from script ──
+  const generateScenes = async () => {
+    if (!script) {
+      setError("Generate a script first before creating scenes.");
+      return;
+    }
+    setScenesGenerating(true);
+    setError("");
+    try {
+      const res = await fetch("/api/video-gen", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "generate-scenes", script, numScenes: 5 }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      setScenes(data.scenes || []);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Scene breakdown failed");
+    } finally {
+      setScenesGenerating(false);
+    }
+  };
+
+  // ── Free Video: Generate video clip for a scene ──
+  const generateSceneVideo = async (sceneIndex: number) => {
+    const scene = scenes[sceneIndex];
+    if (!scene) return;
+    setVideoGenerating(prev => ({ ...prev, [sceneIndex]: true }));
+    setError("");
+    try {
+      const res = await fetch("/api/video-gen", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "generate-video", prompt: scene.visualPrompt, enhance: true }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+
+      setScenes(prev => prev.map((s, i) => i === sceneIndex ? {
+        ...s,
+        videoUrl: data.videoUrl || undefined,
+        videoEventId: data.sessionHash || data.eventId || data.taskId || undefined,
+        videoStatus: data.status === "submitted" ? "processing" : data.status,
+        videoProvider: data.provider || "self-forcing",
+        videoProgress: data.progress || 0,
+        streamUrl: data.streamUrl || undefined,
+      } : s));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : `Scene ${sceneIndex + 1} video failed`);
+    } finally {
+      setVideoGenerating(prev => ({ ...prev, [sceneIndex]: false }));
+    }
+  };
+
+  // ── Free Video: Check status of a scene video ──
+  const checkSceneVideoStatus = async (sceneIndex: number) => {
+    const scene = scenes[sceneIndex];
+    if (!scene?.videoEventId) return;
+    try {
+      const checkBody: Record<string, string> = { action: "check-status", provider: scene.videoProvider || "self-forcing" };
+      if (scene.videoProvider === "kling") {
+        checkBody.taskId = scene.videoEventId || "";
+      } else {
+        checkBody.sessionHash = scene.videoEventId || "";
+      }
+      const res = await fetch("/api/video-gen", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(checkBody),
+      });
+      const data = await res.json();
+      setScenes(prev => prev.map((s, i) => i === sceneIndex ? {
+        ...s,
+        videoUrl: data.videoUrl || data.streamUrl || s.videoUrl,
+        videoStatus: data.status,
+        videoProgress: data.progress ?? s.videoProgress,
+        videoMessage: data.message || s.videoMessage,
+      } : s));
+    } catch {}
+  };
+
+  // ── Free Video: Generate ALL scene videos at once ──
+  const generateAllSceneVideos = async () => {
+    for (let i = 0; i < scenes.length; i++) {
+      if (!scenes[i].videoUrl && scenes[i].videoStatus !== "processing") {
+        await generateSceneVideo(i);
+      }
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
@@ -5581,6 +5721,9 @@ function PodcastStudio() {
         </button>
         <button onClick={() => setMode("clone")} className={cn("px-4 py-2 text-xs font-inter font-black uppercase tracking-widest border-2", mode === "clone" ? "border-emerald-500 bg-emerald-500 text-white" : "border-gray-300 dark:border-white/20 dark:text-white")}>
           🧬 Voice Clone (FREE)
+        </button>
+        <button onClick={() => setMode("free-video")} className={cn("px-4 py-2 text-xs font-inter font-black uppercase tracking-widest border-2", mode === "free-video" ? "border-orange-500 bg-orange-500 text-white" : "border-gray-300 dark:border-white/20 dark:text-white")}>
+          🎬 Free AI Video
         </button>
       </div>
 
@@ -5706,6 +5849,181 @@ function PodcastStudio() {
         </div>
       )}
 
+      {/* Free AI Video Panel */}
+      {mode === "free-video" && (
+        <div className="bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-900/10 dark:to-amber-900/10 border border-orange-200 dark:border-orange-700/30 p-5 space-y-4">
+          <div className="flex items-center gap-2 mb-2">
+            <span className="text-2xl">🎬</span>
+            <div>
+              <h3 className="text-sm font-inter font-black uppercase tracking-widest dark:text-white">Free AI Video Studio</h3>
+              <p className="text-[10px] font-inter opacity-50 dark:text-white/50">Generate video podcasts using Wan 2.1 (FREE via HuggingFace) + Pollinations.ai</p>
+            </div>
+          </div>
+
+          {/* How it works */}
+          <div className="bg-white/50 dark:bg-white/5 border border-orange-200/50 dark:border-orange-700/20 p-3">
+            <p className="text-[10px] font-inter font-bold text-orange-800 dark:text-orange-300 mb-1">3-Step Pipeline</p>
+            <ol className="text-[10px] font-inter text-orange-700 dark:text-orange-400 space-y-0.5 list-decimal ml-4">
+              <li><strong>Script → Scenes:</strong> AI breaks your podcast script into cinematic scenes with visual prompts</li>
+              <li><strong>Scenes → Images + Videos:</strong> Instant preview images (Pollinations) + AI video clips</li>
+              <li><strong>Combine:</strong> Download clips + audio → combine in CapCut (free)</li>
+            </ol>
+            <p className="text-[9px] font-inter opacity-40 mt-1 dark:text-white/30">
+              Video providers: Replicate (set REPLICATE_API_TOKEN) · fal.ai (set FAL_KEY) · HuggingFace (free, GPU limited) · <a href="https://app.klingai.com" target="_blank" className="underline">Kling AI (66 free/day)</a>
+            </p>
+          </div>
+
+          {/* Scene breakdown button (after script is generated) */}
+          {script && scenes.length === 0 && (
+            <button
+              onClick={generateScenes}
+              disabled={scenesGenerating}
+              className="px-6 py-3 bg-orange-600 text-white font-inter font-bold text-xs uppercase tracking-widest flex items-center gap-2 disabled:opacity-50 hover:bg-orange-700 transition w-full justify-center"
+            >
+              {scenesGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+              {scenesGenerating ? "Breaking script into scenes..." : "Break Script into Visual Scenes"}
+            </button>
+          )}
+
+          {/* Scene cards */}
+          {scenes.length > 0 && (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <h4 className="text-xs font-inter font-black uppercase tracking-widest dark:text-white">{scenes.length} Scenes Generated</h4>
+                <button
+                  onClick={generateAllSceneVideos}
+                  className="px-4 py-2 bg-orange-600 text-white text-[10px] font-inter font-bold uppercase tracking-widest hover:bg-orange-700 transition flex items-center gap-1.5"
+                >
+                  <Video className="w-3 h-3" /> Generate All Videos
+                </button>
+              </div>
+
+              {scenes.map((scene, i) => (
+                <div key={i} className="bg-white dark:bg-[#1a1a1a] border border-black/10 dark:border-white/10 p-4 space-y-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="bg-orange-500 text-white text-[9px] font-inter font-bold px-2 py-0.5 rounded-full">Scene {scene.scene}</span>
+                        <span className="text-[10px] font-inter opacity-40 dark:text-white/40">{scene.duration}s</span>
+                      </div>
+                      <p className="text-sm font-inter dark:text-white">{scene.description}</p>
+                      <p className="text-[10px] font-inter opacity-40 dark:text-white/40 mt-1 italic">{scene.visualPrompt.slice(0, 120)}...</p>
+                    </div>
+                    {/* Preview image */}
+                    {scene.imageUrl && (
+                      <img
+                        src={scene.imageUrl}
+                        alt={`Scene ${scene.scene}`}
+                        className="w-32 h-20 object-cover border border-black/10 dark:border-white/10 rounded flex-shrink-0"
+                        loading="lazy"
+                      />
+                    )}
+                  </div>
+
+                  {/* Video controls */}
+                  <div className="flex items-center gap-2">
+                    {!scene.videoUrl && scene.videoStatus !== "processing" && (
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <button
+                          onClick={() => generateSceneVideo(i)}
+                          disabled={videoGenerating[i]}
+                          className="px-3 py-1.5 bg-orange-500 text-white text-[10px] font-inter font-bold uppercase tracking-widest flex items-center gap-1.5 disabled:opacity-50 hover:bg-orange-600 transition"
+                        >
+                          {videoGenerating[i] ? <Loader2 className="w-3 h-3 animate-spin" /> : <Video className="w-3 h-3" />}
+                          {videoGenerating[i] ? "Generating..." : "Generate Video"}
+                        </button>
+                        <button
+                          onClick={() => { navigator.clipboard.writeText(scene.visualPrompt); setCloneMessage(`Prompt copied! Paste in Kling AI → klingai.com`); }}
+                          className="px-3 py-1.5 border border-orange-300 dark:border-orange-700 text-[10px] font-inter font-bold uppercase text-orange-600 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-900/20 transition"
+                          title="Copy prompt to use in Kling AI (66 free credits/day)"
+                        >
+                          📋 Copy for Kling
+                        </button>
+                      </div>
+                    )}
+
+                    {scene.videoStatus === "processing" && scene.videoEventId && (
+                      <div className="flex-1 space-y-1">
+                        <div className="flex items-center gap-2">
+                          <Loader2 className="w-3 h-3 animate-spin text-orange-500" />
+                          <span className="text-[10px] font-inter text-orange-600 dark:text-orange-400">
+                            {scene.videoMessage || `Generating... ${scene.videoProgress ? `${Math.round(scene.videoProgress)}%` : ""}`}
+                          </span>
+                          <button
+                            onClick={() => checkSceneVideoStatus(i)}
+                            className="px-2 py-1 border border-orange-300 dark:border-orange-700 text-[9px] font-inter font-bold uppercase text-orange-600 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-900/20 transition"
+                          >
+                            Refresh
+                          </button>
+                        </div>
+                        {(scene.videoProgress ?? 0) > 0 && (
+                          <div className="w-full bg-gray-200 dark:bg-white/10 rounded-full h-1.5">
+                            <div className="bg-orange-500 h-1.5 rounded-full transition-all" style={{ width: `${scene.videoProgress}%` }} />
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {scene.videoUrl && (
+                      <div className="flex items-center gap-2 flex-1">
+                        <span className="text-[10px] font-inter text-green-600 font-bold">✅ Ready</span>
+                        <a
+                          href={scene.videoUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="px-3 py-1.5 border border-green-300 dark:border-green-700 text-[10px] font-inter font-bold uppercase text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 transition"
+                        >
+                          Download Clip
+                        </a>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Video player */}
+                  {scene.videoUrl && (
+                    <video
+                      src={scene.videoUrl}
+                      controls
+                      className="w-full max-h-48 border border-black/10 dark:border-white/10 rounded bg-black"
+                    />
+                  )}
+                </div>
+              ))}
+
+              {/* Summary */}
+              <div className="bg-white/50 dark:bg-white/5 border border-orange-200/50 dark:border-orange-700/20 p-3 flex items-center justify-between">
+                <div>
+                  <p className="text-[10px] font-inter font-bold text-orange-800 dark:text-orange-300">
+                    {scenes.filter(s => s.videoUrl).length}/{scenes.length} clips ready
+                  </p>
+                  <p className="text-[9px] font-inter opacity-40 dark:text-white/30">Total duration: ~{scenes.reduce((a, s) => a + s.duration, 0)}s</p>
+                </div>
+                {audioUrl && (
+                  <a href={audioUrl} target="_blank" rel="noopener" className="px-3 py-1.5 bg-black text-white text-[10px] font-inter font-bold uppercase tracking-widest">
+                    Download Audio Track
+                  </a>
+                )}
+              </div>
+
+              {/* Regenerate scenes */}
+              <button
+                onClick={() => { setScenes([]); generateScenes(); }}
+                disabled={scenesGenerating}
+                className="text-[10px] font-inter text-orange-500 underline hover:text-orange-700 transition"
+              >
+                Regenerate scene breakdown
+              </button>
+            </div>
+          )}
+
+          {!script && (
+            <div className="p-4 bg-white dark:bg-[#1a1a1a] border border-orange-200 dark:border-orange-700/30 text-center">
+              <p className="text-sm font-inter opacity-50 dark:text-white/50">Select an article and generate a script first (Step 1 below), then come back here to create video scenes.</p>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Step 1: Select article */}
       <div className="bg-white dark:bg-[#1a1a1a] border border-black/10 dark:border-white/10 p-4">
         <h3 className="text-sm font-inter font-black uppercase tracking-widest mb-3 dark:text-white">1. Select Article</h3>
@@ -5798,29 +6116,75 @@ function PodcastStudio() {
       {step === "script" && (
         <div className="bg-white dark:bg-[#1a1a1a] border border-black/10 dark:border-white/10 p-4">
           <h3 className="text-sm font-inter font-black uppercase tracking-widest mb-3 dark:text-white">
-            3. Generate {mode === "video" ? "Video" : mode === "clone" ? "Cloned Audio" : "Audio"}
+            3. Generate {mode === "video" ? "Video" : mode === "clone" ? "Cloned Audio" : mode === "free-video" ? "Free Video + Audio" : "Audio"}
           </h3>
 
           {mode === "video" && (
-            <div className="grid grid-cols-2 gap-3 mb-4">
-              <div>
-                <label className="text-[9px] font-inter font-black uppercase opacity-50 dark:text-white/50">Avatar ID</label>
-                <input
-                  value={avatarId}
-                  onChange={(e) => setAvatarId(e.target.value)}
-                  placeholder="Your HeyGen Avatar ID"
-                  className="w-full p-2 border border-gray-300 dark:border-white/20 dark:bg-[#111] dark:text-white text-sm font-inter mt-1"
-                />
-              </div>
-              <div>
-                <label className="text-[9px] font-inter font-black uppercase opacity-50 dark:text-white/50">Voice ID (optional)</label>
-                <input
-                  value={voiceId}
-                  onChange={(e) => setVoiceId(e.target.value)}
-                  placeholder="HeyGen Voice ID"
-                  className="w-full p-2 border border-gray-300 dark:border-white/20 dark:bg-[#111] dark:text-white text-sm font-inter mt-1"
-                />
-              </div>
+            <div className="space-y-3 mb-4">
+              {heygenLoading ? (
+                <div className="flex items-center gap-2 p-3 bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-700 text-sm font-inter text-purple-700 dark:text-purple-300">
+                  <Loader2 className="w-4 h-4 animate-spin" /> Loading HeyGen avatars & voices...
+                </div>
+              ) : (
+                <>
+                  <div>
+                    <label className="text-[9px] font-inter font-black uppercase opacity-50 dark:text-white/50 mb-1 block">Select Avatar</label>
+                    {heygenAvatars.length > 0 ? (
+                      <>
+                        <select
+                          value={avatarId}
+                          onChange={(e) => setAvatarId(e.target.value)}
+                          className="w-full p-2 border border-gray-300 dark:border-white/20 dark:bg-[#111] dark:text-white text-sm font-inter"
+                        >
+                          <option value="">-- Select an Avatar --</option>
+                          {heygenAvatars.map(a => (
+                            <option key={a.avatar_id} value={a.avatar_id}>
+                              {a.avatar_name} ({a.gender})
+                            </option>
+                          ))}
+                        </select>
+                        <p className="text-[10px] font-inter opacity-40 mt-1 dark:text-white/40">{heygenAvatars.length} avatars available</p>
+                      </>
+                    ) : (
+                      <input
+                        value={avatarId}
+                        onChange={(e) => setAvatarId(e.target.value)}
+                        placeholder="Avatar ID (set HEYGEN_API_KEY to load list)"
+                        className="w-full p-2 border border-gray-300 dark:border-white/20 dark:bg-[#111] dark:text-white text-sm font-inter"
+                      />
+                    )}
+                  </div>
+                  <div>
+                    <label className="text-[9px] font-inter font-black uppercase opacity-50 dark:text-white/50 mb-1 block">Select Voice</label>
+                    {heygenVoices.length > 0 ? (
+                      <>
+                        <select
+                          value={voiceId}
+                          onChange={(e) => setVoiceId(e.target.value)}
+                          className="w-full p-2 border border-gray-300 dark:border-white/20 dark:bg-[#111] dark:text-white text-sm font-inter"
+                        >
+                          <option value="">-- Select a Voice --</option>
+                          {heygenVoices.map(v => (
+                            <option key={v.voice_id} value={v.voice_id}>
+                              {v.name} — {v.language} ({v.gender})
+                            </option>
+                          ))}
+                        </select>
+                        <p className="text-[10px] font-inter opacity-40 mt-1 dark:text-white/40">
+                          {heygenVoices.filter(v => /hindi/i.test(v.language)).length} Hindi + {heygenVoices.filter(v => /english/i.test(v.language)).length} English voices
+                        </p>
+                      </>
+                    ) : (
+                      <input
+                        value={voiceId}
+                        onChange={(e) => setVoiceId(e.target.value)}
+                        placeholder="Voice ID (optional)"
+                        className="w-full p-2 border border-gray-300 dark:border-white/20 dark:bg-[#111] dark:text-white text-sm font-inter"
+                      />
+                    )}
+                  </div>
+                </>
+              )}
             </div>
           )}
 
@@ -5841,16 +6205,61 @@ function PodcastStudio() {
             </div>
           )}
 
+          {mode === "free-video" && (
+            <div className="mb-4">
+              <label className="text-[9px] font-inter font-black uppercase opacity-50 dark:text-white/50 mb-2 block">Voice Selection</label>
+              {clonedVoices.length > 0 ? (
+                <div className="space-y-2">
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      onClick={() => setSelectedCloneVoice("")}
+                      className={cn("px-3 py-1.5 text-xs font-inter font-bold border-2 transition-all", !selectedCloneVoice ? "border-orange-500 bg-orange-500 text-white" : "border-gray-300 dark:border-white/20 dark:text-white hover:border-orange-400")}
+                    >
+                      🔊 Default Voice (Gemini)
+                    </button>
+                    {clonedVoices.map(v => (
+                      <button
+                        key={v.id}
+                        onClick={() => setSelectedCloneVoice(v.id)}
+                        className={cn("px-3 py-1.5 text-xs font-inter font-bold border-2 transition-all", selectedCloneVoice === v.id ? "border-orange-500 bg-orange-500 text-white" : "border-gray-300 dark:border-white/20 dark:text-white hover:border-orange-400")}
+                      >
+                        🎙️ {v.name} ({v.language})
+                      </button>
+                    ))}
+                  </div>
+                  {selectedCloneVoice && (
+                    <div className="flex items-center gap-2 p-2 bg-orange-50 dark:bg-orange-900/20 border border-orange-300 dark:border-orange-700">
+                      <div className="w-2 h-2 rounded-full bg-orange-500" />
+                      <span className="text-xs font-inter font-bold dark:text-white">
+                        Using cloned voice: {clonedVoices.find(v => v.id === selectedCloneVoice)?.name}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="p-3 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-700 text-sm font-inter text-orange-700 dark:text-orange-300">
+                  Using default Gemini voice. To use your own voice, switch to the &quot;🎙️ Voice Clone&quot; tab first to upload a voice sample.
+                </div>
+              )}
+            </div>
+          )}
           <button
-            onClick={mode === "video" ? createVideo : mode === "clone" ? createClonedAudio : createAudio}
+            onClick={mode === "video" ? createVideo : mode === "clone" ? createClonedAudio : async () => {
+              if (mode === "free-video" && selectedCloneVoice) {
+                await createClonedAudio();
+              } else {
+                await createAudio();
+              }
+              if (mode === "free-video") generateScenes();
+            }}
             disabled={generating || (mode === "clone" && !selectedCloneVoice)}
             className={cn(
               "px-6 py-3 text-white font-inter font-bold text-xs uppercase tracking-widest flex items-center gap-2 disabled:opacity-50",
-              mode === "video" ? "bg-purple-600" : mode === "clone" ? "bg-emerald-600" : "bg-primary"
+              mode === "video" ? "bg-purple-600" : mode === "clone" ? "bg-emerald-600" : mode === "free-video" ? "bg-orange-600" : "bg-primary"
             )}
           >
             {generating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Video className="w-4 h-4" />}
-            {generating ? "Generating..." : mode === "video" ? "Create HeyGen Video" : mode === "clone" ? "Generate with Cloned Voice" : "Generate Audio Podcast"}
+            {generating ? "Generating..." : mode === "video" ? "Create HeyGen Video" : mode === "clone" ? "Generate with Cloned Voice" : mode === "free-video" ? (selectedCloneVoice ? "Generate with Cloned Voice + Video Scenes" : "Generate Audio + Video Scenes") : "Generate Audio Podcast"}
           </button>
         </div>
       )}
@@ -5895,10 +6304,13 @@ function PodcastStudio() {
         <p className="text-xs font-inter font-bold text-yellow-800 dark:text-yellow-300 mb-1">Environment Setup</p>
         <ul className="text-xs font-inter text-yellow-700 dark:text-yellow-400 space-y-1 list-disc ml-4">
           <li><strong>Audio:</strong> Set <code>ELEVENLABS_API_KEY</code> (or uses Gemini TTS as free fallback)</li>
-          <li><strong>Video:</strong> Set <code>HEYGEN_API_KEY</code> from <a href="https://app.heygen.com/settings" target="_blank" className="underline">HeyGen Dashboard</a></li>
-          <li><strong>HeyGen Avatar:</strong> Create your avatar at HeyGen → Avatars → Instant Avatar</li>
-          <li><strong>Your face:</strong> Record 2-5 min video of yourself → upload to HeyGen → get Avatar ID</li>
-          <li><strong>Voice Clone:</strong> FREE — uses OpenVoice V2 on HuggingFace. No API key needed!</li>
+          <li><strong>Video (HeyGen):</strong> Set <code>HEYGEN_API_KEY</code> from <a href="https://app.heygen.com/settings" target="_blank" className="underline">HeyGen Dashboard</a></li>
+          <li><strong>Free AI Video (best):</strong> Set <code>REPLICATE_API_TOKEN</code> — free trial runs at <a href="https://replicate.com" target="_blank" className="underline">replicate.com</a></li>
+          <li><strong>Free AI Video (alt):</strong> Set <code>FAL_KEY</code> — free credits at <a href="https://fal.ai" target="_blank" className="underline">fal.ai</a></li>
+          <li><strong>Free AI Video (no key):</strong> HuggingFace Spaces — free but GPU limited. Or use <a href="https://app.klingai.com" target="_blank" className="underline">Kling AI</a> (66 free credits/day)</li>
+          <li><strong>Scene Images:</strong> Pollinations.ai — always free, instant, no API key</li>
+          <li><strong>Voice Clone:</strong> FREE — XTTS v2 on HuggingFace. No API key needed!</li>
+          <li><strong>Combine clips:</strong> Use <a href="https://www.capcut.com" target="_blank" className="underline">CapCut</a> (free) or DaVinci Resolve</li>
         </ul>
       </div>
     </div>

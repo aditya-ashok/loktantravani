@@ -91,24 +91,24 @@ export default function Navbar() {
     )}>
 
       {/* ── Row 1: Thin utility bar ───────────────────────────────── */}
-      <div className="border-b border-[var(--nyt-border)] dark:border-[var(--nyt-border)] px-4 md:px-8 h-8 flex items-center relative">
-        {/* Left: date — visible on all screens */}
-        <span className="font-inter text-[var(--nyt-gray)] flex items-baseline gap-1 sm:gap-2 tracking-wide min-w-0">
+      <div className="border-b border-[var(--nyt-border)] dark:border-[var(--nyt-border)] px-4 md:px-8 h-8 flex items-center">
+        {/* Left: date — truncates on mobile to avoid overlap */}
+        <span className="font-inter text-[var(--nyt-gray)] flex items-baseline gap-1 sm:gap-2 tracking-wide min-w-0 flex-1">
           {(() => {
             const d = formatNavDate(lang);
             return d.sub ? (
               <>
-                <span className="text-[9px] sm:text-[11px] font-bold text-[var(--nyt-black)] dark:text-white truncate">{d.main}</span>
-                <span className="text-[8px] sm:text-[9px] opacity-60 hidden sm:inline">{d.sub}</span>
+                <span className="text-[9px] sm:text-[11px] font-bold text-[var(--nyt-black)] dark:text-white truncate max-w-[140px] sm:max-w-none">{d.main}</span>
+                <span className="text-[8px] sm:text-[9px] opacity-60 hidden md:inline">{d.sub}</span>
               </>
             ) : (
-              <span className="text-[9px] sm:text-[10px] truncate">{d.main}</span>
+              <span className="text-[9px] sm:text-[10px] truncate max-w-[140px] sm:max-w-none">{d.main}</span>
             );
           })()}
         </span>
 
-        {/* Center: Live tag — absolute center */}
-        <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-1.5">
+        {/* Center: Live tag */}
+        <div className="hidden sm:flex items-center gap-1.5 mx-4 shrink-0">
           <span className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse" />
           <span className="text-[9px] font-inter font-bold uppercase tracking-widest text-red-500">
             {t("Live Updates", "लाइव अपडेट")}
@@ -276,36 +276,18 @@ export default function Navbar() {
               </Link>
             ))}
             <Link
-              href="/lok-post"
-              className="text-[9px] font-inter font-bold uppercase tracking-wider px-2.5 py-1.5 whitespace-nowrap text-primary hover:underline"
+              href="/epaper"
+              className="text-[9px] font-inter font-bold uppercase tracking-wider px-2.5 py-1.5 whitespace-nowrap text-[var(--nyt-black)] dark:text-white/90 hover:text-primary transition-colors relative group"
             >
-              {t("Lok Post", "कार्टून मंडला")}
-            </Link>
-            <Link
-              href="/opposition-tracker"
-              className="text-[9px] font-inter font-bold uppercase tracking-wider px-2.5 py-1.5 whitespace-nowrap text-red-600 dark:text-red-400 hover:underline"
-            >
-              {t("🎯 Fact Check", "🎯 फैक्ट चेक")}
-            </Link>
-            <Link
-              href="/modi-scorecard"
-              className="text-[9px] font-inter font-bold uppercase tracking-wider px-2.5 py-1.5 whitespace-nowrap text-[#FF9933] hover:underline"
-            >
-              {t("📊 Govt Report Card", "📊 सरकार रिपोर्ट कार्ड")}
-            </Link>
-            <Link
-              href="/talking-points"
-              className="text-[9px] font-inter font-bold uppercase tracking-wider px-2.5 py-1.5 whitespace-nowrap text-orange-500 hover:underline"
-            >
-              {t("🔥 Daily Brief", "🔥 डेली ब्रीफ")}
+              {t("Today's Paper", "आज का अखबार")}
+              <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-primary group-hover:w-full transition-all" />
             </Link>
           </div>
           <Link
-            href="/epaper"
-            className="text-[9px] font-inter font-bold uppercase tracking-widest text-primary border-l border-[var(--nyt-border)] pl-3 py-1.5 whitespace-nowrap hover:underline flex items-center gap-1.5"
+            href="/opposition-tracker"
+            className="text-[9px] font-inter font-bold uppercase tracking-widest text-[var(--nyt-black)] dark:text-white/90 border-l border-[var(--nyt-border)] pl-3 py-1.5 whitespace-nowrap hover:text-primary transition-colors"
           >
-            <span className="w-1.5 h-1.5 bg-primary rounded-full animate-pulse" />
-            {t("E-Paper", "ई-पेपर")}
+            {t("Fact Check", "फैक्ट चेक")}
           </Link>
         </div>
       </div>

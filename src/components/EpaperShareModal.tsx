@@ -295,10 +295,26 @@ export default function EpaperShareModal({ isOpen, onClose, post }: EpaperShareM
                 </div>
               </div>
 
-              {/* Hero Image */}
+              {/* Hero Image — proxy external images to avoid CORS */}
               {post.imageUrl && (
                 <div className="w-full overflow-hidden flex-shrink-0" style={{ height: 175 }}>
-                  <img src={post.imageUrl} alt="" crossOrigin="anonymous" referrerPolicy="no-referrer" className="w-full h-full object-cover" />
+                  <img
+                    src={post.imageUrl.startsWith("/") ? post.imageUrl : `/api/proxy-image?url=${encodeURIComponent(post.imageUrl)}`}
+                    alt=""
+                    crossOrigin="anonymous"
+                    referrerPolicy="no-referrer"
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      const img = e.currentTarget;
+                      img.style.display = "none";
+                      if (img.parentElement) {
+                        img.parentElement.style.background = `linear-gradient(135deg, ${accent}, #e8870a)`;
+                        img.parentElement.style.display = "flex";
+                        img.parentElement.style.alignItems = "center";
+                        img.parentElement.style.justifyContent = "center";
+                      }
+                    }}
+                  />
                 </div>
               )}
 
@@ -328,11 +344,24 @@ export default function EpaperShareModal({ isOpen, onClose, post }: EpaperShareM
                 <div className="flex items-start justify-between pt-2 pb-2 border-t" style={{ borderColor: isBjp ? "#FF993330" : "#eee" }}>
                   <div className="flex items-center gap-2 flex-1 min-w-0">
                     {post.authorPhoto ? (
-                      <img src={post.authorPhoto} alt="" crossOrigin="anonymous" referrerPolicy="no-referrer" className="w-9 h-9 rounded-full object-cover flex-shrink-0 border-2" style={{ borderColor: accent }} />
+                      <img
+                        src={post.authorPhoto.startsWith("/") ? post.authorPhoto : `/api/proxy-image?url=${encodeURIComponent(post.authorPhoto)}`}
+                        alt=""
+                        crossOrigin="anonymous"
+                        referrerPolicy="no-referrer"
+                        className="w-9 h-9 rounded-full object-cover flex-shrink-0 border-2"
+                        style={{ borderColor: accent }}
+                        onError={(e) => { e.currentTarget.style.display = "none"; }}
+                      />
                     ) : (
-                      <div className="w-9 h-9 rounded-full flex items-center justify-center text-[11px] font-newsreader font-bold flex-shrink-0" style={{ background: `${accent}20`, color: accent }}>
-                        {post.author.charAt(0)}
-                      </div>
+                      <img
+                        src={`/api/proxy-image?url=${encodeURIComponent(`https://ui-avatars.com/api/?name=${encodeURIComponent(post.author)}&background=FF9933&color=fff&size=128&bold=true`)}`}
+                        alt=""
+                        crossOrigin="anonymous"
+                        className="w-9 h-9 rounded-full object-cover flex-shrink-0 border-2"
+                        style={{ borderColor: accent }}
+                        onError={(e) => { e.currentTarget.style.display = "none"; }}
+                      />
                     )}
                     <div className="min-w-0">
                       {(() => {

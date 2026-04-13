@@ -19,6 +19,19 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   if (!post) return { title: "Article Not Found" };
   const cat = post.category.toLowerCase().replace(/\s+/g, "-");
   const url = `${SITE_URL}/${cat}/${post.slug}`;
+
+  // Use article image directly for OG — WhatsApp/social crawlers handle Firebase URLs fine
+  const fallbackImage = `${SITE_URL}/og-image.png`;
+  const ogImage = (post.imageUrl || "").trim() || fallbackImage;
+  const absoluteImage = ogImage.startsWith("http") ? ogImage : `${SITE_URL}${ogImage.startsWith("/") ? "" : "/"}${ogImage}`;
+
+  // Handle both Date objects and ISO strings from Firestore REST
+  const publishedTime = post.createdAt instanceof Date
+    ? post.createdAt.toISOString()
+    : typeof post.createdAt === "string"
+      ? post.createdAt
+      : undefined;
+
   return {
     title: post.title,
     description: post.summary?.slice(0, 160),
@@ -28,20 +41,20 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
       description: post.summary?.slice(0, 160),
       url,
       type: "article",
-      publishedTime: post.createdAt instanceof Date ? post.createdAt.toISOString() : undefined,
+      publishedTime,
       authors: [post.author],
-      images: post.imageUrl ? [{ url: post.imageUrl, width: 1200, height: 630 }] : [],
+      images: [{ url: absoluteImage, width: 1200, height: 630, alt: post.title }],
       siteName: "LoktantraVani",
     },
     twitter: {
       card: "summary_large_image",
       title: post.title,
       description: post.summary?.slice(0, 160),
-      images: post.imageUrl ? [post.imageUrl] : [],
+      images: [{ url: absoluteImage, alt: post.title }],
     },
     alternates: { canonical: url },
     other: {
-      "article:published_time": post.createdAt instanceof Date ? post.createdAt.toISOString() : "",
+      "article:published_time": publishedTime || "",
       "article:author": post.author,
       "article:section": post.category,
       "article:tag": post.tags?.join(", ") || post.category,

@@ -2,8 +2,10 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { Send, MessageCircle } from "lucide-react";
+import { Send, MessageCircle, Twitter, Linkedin, Facebook, Globe } from "lucide-react";
 import { useLanguage } from "@/lib/language-context";
+import WeatherWidget from "@/components/WeatherWidget";
+import StockTicker from "@/components/StockTicker";
 
 const footerLinks = [
   { en: "Bharat Pulse", hi: "भारत पल्स", href: "/category/India" },
@@ -23,11 +25,11 @@ const footerLinks = [
 ];
 
 const socialLinks = [
-  { label: "X / Twitter", href: "https://twitter.com/loktantravani", icon: "𝕏" },
-  { label: "Discord", href: "https://discord.gg/loktantravani", icon: "🎮" },
-  { label: "WhatsApp", href: "https://whatsapp.com/channel/loktantravani", icon: "💬" },
-  { label: "LinkedIn", href: "https://linkedin.com/company/loktantravani", icon: "in" },
-  { label: "Facebook", href: "https://facebook.com/loktantravani", icon: "f" },
+  { label: "X / Twitter", href: "https://twitter.com/loktantravani", icon: Twitter },
+  { label: "Discord", href: "https://discord.gg/loktantravani", icon: MessageCircle },
+  { label: "WhatsApp", href: "https://whatsapp.com/channel/loktantravani", icon: Globe },
+  { label: "LinkedIn", href: "https://linkedin.com/company/loktantravani", icon: Linkedin },
+  { label: "Facebook", href: "https://facebook.com/loktantravani", icon: Facebook },
 ];
 
 export default function Footer() {
@@ -44,8 +46,12 @@ export default function Footer() {
   };
 
   return (
-    <footer className="mt-16 border-t-4 border-black dark:border-white/20 pt-10 pb-8 px-6 md:px-12 bg-white dark:bg-[#0a0a0a]">
-      <div className="max-w-7xl mx-auto">
+    <footer className="mt-16 border-t-4 border-black dark:border-white/20 bg-white dark:bg-[#0a0a0a]">
+      {/* Market & Weather — moved from header for cleaner top */}
+      <StockTicker />
+      <WeatherWidget />
+
+      <div className="max-w-7xl mx-auto pt-10 pb-8 px-6 md:px-12">
         {/* Newsletter — compact */}
         <div className="mb-10 p-6 border-2 border-black dark:border-white/20 bg-[#fafafa] dark:bg-white/5">
           <div className="flex flex-col md:flex-row items-center gap-4">
@@ -104,20 +110,27 @@ export default function Footer() {
 
           {/* Social Links */}
           <div className="flex gap-2.5">
-            {socialLinks.map((link) => (
-              <a
-                key={link.label}
-                href={link.href}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-8 h-8 border border-black/20 dark:border-white/20 flex items-center justify-center font-inter font-bold text-[10px] hover:bg-primary hover:text-white hover:border-primary transition-all dark:text-white/60"
-                title={link.label}
-              >
-                {link.icon}
-              </a>
-            ))}
+            {socialLinks.map((link) => {
+              const Icon = link.icon;
+              return (
+                <a
+                  key={link.label}
+                  href={link.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-10 h-10 border border-black/20 dark:border-white/20 flex items-center justify-center text-[var(--nyt-gray)] hover:bg-primary hover:text-white hover:border-primary transition-all dark:text-white/60"
+                  title={link.label}
+                >
+                  <Icon className="w-4 h-4" />
+                </a>
+              );
+            })}
           </div>
 
+          <div className="flex flex-col md:flex-row justify-between items-center w-full gap-4 text-[10px] font-inter text-[var(--nyt-gray)] dark:text-white/50 mb-4">
+            <p>{t("Editorial contact:", "संपादकीय संपर्क:")} <a href="mailto:editor@loktantravani.in" className="underline hover:text-primary">editor@loktantravani.in</a></p>
+            <p>{t("Built for news, by news people.", "समाचार के लिए बनाया गया।")}</p>
+          </div>
           <div className="w-full h-px bg-black/10 dark:bg-white/10" />
 
           <div className="flex flex-col md:flex-row justify-between items-center w-full gap-4 text-[9px] font-inter font-bold opacity-25 tracking-[0.15em] uppercase dark:text-white/25">

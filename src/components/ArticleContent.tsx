@@ -150,14 +150,16 @@ export default function ArticleContent({ post }: { post: Post }) {
           </div>
           <aside className="col-span-12 lg:col-span-4 space-y-8">
              <div className="sticky top-[240px]">
-               <div className="border-4 border-black dark:border-white/20 p-6 mb-8">
-                 <h4 className="text-sm font-inter font-black uppercase tracking-widest mb-4">In This Article</h4>
-                 <div className="space-y-3 text-sm font-newsreader">
-                   {post.content.match(/<h2>(.*?)<\/h2>/g)?.map((match, idx) => (
-                     <p key={idx} className="border-l-2 border-black/10 pl-3">{match.replace(/<\/?h2>/g, "")}</p>
-                   ))}
+               {post.content.match(/<h2>(.*?)<\/h2>/g)?.length ? (
+                 <div className="border-4 border-black dark:border-white/20 p-6 mb-8">
+                   <h4 className="text-sm font-inter font-black uppercase tracking-widest mb-4">In This Article</h4>
+                   <div className="space-y-3 text-sm font-newsreader">
+                     {post.content.match(/<h2>(.*?)<\/h2>/g)?.map((match, idx) => (
+                       <p key={idx} className="border-l-2 border-black/10 pl-3 hover:border-primary cursor-pointer transition-colors">{match.replace(/<\/?h2>/g, "")}</p>
+                     ))}
+                   </div>
                  </div>
-               </div>
+               ) : null}
                {/* Sidebar ad — sticky */}
                <GoogleAd format="rectangle" />
              </div>

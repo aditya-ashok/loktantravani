@@ -520,6 +520,136 @@ function SchemeCard({
   );
 }
 
+function ArticleCard({
+  title,
+  author,
+  category,
+  imageUrl,
+  authorPhoto,
+}: {
+  title: string;
+  author: string;
+  category: string;
+  imageUrl: string;
+  authorPhoto: string;
+}) {
+  return (
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        width: 1200,
+        height: 630,
+        background: WHITE,
+        fontFamily: "sans-serif",
+        position: "relative",
+        overflow: "hidden",
+      }}
+    >
+      {/* Top tricolor stripe */}
+      <div style={{ display: "flex", width: "100%", height: 6 }}>
+        <div style={{ flex: 1, background: SAFFRON }} />
+        <div style={{ flex: 1, background: WHITE }} />
+        <div style={{ flex: 1, background: GREEN }} />
+      </div>
+
+      {/* Main content - two columns */}
+      <div style={{ display: "flex", flex: 1 }}>
+        {/* Left: Article image */}
+        <div style={{ display: "flex", width: 480, position: "relative" }}>
+          {imageUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={imageUrl}
+              alt=""
+              style={{ width: "100%", height: "100%", objectFit: "cover" }}
+            />
+          ) : (
+            <div style={{ display: "flex", width: "100%", height: "100%", background: `linear-gradient(135deg, ${SAFFRON}, ${NAVY})`, alignItems: "center", justifyContent: "center" }}>
+              <div style={{ fontSize: 80, color: WHITE, fontWeight: 900 }}>LV</div>
+            </div>
+          )}
+          {/* Category badge overlay */}
+          <div style={{
+            display: "flex",
+            position: "absolute",
+            bottom: 16,
+            left: 16,
+            background: SAFFRON,
+            color: WHITE,
+            padding: "6px 18px",
+            fontSize: 16,
+            fontWeight: 800,
+            letterSpacing: 2,
+            textTransform: "uppercase",
+          }}>
+            {category}
+          </div>
+        </div>
+
+        {/* Right: Text content */}
+        <div style={{
+          display: "flex",
+          flexDirection: "column",
+          flex: 1,
+          padding: "40px 44px 32px",
+          justifyContent: "space-between",
+          background: `linear-gradient(180deg, ${WHITE} 0%, #FAFAFA 100%)`,
+        }}>
+          {/* Branding */}
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <div style={{ fontSize: 28, fontWeight: 900, letterSpacing: 1 }}>
+              <span style={{ color: SAFFRON }}>Loktantra</span>
+              <span style={{ color: NAVY }}>Vani</span>
+            </div>
+          </div>
+
+          {/* Title */}
+          <div style={{
+            display: "flex",
+            fontSize: title.length > 80 ? 30 : title.length > 50 ? 36 : 42,
+            fontWeight: 900,
+            color: DARK,
+            lineHeight: 1.25,
+            letterSpacing: -0.5,
+            marginTop: 20,
+          }}>
+            {title.slice(0, 120)}
+          </div>
+
+          {/* Author row */}
+          <div style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 14,
+            marginTop: "auto",
+            paddingTop: 20,
+          }}>
+            {/* Author avatar */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={authorPhoto}
+              alt=""
+              style={{ width: 48, height: 48, borderRadius: "50%", border: `2px solid ${SAFFRON}` }}
+            />
+            <div style={{ display: "flex", flexDirection: "column" }}>
+              <div style={{ fontSize: 20, fontWeight: 700, color: DARK }}>{author}</div>
+              <div style={{ fontSize: 16, color: "#888" }}>loktantravani.in</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Bottom tricolor stripe */}
+      <div style={{ display: "flex", width: "100%", height: 6 }}>
+        <div style={{ flex: 1, background: SAFFRON }} />
+        <div style={{ flex: 1, background: WHITE }} />
+        <div style={{ flex: 1, background: GREEN }} />
+      </div>
+    </div>
+  );
+}
+
 // --- Shared layout wrapper ---
 
 function BaseCard({ children }: { children: React.ReactNode }) {
@@ -662,6 +792,24 @@ export async function GET(req: NextRequest) {
   const metric = sp.get("metric") || "";
   const growth = sp.get("growth") || "";
   const beneficiaries = sp.get("beneficiaries") || "";
+  const imageUrl = sp.get("image") || "";
+  const author = sp.get("author") || "LoktantraVani";
+  const category = sp.get("category") || "India";
+  const authorPhoto = sp.get("authorPhoto") || `https://ui-avatars.com/api/?name=${encodeURIComponent(author)}&background=FF9933&color=fff&size=128&bold=true`;
+
+  // Article card — special 1200x630 size for OG
+  if (type === "article") {
+    const card = (
+      <ArticleCard
+        title={title || "LoktantraVani"}
+        author={author}
+        category={category}
+        imageUrl={imageUrl}
+        authorPhoto={authorPhoto}
+      />
+    );
+    return new ImageResponse(card, { width: 1200, height: 630 });
+  }
 
   let card: React.ReactElement;
 

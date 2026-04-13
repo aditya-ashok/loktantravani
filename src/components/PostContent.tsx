@@ -48,10 +48,10 @@ export default function PostContent({ content, contentHi }: PostContentProps) {
   return (
     <div
       className={cn(
-        "post-content newspaper-text max-w-none text-justify",
+        "post-content newspaper-text max-w-none",
         lang === "hi" && "hindi"
       )}
-      style={{ textAlign: "justify", hyphens: "auto" }}
+      style={{ textAlign: "left", hyphens: "auto" }}
       dangerouslySetInnerHTML={{ __html: html }}
     />
   );

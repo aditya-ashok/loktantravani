@@ -260,16 +260,58 @@ export function getStockImageUrl(category: string, topic: string = ""): string {
   return images[hash % images.length];
 }
 
+/** Common Hindi→English transliterations for news headline slugs */
+const HINDI_SLUG_WORDS: Record<string, string> = {
+  "भारत": "bharat", "भारतीय": "bharatiya", "प्रधानमंत्री": "pm", "मोदी": "modi",
+  "सरकार": "sarkar", "देश": "desh", "राज्य": "rajya", "चुनाव": "chunav",
+  "संसद": "sansad", "लोकसभा": "loksabha", "राज्यसभा": "rajyasabha",
+  "मंत्री": "mantri", "नेता": "neta", "पार्टी": "party", "बीजेपी": "bjp",
+  "कांग्रेस": "congress", "विपक्ष": "vipaksh", "सेना": "sena",
+  "रक्षा": "raksha", "युद्ध": "yuddh", "शांति": "shanti",
+  "अर्थव्यवस्था": "economy", "बजट": "budget", "आर्थिक": "economic",
+  "कीमत": "price", "बाजार": "market", "व्यापार": "trade",
+  "तकनीक": "tech", "डिजिटल": "digital", "इंटरनेट": "internet",
+  "खेल": "sports", "क्रिकेट": "cricket", "विश्व": "world",
+  "पाकिस्तान": "pakistan", "चीन": "china", "अमेरिका": "america",
+  "रूस": "russia", "शिक्षा": "education", "स्वास्थ्य": "health",
+  "नई": "new", "दिल्ली": "delhi", "मुंबई": "mumbai",
+  "कोलकाता": "kolkata", "बेंगलुरु": "bengaluru", "हैदराबाद": "hyderabad",
+  "आतंकवाद": "terrorism", "सुरक्षा": "security", "पुलिस": "police",
+  "न्यायालय": "court", "कानून": "law", "अदालत": "court",
+  "किसान": "farmer", "महिला": "women", "युवा": "youth",
+  "विकास": "development", "योजना": "scheme", "नीति": "policy",
+  "समाचार": "news", "ताजा": "latest", "बड़ी": "big", "बड़ा": "big",
+  "खबर": "news", "रिपोर्ट": "report", "आज": "today",
+};
+
 /** Generate a URL-friendly slug — always English ASCII, never Hindi */
 export function generateSlug(title: string): string {
   // Strip all non-ASCII, keep only a-z, 0-9, spaces, hyphens
-  const base = title
+  const ascii = title
     .toLowerCase()
     .replace(/[^a-z0-9\s-]/g, "")
     .replace(/\s+/g, "-")
     .replace(/-+/g, "-")
     .replace(/^-|-$/g, "");
-  // If slug is empty (pure Hindi title), use "article" as fallback
-  const slug = base.slice(0, 80) || "article";
-  return slug + "-" + Date.now().toString(36);
+
+  if (ascii.length >= 10) {
+    return ascii.slice(0, 80) + "-" + Date.now().toString(36);
+  }
+
+  // Try transliterating Hindi words for better slugs
+  const words = title.split(/\s+/);
+  const translated: string[] = [];
+  for (const word of words) {
+    const clean = word.replace(/[।,!?\-:;'"()]/g, "").trim();
+    if (!clean) continue;
+    if (/^[a-zA-Z0-9]+$/.test(clean)) {
+      translated.push(clean.toLowerCase());
+    } else if (HINDI_SLUG_WORDS[clean]) {
+      translated.push(HINDI_SLUG_WORDS[clean]);
+    }
+  }
+
+  const transliterated = translated.join("-").slice(0, 80);
+  const base = transliterated || ascii || "article";
+  return base + "-" + Date.now().toString(36);
 }

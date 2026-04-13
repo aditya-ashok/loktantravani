@@ -37,7 +37,7 @@ function pcmToWav(pcm: Buffer, rate = 24000): Buffer {
 }
 
 // ── XTTS v2 Voice Clone (HuggingFace — FREE) ──
-async function xttsClone(text: string, refAudioUrl: string): Promise<Buffer> {
+async function xttsClone(text: string, refAudioUrl: string, language = "en"): Promise<Buffer> {
   // 1. Download reference audio
   const refRes = await fetch(refAudioUrl);
   if (!refRes.ok) throw new Error("Cannot download reference audio");
@@ -67,7 +67,7 @@ async function xttsClone(text: string, refAudioUrl: string): Promise<Buffer> {
   const callRes = await fetch(`${HF_SPACE}/call/predict`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ data: [text.slice(0, 2000), { path: uploadedPath, orig_name: `ref.${ext}`, meta: { _type: "gradio.FileData" } }, "en"] }),
+    body: JSON.stringify({ data: [text.slice(0, 2000), { path: uploadedPath, orig_name: `ref.${ext}`, meta: { _type: "gradio.FileData" } }, language] }),
   });
   if (!callRes.ok) throw new Error(`HF predict failed: ${callRes.status}`);
   const callText = await callRes.text();
@@ -106,7 +106,10 @@ async function xttsClone(text: string, refAudioUrl: string): Promise<Buffer> {
   }
 
   if (!audioUrl) throw new Error("XTTS returned no audio");
-  console.log("[Clone] audio URL:", audioUrl.slice(0, 80));
+
+  // Fix Gradio 5.x URL: /c/file= returns 404, but /file= works
+  audioUrl = audioUrl.replace("/c/file=", "/file=");
+  console.log("[Clone] audio URL:", audioUrl.slice(0, 120));
 
   // 5. Download cloned audio
   const audioRes = await fetch(audioUrl);
@@ -231,8 +234,10 @@ export async function POST(req: NextRequest) {
 
       // Try 1: XTTS v2 on HuggingFace (FREE voice cloning)
       try {
-        console.log("[Clone] Trying XTTS v2...");
-        audioBuffer = await xttsClone(text, voice.referenceUrl);
+        const langMap: Record<string, string> = { hindi: "hi", english: "en", tamil: "ta", telugu: "te", bengali: "bn", marathi: "mr", gujarati: "gu" };
+        const xttsLang = langMap[voice.language] || voice.language || "en";
+        console.log("[Clone] Trying XTTS v2 with lang:", xttsLang);
+        audioBuffer = await xttsClone(text, voice.referenceUrl, xttsLang);
         source = "xtts-v2";
         console.log("[Clone] XTTS success!", audioBuffer.length, "bytes");
       } catch (err) {

@@ -138,7 +138,7 @@ const SECTION_SEARCH: Record<string, string> = {
   Sports: "India sports news today cricket IPL Olympic medal espncricinfo.com",
   Tech: "India technology news today AI startups ISRO Digital India semiconductor UPI",
   Defence: "India defence news today military indigenisation Make in India HAL DRDO pib.gov.in",
-  Opinion: "India opposition propaganda fact check Congress AAP failure BJP achievement editorial swarajyamag.com opindia.com",
+  Opinion: "India editorial opinion column today economy policy governance BJP reform development analysis swarajyamag.com firstpost.com",
   Cities: "Indian cities news today smart city infrastructure metro highway airport development Modi government",
   "West Asia": "West Asia Middle East news today Iran Israel India impact oil crude",
   "Lok Post": "India trending satirical topics today opposition gaffe political cartoon BJP Congress",
@@ -254,12 +254,12 @@ EDITORIAL STANCE:
 - When opposition makes allegations, present the COUNTER-NARRATIVE with government data and context that the mainstream media often ignores
 - Tone: confident, data-driven, patriotic — NOT aggressive, hateful, or communal. Think Swarajya Magazine + Republic TV editorial quality
 
-PROPAGANDA ANALYSIS FRAMEWORK (for opposition claims):
-- Identify the specific claim made by opposition
-- Present the actual data/facts that counter it
-- Show historical comparison (UPA vs NDA performance metrics)
-- Highlight what mainstream media omits in their coverage
-- Conclude with ground reality and impact on common citizen
+CRITICAL QUALITY RULES FOR ALL ARTICLES:
+- NEVER write a "Fact-Check" article unless the research brief contains a SPECIFIC verifiable claim with SPECIFIC counter-data
+- Every article MUST have substantial information — at least 5 concrete facts, numbers, dates, or data points from the research
+- Do NOT generate generic rebuttals without real data. If the research is thin, write a NEWS ANALYSIS instead of a fact-check
+- NEVER pad articles with vague statements like "data shows" or "experts believe" without actual data
+- Headlines must reflect the article's actual content — no clickbait that promises more than the article delivers
 ${isOpinion ? "\nPERSPECTIVE: This is an OPINION/EDITORIAL column. Write in FIRST PERSON (I, my, we, our). Express a clear personal viewpoint with conviction, like a veteran columnist writing their weekly editorial. Take a strong stance from a nationalist perspective and argue it persuasively with data.\n" : ""}
 RULES:
 - Write ONLY in ${language === "en" ? "English" : language === "hi" ? "Hindi Devanagari" : "English with Hindi headline"}
@@ -272,8 +272,8 @@ RULES:
 - For sports: include stats, records, match history
 - For geopolitics: include timeline, strategic implications
 - Do NOT include any byline ("By [Name]") in the article — it's added by the system
-- Do NOT use ANY subheadings (<h2>, <h3>) at all. Write flowing prose like a New York Times article — paragraphs only, no section breaks
-- Do NOT end with a "Conclusion" or "Looking Ahead" paragraph — end with the last substantive point
+- Use 3-4 clear <h2> subheadings to structure the article into scannable sections (e.g. "The Ground Reality", "What The Data Shows", "Strategic Implications"). This helps readers navigate long articles.
+- Do NOT end with a generic "Conclusion" or "Looking Ahead" paragraph — end with the last substantive, impactful point
 - ${language === "en" ? "ZERO Hindi words. ZERO Devanagari characters. Pure English." : ""}
 
 INLINE INFOGRAPHICS — embed these HTML elements naturally within the article body:
@@ -309,10 +309,10 @@ IMPORTANT: Embed these infographic elements naturally within the article HTML:
 
 Return ONLY valid JSON:
 {
-  "headline": "CLICKBAIT viral headline — curiosity-gap style, max 12 words. Use power words: Shocking, Exclusive, Breaking, Game-Changer, Historic, Exposed, Secret, Massive, Unprecedented. Examples: 'Shocking Data Reveals Why India Is Beating China at Its Own Game', 'Exclusive: The Secret Plan Behind Modi's Biggest Power Move Yet'",
+  "headline": "Authoritative, compelling headline — max 15 words. Clear and news-driven like NYT/Swarajya. NEVER start with 'Fact-Check:' unless article contains genuine verifiable claim + counter-data. Use strong, precise language. Power words OK sparingly: Historic, Decisive, Critical, Landmark. Examples: 'India's Defence Exports Cross $3 Billion Mark in Historic First', 'Bihar's New BJP Chief Charts Independent Course Amid Coalition Pressures'",
   "headlineHi": "${language === "en" ? "" : "Hindi headline in Devanagari"}",
   "summary": "engaging 2-3 sentence summary",
-  "content": "full HTML article with <p> paragraphs, plus embedded .fact-box, .info-box, and <blockquote> elements. NO <h2>/<h3> subheadings. ${wordCount}+ words.",
+  "content": "full HTML article with <p> paragraphs, 3-4 <h2> subheadings for structure, plus embedded .fact-box, .info-box, and <blockquote> elements. ${wordCount}+ words.",
   "imagePrompt": "VERY SPECIFIC AND DETAILED scene for a POLITICAL CARICATURE / SATIRICAL CARTOON that illustrates THIS article's main subject. Describe: the key figures with EXAGGERATED features (big heads, small bodies, expressive faces), the setting, symbolic props (like flags, podiums, weapons, money bags), and the mood (triumphant, scheming, defeated). Style: bold editorial cartoon like R.K. Laxman, Shankar, or MAD magazine. Example: if article is about opposition criticising GDP data, describe 'caricature of opposition leader with oversized glasses squinting at a tiny magnifying glass while a massive GDP growth chart towers behind him, Indian flag waving proudly'. Be HYPER-SPECIFIC to this exact news story. NOT photorealistic — pure cartoon/caricature."
 }`;
 
