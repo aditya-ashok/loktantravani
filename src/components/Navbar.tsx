@@ -86,17 +86,9 @@ export default function Navbar() {
       <div className="border-b border-[var(--nyt-border)] dark:border-[var(--nyt-border)] px-4 md:px-8 h-8 flex items-center">
         {/* Left: date — truncates on mobile to avoid overlap */}
         <span className="font-inter text-[var(--nyt-gray)] flex items-baseline gap-1 sm:gap-2 tracking-wide min-w-0 flex-1">
-          {(() => {
-            const d = formatNavDate(lang);
-            return d.sub ? (
-              <>
-                <span className="text-[9px] sm:text-[11px] font-bold text-[var(--nyt-black)] dark:text-white truncate max-w-[140px] sm:max-w-none">{d.main}</span>
-                <span className="text-[8px] sm:text-[9px] opacity-60 hidden md:inline">{d.sub}</span>
-              </>
-            ) : (
-              <span className="text-[9px] sm:text-[10px] truncate max-w-[140px] sm:max-w-none">{d.main}</span>
-            );
-          })()}
+          <span className="text-[9px] sm:text-[11px] font-bold text-[var(--nyt-black)] dark:text-white truncate max-w-[180px] sm:max-w-none">
+            {formatNavDate(lang).main}
+          </span>
         </span>
 
         {/* Center: Live tag */}
