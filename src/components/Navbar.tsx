@@ -47,20 +47,12 @@ const SECTIONS = {
 function formatNavDate(lang: string): { main: string; sub?: string } {
   const d = new Date();
   if (lang === "hi") {
-    const { toVikramSamvat } = require("@/lib/utils");
-    const vs = toVikramSamvat(d);
-    const gregorian = d.toLocaleDateString("hi-IN", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
     return {
-      main: `${vs.monthHi} ${vs.tithi}, विक्रम संवत ${vs.year}`,
-      sub: gregorian,
+      main: d.toLocaleDateString("hi-IN", { weekday: "long", day: "numeric", month: "long", year: "numeric" }),
     };
   }
-  const { toVikramSamvat } = require("@/lib/utils");
-  const vs = toVikramSamvat(d);
-  const gregorian = d.toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" }).toUpperCase();
   return {
-    main: `${vs.month} ${vs.tithi}, Vikram Samvat ${vs.year}`,
-    sub: gregorian,
+    main: d.toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" }).toUpperCase(),
   };
 }
 
