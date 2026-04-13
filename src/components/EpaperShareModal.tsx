@@ -195,14 +195,7 @@ export default function EpaperShareModal({ isOpen, onClose, post }: EpaperShareM
   const isHindi = post.language === "hi" || (post.title && /[\u0900-\u097F]/.test(post.title));
   const gregorianDate = new Date().toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" }).toUpperCase();
 
-  let vikramDisplay = "";
-  try {
-    const { toVikramSamvat } = require("@/lib/utils");
-    const vs = toVikramSamvat(new Date());
-    vikramDisplay = isHindi
-      ? `${vs.monthHi} ${vs.tithi}, विक्रम संवत ${vs.year}`
-      : `${vs.month} ${vs.tithi}, Vikram Samvat ${vs.year}`;
-  } catch { /* */ }
+  const vikramDisplay = "";
 
   // Theme colors
   const isBjp = theme === "bjp";

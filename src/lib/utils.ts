@@ -39,11 +39,6 @@ export function formatDate(date: Date | { toDate?: () => Date }, lang: "en" | "h
     day: "numeric",
   });
 
-  if (lang === "hi") {
-    const vs = toVikramSamvat(d);
-    return `${vs.monthHi} ${vs.tithi}, विक्रम संवत ${vs.year}\n${gregorian}`;
-  }
-
   return gregorian;
 }
 
