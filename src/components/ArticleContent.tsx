@@ -49,8 +49,10 @@ export default function ArticleContent({ post }: { post: Post }) {
   const { userRole } = useAuth();
   const isAdmin = userRole === "admin";
   const [shareCardOpen, setShareCardOpen] = useState(false);
-  const title = lang === "hi" && post.titleHi ? post.titleHi : post.title;
-  const summary = lang === "hi" && post.summaryHi ? post.summaryHi : post.summary;
+  // Hindi-language articles always render author info in Hindi regardless of UI lang
+  const useHindi = lang === "hi" || post.language === "hi";
+  const title = useHindi && post.titleHi ? post.titleHi : post.title;
+  const summary = useHindi && post.summaryHi ? post.summaryHi : post.summary;
   const cat = post.category.toLowerCase().replace(/\s+/g, "-");
   const url = `https://loktantravani.in/${cat}/${post.slug}`;
   // Lookup author from AUTHORS list for fallback designation/bio
@@ -59,11 +61,11 @@ export default function ArticleContent({ post }: { post: Post }) {
   const profileNameHi = (post as any).authorNameHi;
   const profileDesignationHi = (post as any).authorDesignationHi;
   const profileBioHi = (post as any).authorBioHi;
-  const displayAuthor = lang === "hi" ? (profileNameHi || authorHi.nameHi || post.author) : post.author;
-  const displayDesignation = lang === "hi"
+  const displayAuthor = useHindi ? (profileNameHi || authorHi.nameHi || post.author) : post.author;
+  const displayDesignation = useHindi
     ? (profileDesignationHi || post.authorDesignation || authorHi.designationHi || "")
     : (post.authorDesignation || authorProfile?.designation || "");
-  const displayBio = lang === "hi"
+  const displayBio = useHindi
     ? (profileBioHi || post.authorBio || authorHi.bioHi || "")
     : (post.authorBio || authorProfile?.bio || "");
 
