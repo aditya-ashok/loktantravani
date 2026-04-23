@@ -642,6 +642,12 @@ function PostsList() {
       if (articleDate && typeof articleDate === "string") {
         updateData.createdAt = new Date(articleDate as string).toISOString();
       }
+      // Hindi posts render titleHi/summaryHi/contentHi — mirror the edited fields so updates reflect.
+      if ((editingPost as Post & { language?: string }).language === "hi") {
+        if (typeof updateData.title === "string") updateData.titleHi = updateData.title;
+        if (typeof updateData.summary === "string") updateData.summaryHi = updateData.summary;
+        if (typeof updateData.content === "string") updateData.contentHi = updateData.content;
+      }
       const res = await fetch("/api/admin/update-post", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -652,12 +658,16 @@ function PostsList() {
         throw new Error(errData.error || `HTTP ${res.status}`);
       }
       setPosts(prev => prev.map(p => p.id === editingPost.id ? { ...p, ...cleanForm } as Post : p));
-      // Revalidate the article page and homepage so changes appear immediately
+      // Revalidate the article page and homepage so changes appear immediately.
+      // Articles live at /<category-slug>/<slug> (and /blog/<slug> alias).
       try {
+        const catSlug = (editingPost.category || "").toLowerCase().replace(/\s+/g, "-");
+        const paths = ["/", "/blog", `/blog/${editingPost.slug}`];
+        if (catSlug) paths.push(`/${catSlug}/${editingPost.slug}`);
         await fetch("/api/revalidate", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ paths: ["/", "/blog", `/blog/${editingPost.slug}`] }),
+          body: JSON.stringify({ paths }),
         });
       } catch { /* revalidation is best-effort */ }
       setEditingPost(null);
