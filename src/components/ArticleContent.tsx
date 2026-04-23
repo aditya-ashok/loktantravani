@@ -107,13 +107,23 @@ export default function ArticleContent({ post }: { post: Post }) {
           <p className="text-xl font-newsreader italic opacity-60 max-w-3xl mb-8 dark:text-white/60">{summary}</p>
           
           <div className="flex flex-col sm:flex-row sm:items-center gap-4 pb-8 border-b-4 border-double border-black dark:border-white/20">
-            <div className="flex items-center gap-4">
+            <Link
+              href={`/author/${encodeURIComponent(post.author)}`}
+              rel="author"
+              className="flex items-center gap-4 group hover:opacity-90 transition-opacity"
+              itemScope
+              itemType="https://schema.org/Person"
+              itemProp="author"
+            >
               <div className="w-10 h-10 sm:w-12 sm:h-12 bg-primary text-white flex items-center justify-center font-newsreader font-bold text-lg sm:text-xl shrink-0">{displayAuthor[0]}</div>
               <div>
-                <p className="font-inter font-black text-sm dark:text-white">{displayAuthor}</p>
-                <p className="text-[10px] font-inter font-bold opacity-40 uppercase tracking-widest">{post.section} &bull; {post.category}</p>
+                <p className="font-inter font-black text-sm dark:text-white group-hover:text-primary transition-colors" itemProp="name">
+                  By <span className="underline-offset-2 group-hover:underline">{displayAuthor}</span>
+                </p>
+                <p className="text-[10px] font-inter font-bold opacity-40 uppercase tracking-widest" itemProp="jobTitle">{post.section} &bull; {post.category}</p>
+                <meta itemProp="url" content={`https://loktantravani.in/author/${encodeURIComponent(post.author)}`} />
               </div>
-            </div>
+            </Link>
             <div className="flex items-center gap-2 sm:gap-3 sm:ml-auto flex-wrap">
                <BookmarkButton slug={post.slug} />
                <button onClick={() => setShareCardOpen(true)} className="flex items-center gap-1.5 px-2 sm:px-3 py-1.5 border-2 border-black dark:border-white text-[9px] sm:text-[10px] font-inter font-black uppercase tracking-widest hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-all bg-white dark:bg-black shadow-[2px_2px_0px_0px_#000] dark:shadow-[2px_2px_0px_0px_#fff]">

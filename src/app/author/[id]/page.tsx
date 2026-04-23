@@ -65,24 +65,39 @@ export default async function AuthorPage({ params }: { params: Promise<{ id: str
     0
   );
 
+  const authorUrl = `${SITE_URL}/author/${slugify(authorName)}`;
+
   // Person JSON-LD for Google Knowledge Panel
   const personJsonLd = {
     "@context": "https://schema.org",
     "@type": "Person",
+    "@id": authorUrl,
     name: authorName,
     alternateName: author?.nameHi || undefined,
-    url: `${SITE_URL}/author/${slugify(authorName)}`,
-    image: `${SITE_URL}/og-image.png`,
+    url: authorUrl,
+    mainEntityOfPage: authorUrl,
+    image: `${SITE_URL}/authors/${slugify(authorName)}.jpg`,
     jobTitle: author?.designation || "Contributing Author",
-    description: author?.bio || `Author at LoktantraVani`,
+    description: author?.bio || `Author at LoktantraVani — India's First AI Newspaper`,
+    email: author?.email,
     worksFor: {
       "@type": "NewsMediaOrganization",
       name: "LoktantraVani",
       url: SITE_URL,
+      logo: `${SITE_URL}/og-image.png`,
     },
-    sameAs: [
-      `${SITE_URL}/author/${slugify(authorName)}`,
-    ],
+    sameAs: [authorUrl],
+    knowsAbout: author ? [author.designation, "Indian Politics", "Journalism", "India News"] : ["Journalism"],
+    nationality: { "@type": "Country", name: "India" },
+  };
+
+  // ProfilePage wrapper — Google's recommended type for author/profile pages
+  const profilePageJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "ProfilePage",
+    dateCreated: "2026-01-01T00:00:00Z",
+    dateModified: new Date().toISOString(),
+    mainEntity: personJsonLd,
   };
 
   // CollectionPage JSON-LD
@@ -107,7 +122,7 @@ export default async function AuthorPage({ params }: { params: Promise<{ id: str
   return (
     <>
       <Navbar />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(personJsonLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(profilePageJsonLd) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(collectionJsonLd) }} />
 
       <main className="min-h-screen pt-[220px] pb-24 bg-white dark:bg-[#0a0a0a]">
