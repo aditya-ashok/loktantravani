@@ -5,7 +5,7 @@ import { ArrowLeft, PenLine } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import BlogCard from "@/components/BlogCard";
-import { AUTHORS } from "@/lib/authors";
+import { AUTHORS, getAuthorPhoto, getAuthorSameAs } from "@/lib/authors";
 import { getPosts } from "@/lib/data-service";
 import type { Post } from "@/lib/types";
 
@@ -68,7 +68,7 @@ export default async function AuthorPage({ params }: { params: Promise<{ id: str
   const authorUrl = `${SITE_URL}/author/${slugify(authorName)}`;
 
   // Person JSON-LD for Google Knowledge Panel
-  const personJsonLd = {
+  const personJsonLd: Record<string, unknown> = {
     "@context": "https://schema.org",
     "@type": "Person",
     "@id": authorUrl,
@@ -76,7 +76,7 @@ export default async function AuthorPage({ params }: { params: Promise<{ id: str
     alternateName: author?.nameHi || undefined,
     url: authorUrl,
     mainEntityOfPage: authorUrl,
-    image: `${SITE_URL}/authors/${slugify(authorName)}.jpg`,
+    image: getAuthorPhoto(authorName),
     jobTitle: author?.designation || "Contributing Author",
     description: author?.bio || `Author at LoktantraVani — India's First AI Newspaper`,
     email: author?.email,
@@ -86,10 +86,17 @@ export default async function AuthorPage({ params }: { params: Promise<{ id: str
       url: SITE_URL,
       logo: `${SITE_URL}/og-image.png`,
     },
-    sameAs: [authorUrl],
+    // Combine author page URL + all real social profiles
+    sameAs: [authorUrl, ...getAuthorSameAs(authorName)],
     knowsAbout: author ? [author.designation, "Indian Politics", "Journalism", "India News"] : ["Journalism"],
     nationality: { "@type": "Country", name: "India" },
   };
+  if (author?.alumniOf) {
+    personJsonLd.alumniOf = { "@type": "EducationalOrganization", name: author.alumniOf };
+  }
+  if (author?.location) {
+    personJsonLd.workLocation = { "@type": "Place", name: author.location };
+  }
 
   // ProfilePage wrapper — Google's recommended type for author/profile pages
   const profilePageJsonLd = {
@@ -137,9 +144,18 @@ export default async function AuthorPage({ params }: { params: Promise<{ id: str
           {/* Author Header */}
           <div className="mb-16 pb-8 border-b-4 border-double border-black dark:border-white/20">
             <div className="flex items-start gap-6">
-              <div className="w-20 h-20 bg-primary text-white flex items-center justify-center font-newsreader font-black text-3xl shrink-0">
-                {authorName[0]}
-              </div>
+              {author?.photo ? (
+                <img
+                  src={getAuthorPhoto(authorName)}
+                  alt={authorName}
+                  className="w-20 h-20 rounded-full object-cover border-2 border-primary shrink-0"
+                  itemProp="image"
+                />
+              ) : (
+                <div className="w-20 h-20 bg-primary text-white flex items-center justify-center font-newsreader font-black text-3xl shrink-0 rounded-full">
+                  {authorName[0]}
+                </div>
+              )}
               <div className="flex-1">
                 <h1 className="text-4xl md:text-5xl font-newsreader font-black dark:text-white">
                   {authorName}
@@ -159,6 +175,35 @@ export default async function AuthorPage({ params }: { params: Promise<{ id: str
                   <p className="text-base font-newsreader italic opacity-60 mt-4 max-w-2xl dark:text-white/60">
                     {author.bio}
                   </p>
+                )}
+                {author?.social && Object.keys(author.social).length > 0 && (
+                  <div className="flex gap-3 mt-4 flex-wrap">
+                    {author.social.twitter && (
+                      <a href={author.social.twitter} target="_blank" rel="noopener noreferrer me" className="text-[10px] font-inter font-bold uppercase tracking-widest text-[var(--nyt-gray)] hover:text-primary border border-black/20 dark:border-white/20 px-3 py-1.5 transition-colors">
+                        Twitter / X
+                      </a>
+                    )}
+                    {author.social.linkedin && (
+                      <a href={author.social.linkedin} target="_blank" rel="noopener noreferrer me" className="text-[10px] font-inter font-bold uppercase tracking-widest text-[var(--nyt-gray)] hover:text-primary border border-black/20 dark:border-white/20 px-3 py-1.5 transition-colors">
+                        LinkedIn
+                      </a>
+                    )}
+                    {author.social.instagram && (
+                      <a href={author.social.instagram} target="_blank" rel="noopener noreferrer me" className="text-[10px] font-inter font-bold uppercase tracking-widest text-[var(--nyt-gray)] hover:text-primary border border-black/20 dark:border-white/20 px-3 py-1.5 transition-colors">
+                        Instagram
+                      </a>
+                    )}
+                    {author.social.youtube && (
+                      <a href={author.social.youtube} target="_blank" rel="noopener noreferrer me" className="text-[10px] font-inter font-bold uppercase tracking-widest text-[var(--nyt-gray)] hover:text-primary border border-black/20 dark:border-white/20 px-3 py-1.5 transition-colors">
+                        YouTube
+                      </a>
+                    )}
+                    {author.social.website && (
+                      <a href={author.social.website} target="_blank" rel="noopener noreferrer me" className="text-[10px] font-inter font-bold uppercase tracking-widest text-[var(--nyt-gray)] hover:text-primary border border-black/20 dark:border-white/20 px-3 py-1.5 transition-colors">
+                        Website
+                      </a>
+                    )}
+                  </div>
                 )}
                 <div className="flex gap-8 mt-6">
                   <div>

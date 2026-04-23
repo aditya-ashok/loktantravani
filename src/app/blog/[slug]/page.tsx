@@ -7,7 +7,7 @@ import Footer from "@/components/Footer";
 import VaniBot from "@/components/VaniBot";
 import ArticleContent from "@/components/ArticleContent";
 import { getPostBySlug, getPosts } from "@/lib/data-service";
-import { AUTHORS } from "@/lib/authors";
+import { AUTHORS, getAuthorPhoto, getAuthorSameAs } from "@/lib/authors";
 
 export const revalidate = 60;
 export const dynamicParams = true;
@@ -117,20 +117,27 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
         name: post.author,
         url: authorUrl,
         mainEntityOfPage: authorUrl,
+        image: getAuthorPhoto(post.author),
       };
       if (profile) {
         personSchema.alternateName = profile.nameHi;
         personSchema.jobTitle = profile.designation;
         personSchema.description = profile.bio;
-        personSchema.image = `${SITE_URL}/authors/${encodeURIComponent(post.author)}.jpg`;
         personSchema.email = profile.email;
         personSchema.worksFor = {
           "@type": "NewsMediaOrganization",
           name: "LoktantraVani",
           url: SITE_URL,
         };
-        personSchema.sameAs = [authorUrl];
+        // Real social profiles + author page URL → Google uses these to verify identity
+        personSchema.sameAs = [authorUrl, ...getAuthorSameAs(post.author)];
         personSchema.knowsAbout = [profile.designation, "Indian Politics", "Journalism", post.category];
+        if (profile.alumniOf) {
+          personSchema.alumniOf = { "@type": "EducationalOrganization", name: profile.alumniOf };
+        }
+        if (profile.location) {
+          personSchema.workLocation = { "@type": "Place", name: profile.location };
+        }
       }
       return personSchema;
     })()],
