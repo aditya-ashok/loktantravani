@@ -233,7 +233,7 @@ function renderPage(sectionName: string, articles: ArticleData[], pageNum: numbe
     </div>` : ""}
 
     <div class="page-footer">
-      <span>LoktantraVani by Kautilya World</span>
+      <span>LoktantraVani</span>
       <span>loktantravani.vercel.app</span>
       <span>Page ${pageNum}</span>
     </div>
@@ -511,7 +511,7 @@ export async function GET(req: NextRequest) {
       <h1>LoktantraVani</h1>
       <div class="date">${dateFormatted}</div>
       <div class="tagline">India's First AI Newspaper — Neo Bharat Edition</div>
-      <div class="byline-tag">by Kautilya World · ${posts.length} Articles · ${allSections.length} Sections · ${totalPages} Pages</div>
+      <div class="byline-tag">${posts.length} Articles · ${allSections.length} Sections · ${totalPages} Pages</div>
     </div>
 
     ${renderAdSlot(adsData[0] || null)}
@@ -569,7 +569,7 @@ export async function GET(req: NextRequest) {
     </div>
 
     <div class="page-footer">
-      <span>LoktantraVani by Kautilya World</span>
+      <span>LoktantraVani</span>
       <span>loktantravani.vercel.app</span>
       <span>Page 1 of ${totalPages}</span>
     </div>

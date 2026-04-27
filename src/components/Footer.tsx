@@ -134,9 +134,8 @@ export default function Footer() {
           <div className="w-full h-px bg-black/10 dark:bg-white/10" />
 
           <div className="flex flex-col md:flex-row justify-between items-center w-full gap-4 text-[9px] font-inter font-bold opacity-25 tracking-[0.15em] uppercase dark:text-white/25">
-            <p>&copy; 2026 LoktantraVani by <a href="https://kautilya.world" target="_blank" rel="noopener noreferrer" className="hover:opacity-60 underline">Kautilya World</a></p>
+            <p>&copy; 2026 LoktantraVani</p>
             <div className="flex gap-6">
-              <a href="https://kautilya.world" target="_blank" rel="noopener noreferrer" className="hover:opacity-60">Kautilya World</a>
               <a href="/about" className="hover:opacity-60">Ethics</a>
               <a href="/privacy" className="hover:opacity-60">Privacy</a>
               <a href="/terms" className="hover:opacity-60">Terms</a>

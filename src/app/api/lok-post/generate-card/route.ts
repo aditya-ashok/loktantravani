@@ -163,7 +163,7 @@ body { background:${theme.bg}; font-family:'Source Sans 3',sans-serif; }
     }).join("")}
   </div>
   <div class="footer">
-    <span>LoktantraVani by Kautilya World</span>
+    <span>LoktantraVani</span>
     <span>loktantravani.vercel.app</span>
     <span>${tone.toUpperCase()}</span>
   </div>

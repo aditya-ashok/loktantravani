@@ -37,7 +37,7 @@ export const metadata: Metadata = {
     "digital newspaper", "Neo Bharat", "loktantravani",
   ],
   authors: [{ name: "LoktantraVani Editorial", url: SITE_URL }],
-  creator: "LoktantraVani by Kautilya World",
+  creator: "LoktantraVani",
   publisher: "LoktantraVani",
   metadataBase: new URL(SITE_URL),
   alternates: {
