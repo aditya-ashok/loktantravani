@@ -27,6 +27,7 @@ const SECTIONS = {
     { label: "Shield & Sword",   href: "/category/Defence" },
     { label: "Hot Takes",        href: "/category/Opinion" },
     { label: "City Vibes",       href: "/category/Cities" },
+    { label: "Elections 🗳️",    href: "/elections", special: true },
     { label: "West Asia ⚡",     href: "/west-asia", special: true },
   ],
   hi: [
@@ -40,6 +41,7 @@ const SECTIONS = {
     { label: "शील्ड & स्वॉर्ड",  href: "/category/Defence" },
     { label: "हॉट टेक्स",       href: "/category/Opinion" },
     { label: "सिटी वाइब्स",     href: "/category/Cities" },
+    { label: "चुनाव 🗳️",        href: "/elections", special: true },
     { label: "पश्चिम एशिया ⚡",  href: "/west-asia", special: true },
   ],
 };
