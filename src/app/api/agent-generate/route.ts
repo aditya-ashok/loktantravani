@@ -18,6 +18,8 @@ export const maxDuration = 300;
 
 const GEMINI_KEY = () => (process.env.GEMINI_API_KEY || "").trim();
 const ANTHROPIC_KEY = () => (process.env.ANTHROPIC_API_KEY || "").trim();
+const GROQ_KEY = () => (process.env.GROQ_API_KEY || "").trim();
+const GROQ_MODEL = (process.env.GROQ_MODEL || "llama-3.3-70b-versatile").trim();
 const STORAGE_BUCKET = (process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || "loktantravani-2d159.firebasestorage.app").trim();
 
 // ── Gemini: Google Search grounding for real-time facts ──
@@ -39,49 +41,111 @@ async function geminiSearch(prompt: string): Promise<string> {
   return candidates?.[0]?.content?.parts?.map((p: { text?: string }) => p.text || "").join("") || "";
 }
 
-// ── AI Writer: Claude (best quality) or Gemini (free, fast) ──
+// ── Groq writer (Llama 3.3 70B by default) ──
+async function writeWithGroq(systemPrompt: string, userPrompt: string, maxTokens: number): Promise<string> {
+  const key = GROQ_KEY();
+  if (!key) return "";
+  try {
+    const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${key}`,
+      },
+      body: JSON.stringify({
+        model: GROQ_MODEL,
+        max_tokens: Math.min(maxTokens, 8000),
+        temperature: 0.4,
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userPrompt },
+        ],
+      }),
+    });
+    if (!res.ok) return "";
+    const data = await res.json();
+    return data.choices?.[0]?.message?.content || "";
+  } catch {
+    return "";
+  }
+}
+
+// ── AI Writer: tries providers in order based on `enginePref` ──
+// Priority (auto): Claude → Groq → Gemini. Returns first non-empty response.
 async function writeArticle(systemPrompt: string, userPrompt: string, maxTokens = 4000, enginePref = "auto"): Promise<string> {
-  // Try Claude first if engine is "auto" or "claude"
-  const anthropicKey = ANTHROPIC_KEY();
-  if (anthropicKey && enginePref !== "gemini") {
-    try {
-      const res = await fetch("https://api.anthropic.com/v1/messages", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-api-key": anthropicKey,
-          "anthropic-version": "2023-06-01",
-        },
-        body: JSON.stringify({
-          model: "claude-sonnet-4-20250514",
-          max_tokens: maxTokens,
-          system: systemPrompt,
-          messages: [{ role: "user", content: userPrompt }],
-        }),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        const text = data.content?.[0]?.text || "";
-        if (text) return text;
-      }
-    } catch { /* Claude failed, fall through to Gemini */ }
+  // Honor explicit single-provider choice
+  if (enginePref === "groq") {
+    const out = await writeWithGroq(systemPrompt, userPrompt, maxTokens);
+    if (out) return out;
+  }
+  if (enginePref === "gemini") {
+    const out = await writeWithGemini(systemPrompt, userPrompt, maxTokens);
+    if (out) return out;
+  }
+  if (enginePref === "claude") {
+    const out = await writeWithClaude(systemPrompt, userPrompt, maxTokens);
+    if (out) return out;
   }
 
-  // Fallback: Use Gemini for writing
+  // Auto mode: try Claude → Groq → Gemini in order, first non-empty wins
+  if (enginePref === "auto" || !["claude", "gemini", "groq"].includes(enginePref)) {
+    const claude = await writeWithClaude(systemPrompt, userPrompt, maxTokens);
+    if (claude) return claude;
+    const groq = await writeWithGroq(systemPrompt, userPrompt, maxTokens);
+    if (groq) return groq;
+    const gemini = await writeWithGemini(systemPrompt, userPrompt, maxTokens);
+    if (gemini) return gemini;
+  }
+
+  throw new Error("All AI writers returned empty — check GEMINI/GROQ/ANTHROPIC keys via /api/admin/ai-health");
+}
+
+async function writeWithClaude(systemPrompt: string, userPrompt: string, maxTokens: number): Promise<string> {
+  const key = ANTHROPIC_KEY();
+  if (!key) return "";
+  try {
+    const res = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": key,
+        "anthropic-version": "2023-06-01",
+      },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-20250514",
+        max_tokens: maxTokens,
+        system: systemPrompt,
+        messages: [{ role: "user", content: userPrompt }],
+      }),
+    });
+    if (!res.ok) return "";
+    const data = await res.json();
+    return data.content?.[0]?.text || "";
+  } catch {
+    return "";
+  }
+}
+
+async function writeWithGemini(systemPrompt: string, userPrompt: string, maxTokens: number): Promise<string> {
   const key = GEMINI_KEY();
-  if (!key) throw new Error("No AI API key available");
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`;
-  const res = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      contents: [{ parts: [{ text: `${systemPrompt}\n\n${userPrompt}` }] }],
-      generationConfig: { temperature: 0.4, maxOutputTokens: maxTokens > 4000 ? 8000 : 4000 },
-    }),
-  });
-  const data = await res.json();
-  const candidates = data.candidates as Array<{ content: { parts: Array<{ text?: string }> } }> | undefined;
-  return candidates?.[0]?.content?.parts?.map((p: { text?: string }) => p.text || "").join("") || "";
+  if (!key) return "";
+  try {
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`;
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: `${systemPrompt}\n\n${userPrompt}` }] }],
+        generationConfig: { temperature: 0.4, maxOutputTokens: maxTokens > 4000 ? 8000 : 4000 },
+      }),
+    });
+    if (!res.ok) return "";
+    const data = await res.json();
+    const candidates = data.candidates as Array<{ content: { parts: Array<{ text?: string }> } }> | undefined;
+    return candidates?.[0]?.content?.parts?.map((p: { text?: string }) => p.text || "").join("") || "";
+  } catch {
+    return "";
+  }
 }
 
 // ── Gemini Imagen: Generate + upload thumbnail ──
@@ -201,13 +265,40 @@ Return ONLY a JSON array:
   ...
 ]`;
 
-          const searchResult = await geminiSearch(searchPrompt);
-          const parsed = parseJSON(searchResult);
+          let searchResult = "";
+          try {
+            searchResult = await geminiSearch(searchPrompt);
+          } catch {
+            // Gemini search failed entirely (bad key, quota, etc.) — fall through to Groq below
+          }
+          let parsed = parseJSON(searchResult);
 
           if (parsed) {
             const items = (parsed.items as Array<{ topic: string; facts: string; sources: string }>) ||
                          (Array.isArray(parsed) ? parsed as unknown as Array<{ topic: string; facts: string; sources: string }> : []);
             researchBriefs = items.slice(0, perSection);
+          }
+
+          // ── Fallback 1: Groq generates topics from training data (no live web search) ──
+          if (researchBriefs.length === 0 && GROQ_KEY()) {
+            send({ type: "search_fallback", section, message: `🦙 Gemini search returned nothing — falling back to Groq for topic ideas...` });
+            const groqTopicPrompt = `You are a news editor at India's leading right-of-centre digital newspaper. Generate ${perSection + 1} compelling, plausible Indian news article ideas for the "${section}" section. Use topics that would be relevant to Indian audiences right now (BJP governance, India's foreign policy, economy, defence, technology). Even if you don't know today's news, propose realistic ongoing themes.
+
+Return ONLY a JSON array, no prose:
+[
+  {"topic": "specific compelling article headline", "facts": "3-5 plausible factual points (numbers, names, dates) to anchor the article", "sources": "PIB, Reuters, etc"}
+]`;
+            const groqResult = await writeWithGroq(
+              "You are a JSON-only response generator. Output only valid JSON arrays.",
+              groqTopicPrompt,
+              2000
+            );
+            parsed = parseJSON(groqResult);
+            if (parsed) {
+              const items = (parsed.items as Array<{ topic: string; facts: string; sources: string }>) ||
+                           (Array.isArray(parsed) ? parsed as unknown as Array<{ topic: string; facts: string; sources: string }> : []);
+              researchBriefs = items.slice(0, perSection);
+            }
           }
 
           if (researchBriefs.length === 0) {

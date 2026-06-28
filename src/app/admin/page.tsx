@@ -5105,7 +5105,7 @@ function DeepSearchAgentPanel() {
   const [wordCount, setWordCount] = useState(1500);
   const [language, setLanguage] = useState("en");
   const [author, setAuthor] = useState("LoktantraVani AI");
-  const [engine, setEngine] = useState<"auto" | "claude" | "gemini">("auto");
+  const [engine, setEngine] = useState<"auto" | "claude" | "gemini" | "groq">("auto");
   const [autoPublish, setAutoPublish] = useState(false);
   const [running, setRunning] = useState(false);
   const [elapsed, setElapsed] = useState(0);
@@ -5261,8 +5261,9 @@ function DeepSearchAgentPanel() {
         <label className="text-[9px] font-inter font-black uppercase tracking-widest opacity-60 block mb-3">AI Writing Engine</label>
         <div className="flex gap-2">
           {([
-            { id: "auto" as const, label: "Auto (Claude → Gemini)", desc: "Tries Claude first, falls back to Gemini if credits exhausted" },
+            { id: "auto" as const, label: "Auto (Claude → Groq → Gemini)", desc: "Tries each provider in order, uses the first one that returns a response" },
             { id: "claude" as const, label: "Claude Only", desc: "Anthropic Claude Sonnet — best quality, requires API credits" },
+            { id: "groq" as const, label: "Groq (Llama 3.3 70B)", desc: "Fast & free — recommended if Claude/Gemini keys are exhausted" },
             { id: "gemini" as const, label: "Gemini Only", desc: "Google Gemini 2.0 Flash — free, fast, good quality" },
           ]).map(opt => (
             <button
