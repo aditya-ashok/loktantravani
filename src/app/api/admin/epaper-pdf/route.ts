@@ -438,7 +438,7 @@ export async function GET(req: NextRequest) {
     Tech: 2, Cities: 2, World: 2, "Lok Post": 1,
   };
   // Each page fits ~2 full articles or 1 lead + 2 columns
-  const ARTICLES_PER_PAGE = 3;
+  const ARTICLES_PER_PAGE = 2;
 
   const activeSections = SECTION_ORDER.filter(s => sections[s]?.length > 0);
   const extraSections = Object.keys(sections).filter(s => !SECTION_ORDER.includes(s) && sections[s].length > 0);
