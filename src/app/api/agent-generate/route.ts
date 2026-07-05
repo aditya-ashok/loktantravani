@@ -143,7 +143,7 @@ async function writeWithGemini(systemPrompt: string, userPrompt: string, maxToke
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         contents: [{ parts: [{ text: `${systemPrompt}\n\n${userPrompt}` }] }],
-        generationConfig: { temperature: 0.4, maxOutputTokens: maxTokens > 4000 ? 8000 : 4000 },
+        generationConfig: { temperature: 0.4, maxOutputTokens: 8000 },
       }),
     });
     if (!res.ok) return "";
@@ -425,7 +425,7 @@ Return ONLY valid JSON:
   "imagePrompt": "VERY SPECIFIC AND DETAILED scene for a POLITICAL CARICATURE / SATIRICAL CARTOON that illustrates THIS article's main subject. Describe: the key figures with EXAGGERATED features (big heads, small bodies, expressive faces), the setting, symbolic props (like flags, podiums, weapons, money bags), and the mood (triumphant, scheming, defeated). Style: bold editorial cartoon like R.K. Laxman, Shankar, or MAD magazine. Example: if article is about opposition criticising GDP data, describe 'caricature of opposition leader with oversized glasses squinting at a tiny magnifying glass while a massive GDP growth chart towers behind him, Indian flag waving proudly'. Be HYPER-SPECIFIC to this exact news story. NOT photorealistic — pure cartoon/caricature."
 }`;
 
-            const raw = await writeArticle(systemPrompt, userPrompt, wordCount <= 500 ? 2000 : 5000, engine);
+            const raw = await writeArticle(systemPrompt, userPrompt, wordCount <= 500 ? 5000 : 8000, engine);
             const parsed = parseJSON(raw);
 
             if (!parsed) {
@@ -599,7 +599,7 @@ Return ONLY valid JSON:
               const hindiPrompt = `Translate this newspaper article to Hindi (Devanagari). Keep the same structure, facts, and tone. Write entirely in Hindi. Include .fact-box, .info-box, and blockquote elements in Hindi.\n\nHeadline: ${headline}\nContent:\n${(parsed.content as string || "").slice(0, 3000)}`;
               const hindiRaw = await writeArticle(
                 "You are a Hindi newspaper translator. Translate English articles to fluent Hindi Devanagari. Keep all HTML tags. Return ONLY JSON: {\"headline\":\"Hindi headline\",\"summary\":\"Hindi summary\",\"content\":\"Full Hindi HTML\"}",
-                hindiPrompt, 3000, engine
+                hindiPrompt, 6000, engine
               );
               const hindiParsed = parseJSON(hindiRaw);
               if (hindiParsed) {
