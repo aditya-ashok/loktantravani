@@ -103,13 +103,15 @@ export default function ForYouFeed() {
       const readIds = new Set(history.map((h) => h.id));
 
       // 5. Score posts: category relevance × recency × engagement
+      const langOk = (p: Post) => {
+        const pLang = p.language;
+        if (lang === "hi" && pLang && pLang !== "hi" && pLang !== "bilingual") return false;
+        if (lang !== "hi" && pLang === "hi") return false;
+        return true;
+      };
+
       const recs = allPosts
-        .filter((p) => {
-          const pLang = p.language;
-          if (lang === "hi" && pLang && pLang !== "hi" && pLang !== "bilingual") return false;
-          if (lang !== "hi" && pLang === "hi") return false;
-          return topCats.includes(p.category) && !readIds.has(p.id);
-        })
+        .filter((p) => langOk(p) && topCats.includes(p.category) && !readIds.has(p.id))
         .map((p) => {
           const createdAtValue = p.createdAt as any;
           const createdAt = createdAtValue?.toDate
@@ -136,6 +138,17 @@ export default function ForYouFeed() {
         .sort((a, b) => b.score - a.score)
         .slice(0, 6)
         .map((r) => r.post);
+
+      // Backfill: if the picked categories have too few articles, top up with
+      // the newest unread posts from any category so the feed never vanishes.
+      if (recs.length < 3) {
+        const seen = new Set(recs.map((p) => p.id));
+        const fill = allPosts
+          .filter((p) => langOk(p) && !readIds.has(p.id) && !seen.has(p.id))
+          .sort((a, b) => new Date(b.createdAt as any).getTime() - new Date(a.createdAt as any).getTime())
+          .slice(0, 6 - recs.length);
+        recs.push(...fill);
+      }
 
       setPosts(recs);
       setShowPicker(false);
