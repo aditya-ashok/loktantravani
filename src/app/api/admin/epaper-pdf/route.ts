@@ -196,7 +196,9 @@ const HOUSE_PROMOS = [
 function fillerScript(): string {
   return `<script>
   var PROMOS = ${JSON.stringify(HOUSE_PROMOS)};
-  window.addEventListener("load", function () {
+  // Image heights are fixed in CSS, so layout is stable at DOM-ready — do
+  // not wait for window.load (one stalled image would block filling forever).
+  function fillPages() {
     var k = 0;
     document.querySelectorAll(".page").forEach(function (page) {
       var footer = page.querySelector(".page-footer");
@@ -208,10 +210,18 @@ function fillerScript(): string {
       };
       var inserted = null;
       for (var i = 0; i < 6; i++) {
-        if (measure() < 130) break;
+        var g = measure();
+        if (g < 130) break;
         inserted = document.createElement("div");
-        inserted.className = "filler-row filler-1";
-        inserted.innerHTML = PROMOS[k++ % PROMOS.length];
+        if (g >= 300) {
+          // Tall gap: a 2-up row of square promo boxes
+          inserted.className = "filler-row filler-2";
+          inserted.innerHTML = PROMOS[k++ % PROMOS.length] + PROMOS[k++ % PROMOS.length];
+        } else {
+          // Short gap: one wide rectangle strip
+          inserted.className = "filler-row filler-1";
+          inserted.innerHTML = PROMOS[k++ % PROMOS.length];
+        }
         page.insertBefore(inserted, footer);
       }
       // Absorb whatever sliver remains into the last promo's padding so the
@@ -226,7 +236,9 @@ function fillerScript(): string {
         }
       }
     });
-  });
+  }
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", fillPages);
+  else fillPages();
   </script>`;
 }
 
@@ -239,8 +251,8 @@ function renderPage(sectionName: string, articles: ArticleData[], pageNum: numbe
 
   const leadImg = lead.imageUrl && !lead.imageUrl.startsWith("data:") ? lead.imageUrl : "";
   const leadBody = stripHtml(lead.content || "");
-  // Show full content — pages expand as needed
-  const leadTrunc = leadBody;
+  // Pages are fixed A4 — truncate to fit, point readers to the site
+  const leadTrunc = truncateWords(leadBody, 380) + ' <span class="read-on">Full story → loktantravani.in</span>';
   const leadQuotes = extractQuotes(lead.content || "");
   const leadPullQuote = leadQuotes.length > 0 ? leadQuotes[0] : extractPullQuote(leadBody);
   // Alternate layout: even pages = image right, odd = image top
@@ -254,8 +266,8 @@ function renderPage(sectionName: string, articles: ArticleData[], pageNum: numbe
   function renderColArticle(a: ArticleData) {
     colIdx++;
     const hasImg = a.imageUrl && !a.imageUrl.startsWith("data:");
-    // Show full article content
-    const body = stripHtml(a.content || "");
+    // Fixed A4 pages — column articles get a tight excerpt
+    const body = truncateWords(stripHtml(a.content || ""), 180) + ' <span class="read-on">→ loktantravani.in</span>';
     const colQuotes = extractQuotes(a.content || "");
     const colPull = colQuotes.length > 0 ? colQuotes[0] : "";
     const extraEl = colIdx % 2 === 0
@@ -266,7 +278,7 @@ function renderPage(sectionName: string, articles: ArticleData[], pageNum: numbe
     if (colIdx % 2 === 1 && hasImg) {
       // Full-width image above text
       return `<div class="col-article">
-        <img src="${a.imageUrl}" class="col-art-img" alt="" />
+        <img src="${a.imageUrl}" class="col-art-img" alt="" onerror="this.style.display=\'none\'" />
         <h3>${a.title}</h3>
         ${a.titleHi ? `<p class="col-title-hi">${a.titleHi}</p>` : ""}
         <div class="col-byline">By ${a.author} · ${dateStr(a)}</div>
@@ -279,7 +291,7 @@ function renderPage(sectionName: string, articles: ArticleData[], pageNum: numbe
       ${hasImg ? `<div class="col-art-grid"><div><h3>${a.title}</h3>
         ${a.titleHi ? `<p class="col-title-hi">${a.titleHi}</p>` : ""}
         <div class="col-byline">By ${a.author} · ${dateStr(a)}</div></div>
-        <img src="${a.imageUrl}" class="col-art-thumb" alt="" /></div>`
+        <img src="${a.imageUrl}" class="col-art-thumb" alt="" onerror="this.style.display=\'none\'" /></div>`
         : `<h3>${a.title}</h3>
         ${a.titleHi ? `<p class="col-title-hi">${a.titleHi}</p>` : ""}
         <div class="col-byline">By ${a.author} · ${dateStr(a)}</div>`}
@@ -298,7 +310,7 @@ function renderPage(sectionName: string, articles: ArticleData[], pageNum: numbe
 
     <!-- Lead Story -->
     <div class="lead-story">
-      ${leadLayout === "top" && leadImg ? `<img src="${leadImg}" class="lead-img-top" alt="" />` : ""}
+      ${leadLayout === "top" && leadImg ? `<img src="${leadImg}" class="lead-img-top" alt="" onerror="this.style.display=\'none\'" />` : ""}
       <h2 class="lead-headline">${lead.title}</h2>
       ${lead.titleHi ? `<div class="lead-headline-hi">${lead.titleHi}</div>` : ""}
       <div class="lead-byline">By ${lead.author} · ${dateStr(lead)} · ${sectionName}</div>
@@ -478,7 +490,7 @@ export async function GET(req: NextRequest) {
   body { font-family: 'Noto Serif', 'Source Serif 4', Georgia, serif; color: #1a1a1a; background: #f0f0f0; font-size: 8px; line-height: 1.4; }
 
   .page {
-    width: 210mm; min-height: 297mm; max-width: 210mm;
+    width: 210mm; height: 297mm; max-width: 210mm;
     margin: 0 auto 20px; background: #ffffff;
     border: 1px solid #ccc; box-shadow: 0 2px 8px rgba(0,0,0,0.08);
     padding: 14px 18px 44px; position: relative;
@@ -603,6 +615,8 @@ export async function GET(req: NextRequest) {
   .single-col .col-body { column-count: 3; column-gap: 16px; column-rule: 0.5px solid #ccc; text-indent: 10px; }
   .single-col .col-art-img { height: 140px; }
 
+  .read-on { font-size: 7px; color: #c41e1e; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; white-space: nowrap; }
+
   /* ── House promo fillers (classic self-ads for leftover column inches) ── */
   .filler-row { display: grid; gap: 12px; margin-top: 14px; }
   .filler-1 { grid-template-columns: 1fr; }
@@ -669,7 +683,7 @@ export async function GET(req: NextRequest) {
 
   @media print {
     .nav-bar { display: none; }
-    .page { box-shadow: none; border: none; margin: 0; padding: 10px 14px; page-break-after: always; background: #fff; width: 210mm; min-height: 297mm; }
+    .page { box-shadow: none; border: none; margin: 0; padding: 10px 14px 40px; page-break-after: always; background: #fff; width: 210mm; height: 297mm; }
     body { background: #fff; }
   }
   @media screen and (max-width: 768px) {
