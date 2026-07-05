@@ -135,6 +135,55 @@ function renderPullQuote(text: string): string {
   </div>`;
 }
 
+/**
+ * House promos — how real papers fill leftover column inches. Rotated
+ * deterministically per page; injected only when a page runs light.
+ */
+const HOUSE_PROMOS = [
+  `<div class="promo promo-dark">
+    <div class="promo-kicker">Every morning · 7:30 AM</div>
+    <div class="promo-title">The Vani Morning Brief</div>
+    <div class="promo-body">India's first AI-composed daily digest — the banner story, today at a glance, and the editorial, in your inbox before chai.</div>
+    <div class="promo-cta">Subscribe free → loktantravani.in</div>
+  </div>`,
+  `<div class="promo promo-border">
+    <div class="promo-kicker">Your byline here</div>
+    <div class="promo-title">Write for LoktantraVani</div>
+    <div class="promo-body">Reporters, columnists, satirists — pitch us. AI-assisted editing, real readership, and a national platform for your voice.</div>
+    <div class="promo-cta">Apply → loktantravani.in/write</div>
+  </div>`,
+  `<div class="promo promo-orange">
+    <div class="promo-kicker">Advertise with us</div>
+    <div class="promo-title">Reach New India, Every Day</div>
+    <div class="promo-body">Homepage, articles and this very e-paper — one campaign, every surface. Priority placements for early partners.</div>
+    <div class="promo-cta">Book space → loktantravani.in</div>
+  </div>`,
+  `<div class="promo promo-border">
+    <div class="promo-kicker">पढ़िए हिंदी में</div>
+    <div class="promo-title">लोकतंत्रवाणी हिंदी संस्करण</div>
+    <div class="promo-body">वही खबरें, वही विश्लेषण — शुद्ध हिंदी में। हर लेख का हिंदी संस्करण स्वतः तैयार होता है।</div>
+    <div class="promo-cta">hindi.loktantravani.in</div>
+  </div>`,
+  `<div class="promo promo-dark">
+    <div class="promo-kicker">Ask the newsroom</div>
+    <div class="promo-title">Meet VaniBot</div>
+    <div class="promo-body">Our AI news assistant answers your questions on any story, in English or Hindi — right on the site, round the clock.</div>
+    <div class="promo-cta">Chat now → loktantravani.in</div>
+  </div>`,
+];
+
+/** Estimate how full a page is and return filler promos for the slack. */
+function renderFillers(articles: ArticleData[], pageNum: number): string {
+  const words = articles.reduce((sum, a) => sum + stripHtml(a.content || "").split(/\s+/).length, 0);
+  let count = 0;
+  if (words < 500) count = 3;
+  else if (words < 900) count = 2;
+  else if (words < 1300) count = 1;
+  if (count === 0) return "";
+  const picks = Array.from({ length: count }, (_, i) => HOUSE_PROMOS[(pageNum + i) % HOUSE_PROMOS.length]);
+  return `<div class="filler-row filler-${count}">${picks.join("")}</div>`;
+}
+
 function renderPage(sectionName: string, articles: ArticleData[], pageNum: number, totalPages: number, dateFormatted: string) {
   if (articles.length === 0) return "";
 
@@ -219,8 +268,12 @@ function renderPage(sectionName: string, articles: ArticleData[], pageNum: numbe
       ${renderPullQuote(leadPullQuote)}
     </div>
 
-    <!-- Two-column grid for remaining articles -->
-    ${rest.length > 0 ? `
+    <!-- Remaining articles: two-column grid, or full-width when only one
+         is left (a lone article in a half-empty grid reads as a blank page) -->
+    ${rest.length === 1 ? `
+    <hr class="section-divider" />
+    <div class="single-col">${renderColArticle(rest[0])}</div>` : ""}
+    ${rest.length > 1 ? `
     <hr class="section-divider" />
     <div class="columns">
       <div class="col">
@@ -231,6 +284,8 @@ function renderPage(sectionName: string, articles: ArticleData[], pageNum: numbe
         ${rightCol.map(renderColArticle).join('<hr class="col-rule" />')}
       </div>
     </div>` : ""}
+
+    ${renderFillers(articles, pageNum)}
 
     <div class="page-footer">
       <span>LoktantraVani</span>
@@ -494,6 +549,28 @@ export async function GET(req: NextRequest) {
   .toc-v-item { display: flex; justify-content: space-between; font-size: 7px; padding: 2px 0; border-bottom: 0.5px dotted #ddd; }
   .toc-v-item span:first-child { font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; }
   .toc-v-item .page-no { color: #c41e1e; font-weight: 700; }
+
+  /* ── Single leftover article: full width, body flows in 3 columns ── */
+  .single-col .col-article { margin-bottom: 10px; }
+  .single-col .col-body { column-count: 3; column-gap: 16px; column-rule: 0.5px solid #ccc; text-indent: 10px; }
+  .single-col .col-art-img { height: 140px; }
+
+  /* ── House promo fillers (classic self-ads for leftover column inches) ── */
+  .filler-row { display: grid; gap: 12px; margin-top: 14px; }
+  .filler-1 { grid-template-columns: 1fr; }
+  .filler-2 { grid-template-columns: 1fr 1fr; }
+  .filler-3 { grid-template-columns: 1fr 1fr 1fr; }
+  .promo { padding: 14px 16px; text-align: center; page-break-inside: avoid; }
+  .promo-dark { background: #1a1a1a; color: #fff; }
+  .promo-dark .promo-cta { color: #ff9933; }
+  .promo-border { border: 2px solid #1a1a1a; background: #fbf9f4; color: #1a1a1a; }
+  .promo-border .promo-cta { color: #c41e1e; }
+  .promo-orange { background: #ff9933; color: #1a1a1a; }
+  .promo-orange .promo-cta { color: #7a1010; }
+  .promo-kicker { font-size: 6.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 3px; opacity: 0.7; margin-bottom: 4px; }
+  .promo-title { font-family: 'Playfair Display', serif; font-size: 15px; font-weight: 900; line-height: 1.1; margin-bottom: 5px; }
+  .promo-body { font-size: 7.5px; line-height: 1.5; opacity: 0.85; margin-bottom: 6px; }
+  .promo-cta { font-size: 7.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; }
 
   /* ── AI edition blocks ── */
   .banner-block { text-align: center; border-bottom: 2px solid #1a1a1a; padding: 4px 0 10px; margin-bottom: 10px; }
