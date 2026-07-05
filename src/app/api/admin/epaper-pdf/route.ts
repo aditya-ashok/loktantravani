@@ -240,13 +240,35 @@ function renderPage(sectionName: string, articles: ArticleData[], pageNum: numbe
   </div>`;
 }
 
+type EditionPlan = {
+  leadTitle: string;
+  bannerHeadline: string;
+  deck: string;
+  atAGlance: string[];
+  editorial: { title: string; body: string } | null;
+  quoteOfDay: { text: string; by: string } | null;
+  printHeadlines: { title: string; headline: string }[];
+};
+
+/** Fetch the AI-composed edition plan for a date (created by /api/epaper-generate) */
+async function fetchEdition(date: string): Promise<EditionPlan | null> {
+  try {
+    const res = await fetch(`${BASE}/editions/${date}`, { cache: "no-store" });
+    if (!res.ok) return null;
+    const doc = await res.json();
+    const planStr = doc.fields?.plan?.stringValue;
+    if (!planStr) return null;
+    return JSON.parse(planStr) as EditionPlan;
+  } catch { return null; }
+}
+
 export async function GET(req: NextRequest) {
   const dateParam = req.nextUrl.searchParams.get("date") || new Date().toISOString().split("T")[0];
   const download = req.nextUrl.searchParams.get("download") === "true";
   const requestedPage = req.nextUrl.searchParams.get("page");
 
-  // Fetch ads
-  const adsData = await fetchAds();
+  // Fetch ads + AI edition plan in parallel
+  const [adsData, edition] = await Promise.all([fetchAds(), fetchEdition(dateParam)]);
 
   const res = await fetch(`${BASE}:runQuery`, {
     method: "POST",
@@ -274,15 +296,34 @@ export async function GET(req: NextRequest) {
       };
     })
     .filter((p: ArticleData & { inEpaper?: string }) => {
-      // Only include posts explicitly marked for E-Paper
-      if (p.inEpaper !== "true" && p.inEpaper !== "1") return false;
       if (!p.createdAt) return true;
       try { return new Date(p.createdAt) <= new Date(dateParam + "T23:59:59+05:30"); } catch { return true; }
     });
 
+  // Prefer posts explicitly marked for the E-Paper; if none are marked
+  // (edition not generated yet), fall back to the last 48h of published
+  // posts so the paper is never blank.
+  const markedPosts = posts.filter((p: ArticleData & { inEpaper?: string }) => p.inEpaper === "true" || p.inEpaper === "1");
+  let paperPosts = markedPosts;
+  if (paperPosts.length === 0) {
+    const cutoff = new Date(dateParam + "T23:59:59+05:30").getTime() - 48 * 3600 * 1000;
+    paperPosts = posts.filter((p: ArticleData) => {
+      try { return new Date(p.createdAt).getTime() >= cutoff; } catch { return false; }
+    });
+    if (paperPosts.length === 0) paperPosts = posts.slice(0, 15);
+  }
+
+  // Apply AI print headlines from the edition plan (keep original for matching)
+  const headlineOverride = new Map((edition?.printHeadlines || []).map(h => [h.title, h.headline]));
+  for (const p of paperPosts) {
+    (p as ArticleData & { origTitle?: string }).origTitle = p.title;
+    const punchier = headlineOverride.get(p.title);
+    if (punchier) p.title = punchier;
+  }
+
   // Group by section — no article limit per section
   const sections: Record<string, ArticleData[]> = {};
-  for (const p of posts) {
+  for (const p of paperPosts) {
     const cat = p.category || "General";
     if (!sections[cat]) sections[cat] = [];
     sections[cat].push(p);
@@ -451,6 +492,27 @@ export async function GET(req: NextRequest) {
   .toc-v-item span:first-child { font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; }
   .toc-v-item .page-no { color: #c41e1e; font-weight: 700; }
 
+  /* ── AI edition blocks ── */
+  .banner-block { text-align: center; border-bottom: 2px solid #1a1a1a; padding: 4px 0 10px; margin-bottom: 10px; }
+  .banner-headline { font-family: 'Playfair Display', serif; font-size: 34px; font-weight: 900; line-height: 1.05; letter-spacing: -0.5px; }
+  .banner-deck { font-size: 10px; font-style: italic; color: #555; margin-top: 4px; }
+
+  .glance-box { border: 2px solid #1a1a1a; padding: 8px 10px; margin-bottom: 10px; background: #fbf9f4; }
+  .glance-box h3 { font-size: 8px; font-weight: 700; text-transform: uppercase; letter-spacing: 2.5px; color: #c41e1e; border-bottom: 1px solid #1a1a1a; padding-bottom: 3px; margin-bottom: 5px; }
+  .glance-item { font-size: 7.5px; line-height: 1.5; color: #333; padding: 2px 0; border-bottom: 0.5px dotted #ccc; }
+  .glance-item:last-child { border-bottom: none; }
+
+  .editorial-box { border-top: 3px double #1a1a1a; border-bottom: 3px double #1a1a1a; padding: 10px 14px; margin-top: 12px; background: #fdfcf9; }
+  .editorial-box .ed-label { font-size: 7px; font-weight: 700; text-transform: uppercase; letter-spacing: 3px; color: #c41e1e; margin-bottom: 3px; }
+  .editorial-box h3 { font-family: 'Playfair Display', serif; font-size: 14px; font-weight: 900; margin-bottom: 5px; }
+  .editorial-box p { font-size: 8px; line-height: 1.55; color: #333; text-align: justify; margin-bottom: 4px; text-indent: 12px; }
+  .editorial-box p:first-of-type { text-indent: 0; }
+
+  .qod-box { border-left: 3px solid #c41e1e; background: #faf7f2; padding: 8px 10px; margin: 10px 0; }
+  .qod-box .qod-label { font-size: 6.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 2.5px; color: #c41e1e; margin-bottom: 3px; }
+  .qod-box .qod-text { font-family: 'Playfair Display', serif; font-size: 10px; font-style: italic; line-height: 1.4; color: #222; }
+  .qod-box .qod-by { font-size: 7px; color: #777; margin-top: 3px; text-transform: uppercase; letter-spacing: 1px; }
+
   /* ── Ads ── */
   .ad-slot {
     background: #f5f5f5; border: 0.5px solid #ddd; padding: 8px; margin: 14px 0; text-align: center;
@@ -500,10 +562,45 @@ export async function GET(req: NextRequest) {
     const top = sections[s]?.[0];
     const pg = sectionStartPages[s] || 2;
     return top ? { ...top, sectionName: s, pageNo: pg } : null;
-  }).filter(Boolean) as (ArticleData & { sectionName: string; pageNo: number })[];
+  }).filter(Boolean) as (ArticleData & { sectionName: string; pageNo: number; origTitle?: string })[];
+
+  // AI edition chose a lead story — promote it to the top of the front page
+  if (edition?.leadTitle) {
+    const leadIdx = frontPageHeadlines.findIndex(h => h.origTitle === edition.leadTitle || h.title === edition.leadTitle);
+    if (leadIdx > 0) {
+      const [aiLead] = frontPageHeadlines.splice(leadIdx, 1);
+      frontPageHeadlines.unshift(aiLead);
+    }
+  }
 
   // Get first few sentences from lead story for front page excerpt
   const leadExcerpt = frontPageHeadlines[0] ? stripHtml(sections[frontPageHeadlines[0].sectionName]?.[0]?.content || "").split(/[.!?]/).slice(0, 4).join(". ") + "." : "";
+
+  const bannerHTML = edition?.bannerHeadline ? `
+    <div class="banner-block">
+      <h2 class="banner-headline">${edition.bannerHeadline}</h2>
+      ${edition.deck ? `<p class="banner-deck">${edition.deck}</p>` : ""}
+    </div>` : "";
+
+  const glanceHTML = edition?.atAGlance?.length ? `
+    <div class="glance-box">
+      <h3>Today at a Glance</h3>
+      ${edition.atAGlance.map(g => `<div class="glance-item">▸ ${g}</div>`).join("")}
+    </div>` : "";
+
+  const editorialHTML = edition?.editorial?.body ? `
+    <div class="editorial-box">
+      <div class="ed-label">✒ The LoktantraVani View</div>
+      <h3>${edition.editorial.title || "Editorial"}</h3>
+      ${edition.editorial.body.split(/\n+/).map(p => `<p>${p}</p>`).join("")}
+    </div>` : "";
+
+  const qodHTML = edition?.quoteOfDay?.text ? `
+    <div class="qod-box">
+      <div class="qod-label">Quote of the Day</div>
+      <div class="qod-text">"${edition.quoteOfDay.text}"</div>
+      <div class="qod-by">— ${edition.quoteOfDay.by || "Reported"}</div>
+    </div>` : "";
 
   const frontPageHTML = `
   <div class="page front-page" id="page-0">
@@ -511,8 +608,10 @@ export async function GET(req: NextRequest) {
       <h1>LoktantraVani</h1>
       <div class="date">${dateFormatted}</div>
       <div class="tagline">India's First AI Newspaper — Neo Bharat Edition</div>
-      <div class="byline-tag">${posts.length} Articles · ${allSections.length} Sections · ${totalPages} Pages</div>
+      <div class="byline-tag">${paperPosts.length} Articles · ${allSections.length} Sections · ${totalPages} Pages${edition ? " · AI-Composed Edition" : ""}</div>
     </div>
+
+    ${bannerHTML}
 
     ${renderAdSlot(adsData[0] || null)}
 
@@ -546,8 +645,9 @@ export async function GET(req: NextRequest) {
 
       <div class="fp-rule"></div>
 
-      <!-- Right sidebar: more headlines + TOC at bottom -->
+      <!-- Right sidebar: at a glance + more headlines + TOC at bottom -->
       <div class="fp-sidebar">
+        ${glanceHTML}
         ${frontPageHeadlines.slice(5, 10).map(h => `
           <div class="hl">
             <div class="cat">${h.sectionName}</div>
@@ -555,6 +655,8 @@ export async function GET(req: NextRequest) {
             <p>${(h.summary || "").slice(0, 80)} <span style="color:#c41e1e;font-size:7px;">→ p.${h.pageNo}</span></p>
           </div>
         `).join("")}
+
+        ${qodHTML}
 
         <!-- Today's Paper TOC — vertical on right -->
         <div class="toc-vertical">
@@ -567,6 +669,8 @@ export async function GET(req: NextRequest) {
         </div>
       </div>
     </div>
+
+    ${editorialHTML}
 
     <div class="page-footer">
       <span>LoktantraVani</span>
