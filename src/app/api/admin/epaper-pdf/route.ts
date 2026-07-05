@@ -141,34 +141,49 @@ function renderPullQuote(text: string): string {
  */
 const HOUSE_PROMOS = [
   `<div class="promo promo-dark">
-    <div class="promo-kicker">Every morning · 7:30 AM</div>
-    <div class="promo-title">The Vani Morning Brief</div>
-    <div class="promo-body">India's first AI-composed daily digest — the banner story, today at a glance, and the editorial, in your inbox before chai.</div>
-    <div class="promo-cta">Subscribe free → loktantravani.in</div>
+    <img class="promo-img" src="https://firebasestorage.googleapis.com/v0/b/loktantravani-2d159.firebasestorage.app/o/caricatures%2F1783246528118-h09idm.png?alt=media&token=3a58255d-eb8d-4fb9-a1bf-26029e67def8" alt="" />
+    <div class="promo-text">
+      <div class="promo-kicker">Every morning · 7:30 AM</div>
+      <div class="promo-title">The Vani Morning Brief</div>
+      <div class="promo-body">India's first AI-composed daily digest — the banner story, today at a glance, and the editorial, in your inbox before chai.</div>
+      <div class="promo-cta">Subscribe free → loktantravani.in</div>
+    </div>
   </div>`,
   `<div class="promo promo-border">
-    <div class="promo-kicker">Your byline here</div>
-    <div class="promo-title">Write for LoktantraVani</div>
-    <div class="promo-body">Reporters, columnists, satirists — pitch us. AI-assisted editing, real readership, and a national platform for your voice.</div>
-    <div class="promo-cta">Apply → loktantravani.in/write</div>
+    <img class="promo-img" src="https://firebasestorage.googleapis.com/v0/b/loktantravani-2d159.firebasestorage.app/o/caricatures%2F1783246553699-iwle06.png?alt=media&token=fcf1cfc1-16bd-4385-9ca5-5c47fc639e3e" alt="" />
+    <div class="promo-text">
+      <div class="promo-kicker">Your byline here</div>
+      <div class="promo-title">Write for LoktantraVani</div>
+      <div class="promo-body">Reporters, columnists, satirists — pitch us. AI-assisted editing, real readership, and a national platform for your voice.</div>
+      <div class="promo-cta">Apply → loktantravani.in/write</div>
+    </div>
   </div>`,
   `<div class="promo promo-orange">
-    <div class="promo-kicker">Advertise with us</div>
-    <div class="promo-title">Reach New India, Every Day</div>
-    <div class="promo-body">Homepage, articles and this very e-paper — one campaign, every surface. Priority placements for early partners.</div>
-    <div class="promo-cta">Book space → loktantravani.in</div>
+    <img class="promo-img" src="https://firebasestorage.googleapis.com/v0/b/loktantravani-2d159.firebasestorage.app/o/caricatures%2F1783246562988-1363ne.png?alt=media&token=317eece7-a749-41c3-bf05-571e3e22e9fb" alt="" />
+    <div class="promo-text">
+      <div class="promo-kicker">Advertise with us</div>
+      <div class="promo-title">Reach New India, Every Day</div>
+      <div class="promo-body">Homepage, articles and this very e-paper — one campaign, every surface. Priority placements for early partners.</div>
+      <div class="promo-cta">Book space → loktantravani.in</div>
+    </div>
   </div>`,
   `<div class="promo promo-border">
-    <div class="promo-kicker">पढ़िए हिंदी में</div>
-    <div class="promo-title">लोकतंत्रवाणी हिंदी संस्करण</div>
-    <div class="promo-body">वही खबरें, वही विश्लेषण — शुद्ध हिंदी में। हर लेख का हिंदी संस्करण स्वतः तैयार होता है।</div>
-    <div class="promo-cta">hindi.loktantravani.in</div>
+    <img class="promo-img" src="https://firebasestorage.googleapis.com/v0/b/loktantravani-2d159.firebasestorage.app/o/caricatures%2F1783246570169-n5i9zo.png?alt=media&token=3cbcfc40-dab6-4708-81a0-71b0321db70e" alt="" />
+    <div class="promo-text">
+      <div class="promo-kicker">पढ़िए हिंदी में</div>
+      <div class="promo-title">लोकतंत्रवाणी हिंदी संस्करण</div>
+      <div class="promo-body">वही खबरें, वही विश्लेषण — शुद्ध हिंदी में। हर लेख का हिंदी संस्करण स्वतः तैयार होता है।</div>
+      <div class="promo-cta">hindi.loktantravani.in</div>
+    </div>
   </div>`,
   `<div class="promo promo-dark">
-    <div class="promo-kicker">Ask the newsroom</div>
-    <div class="promo-title">Meet VaniBot</div>
-    <div class="promo-body">Our AI news assistant answers your questions on any story, in English or Hindi — right on the site, round the clock.</div>
-    <div class="promo-cta">Chat now → loktantravani.in</div>
+    <img class="promo-img" src="https://firebasestorage.googleapis.com/v0/b/loktantravani-2d159.firebasestorage.app/o/caricatures%2F1783246577457-5pfgla.png?alt=media&token=cfe7e566-081f-4c54-b420-d0f6af92f459" alt="" />
+    <div class="promo-text">
+      <div class="promo-kicker">Ask the newsroom</div>
+      <div class="promo-title">Meet VaniBot</div>
+      <div class="promo-body">Our AI news assistant answers your questions on any story, in English or Hindi — right on the site, round the clock.</div>
+      <div class="promo-cta">Chat now → loktantravani.in</div>
+    </div>
   </div>`,
 ];
 
@@ -186,16 +201,29 @@ function fillerScript(): string {
     document.querySelectorAll(".page").forEach(function (page) {
       var footer = page.querySelector(".page-footer");
       if (!footer) return;
-      for (var i = 0; i < 4; i++) {
+      var measure = function () {
         var kids = Array.prototype.filter.call(page.children, function (el) { return el !== footer; });
         var last = kids[kids.length - 1];
-        if (!last) break;
-        var gap = page.getBoundingClientRect().bottom - last.getBoundingClientRect().bottom - 55;
-        if (gap < 140) break;
-        var holder = document.createElement("div");
-        holder.className = "filler-row filler-1";
-        holder.innerHTML = PROMOS[k++ % PROMOS.length];
-        page.insertBefore(holder, footer);
+        return last ? page.getBoundingClientRect().bottom - last.getBoundingClientRect().bottom - 40 : 0;
+      };
+      var inserted = null;
+      for (var i = 0; i < 6; i++) {
+        if (measure() < 130) break;
+        inserted = document.createElement("div");
+        inserted.className = "filler-row filler-1";
+        inserted.innerHTML = PROMOS[k++ % PROMOS.length];
+        page.insertBefore(inserted, footer);
+      }
+      // Absorb whatever sliver remains into the last promo's padding so the
+      // page ends flush at the footer like a typeset broadsheet.
+      var leftover = measure();
+      if (inserted && leftover > 12) {
+        var promoEl = inserted.querySelector(".promo");
+        if (promoEl) {
+          var pad = Math.min(leftover / 2, 70);
+          promoEl.style.paddingTop = (12 + pad) + "px";
+          promoEl.style.paddingBottom = (12 + pad) + "px";
+        }
       }
     });
   });
@@ -405,9 +433,9 @@ export async function GET(req: NextRequest) {
 
   // Page allocation formula: bigger sections get more pages
   const PAGE_ALLOCATION: Record<string, number> = {
-    Opinion: 3, Politics: 2, Geopolitics: 2, India: 2,
-    Economy: 2, "West Asia": 2, Defence: 1, Sports: 1,
-    Tech: 1, Cities: 1, World: 1, "Lok Post": 1,
+    Opinion: 3, Politics: 2, Geopolitics: 2, India: 3,
+    Economy: 2, "West Asia": 2, Defence: 2, Sports: 2,
+    Tech: 2, Cities: 2, World: 2, "Lok Post": 1,
   };
   // Each page fits ~2 full articles or 1 lead + 2 columns
   const ARTICLES_PER_PAGE = 3;
@@ -576,7 +604,12 @@ export async function GET(req: NextRequest) {
   .filler-1 { grid-template-columns: 1fr; }
   .filler-2 { grid-template-columns: 1fr 1fr; }
   .filler-3 { grid-template-columns: 1fr 1fr 1fr; }
-  .promo { padding: 14px 16px; text-align: center; page-break-inside: avoid; }
+  .promo { padding: 12px 16px; display: flex; align-items: center; gap: 16px; text-align: left; page-break-inside: avoid; }
+  .promo-img { width: 150px; height: 90px; object-fit: cover; flex-shrink: 0; border: 1.5px solid rgba(0,0,0,0.25); }
+  .promo-dark .promo-img { border-color: rgba(255,153,51,0.6); }
+  .promo-text { flex: 1; min-width: 0; }
+  .filler-2 .promo, .filler-3 .promo { flex-direction: column; text-align: center; }
+  .filler-2 .promo-img, .filler-3 .promo-img { width: 100%; height: 70px; }
   .promo-dark { background: #1a1a1a; color: #fff; }
   .promo-dark .promo-cta { color: #ff9933; }
   .promo-border { border: 2px solid #1a1a1a; background: #fbf9f4; color: #1a1a1a; }
