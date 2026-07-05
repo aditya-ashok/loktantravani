@@ -461,6 +461,10 @@ export async function GET(req: NextRequest) {
       });
     }
   }
+  // Broadsheet discipline: cap at 14 section pages (+front = 15 max).
+  // Sections keep their order, so lower-priority overflow drops first.
+  const MAX_SECTION_PAGES = 14;
+  if (pagesPlan.length > MAX_SECTION_PAGES) pagesPlan.splice(MAX_SECTION_PAGES);
   const totalPages = pagesPlan.length + 1; // +1 for front page
 
   const dateFormatted = new Date(dateParam + "T00:00:00").toLocaleDateString("en-IN", {
