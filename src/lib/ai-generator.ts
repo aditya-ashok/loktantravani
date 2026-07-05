@@ -53,7 +53,10 @@ function parseJSON(text: string): Record<string, unknown> | null {
     // Try to extract JSON from text
     const match = text.match(/\{[\s\S]*\}/);
     if (match) {
-      try { return JSON.parse(match[0]); } catch { return null; }
+      try { return JSON.parse(match[0]); } catch { /* fall through */ }
+      // Models sometimes emit raw newlines inside JSON strings — invalid in
+      // strings, insignificant outside, so flattening to spaces is safe.
+      try { return JSON.parse(match[0].replace(/[\u0000-\u001F]+/g, " ")); } catch { return null; }
     }
     return null;
   }
@@ -116,7 +119,7 @@ TARGET LENGTH: ${wordCount} words
 
 TOPIC: "${topic}"
 
-Write a compelling, well-researched newspaper article. Use real facts and current context (March 2026).
+Write a compelling, well-researched newspaper article. Use real facts and current context (${new Date().toLocaleDateString("en-IN", { month: "long", year: "numeric" })}).
 
 CRITICAL: Do NOT hallucinate quotes or statistics. Ground everything in plausible real-world context.
 ${isHindi ? "CRITICAL: Write ALL text in Hindi Devanagari script. The headline, summary, and entire article content MUST be in Hindi. Not bilingual. Not English. PURE HINDI." : ""}
@@ -124,13 +127,45 @@ ${isHindi ? "CRITICAL: Write ALL text in Hindi Devanagari script. The headline, 
 Return ONLY valid JSON (no markdown fences):
 ${jsonSchema}`;
 
-  const data = await callGemini("gemini-2.5-flash", {
-    contents: [{ parts: [{ text: prompt }] }],
-    generationConfig: { temperature: 0.5, maxOutputTokens: 4096 },
-  });
+  // When the topic contains URLs, let Gemini actually fetch and read them
+  // (url_context) and search for surrounding coverage — otherwise the model
+  // only sees the URL string itself and invents the contents.
+  const hasUrls = /https?:\/\//.test(topic);
+  const generationConfig = {
+    temperature: 0.5,
+    // Gemini 2.5 spends output budget on internal thinking — a small cap
+    // truncates the JSON mid-string. Disable thinking and give headroom.
+    maxOutputTokens: 16384,
+    thinkingConfig: { thinkingBudget: 0 },
+  };
 
-  const text = extractGeminiText(data);
-  const parsed = parseJSON(text);
+  let data: Record<string, unknown>;
+  try {
+    data = await callGemini("gemini-2.5-flash", {
+      contents: [{ parts: [{ text: prompt }] }],
+      ...(hasUrls ? { tools: [{ url_context: {} }, { google_search: {} }] } : {}),
+      generationConfig,
+    });
+  } catch {
+    // Tools can be rejected (unsupported URL, tool quota) — retry bare
+    data = await callGemini("gemini-2.5-flash", {
+      contents: [{ parts: [{ text: prompt }] }],
+      generationConfig,
+    });
+  }
+
+  let text = extractGeminiText(data);
+  let parsed = parseJSON(text);
+
+  // One retry on parse failure — regenerate rather than fail the request
+  if (!parsed) {
+    data = await callGemini("gemini-2.5-flash", {
+      contents: [{ parts: [{ text: prompt + "\n\nREMINDER: Output must be a single valid JSON object. Escape all newlines inside strings as \\n." }] }],
+      generationConfig,
+    });
+    text = extractGeminiText(data);
+    parsed = parseJSON(text);
+  }
 
   if (!parsed) throw new Error("Failed to parse AI response");
 
@@ -180,7 +215,7 @@ Return ONLY valid JSON:
 
   const data = await callGemini("gemini-2.5-flash", {
     contents: [{ parts: [{ text: prompt }] }],
-    generationConfig: { temperature: 0.7, maxOutputTokens: 1024 },
+    generationConfig: { temperature: 0.7, maxOutputTokens: 4096, thinkingConfig: { thinkingBudget: 0 } },
   });
 
   const text = extractGeminiText(data);

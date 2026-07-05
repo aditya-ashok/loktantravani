@@ -300,16 +300,19 @@ export async function GET(req: NextRequest) {
       try { return new Date(p.createdAt) <= new Date(dateParam + "T23:59:59+05:30"); } catch { return true; }
     });
 
+  // The paper only carries the last 2 days of news — inEpaper marks
+  // accumulate across editions, so an age gate keeps old stories out.
+  const freshCutoff = new Date(dateParam + "T23:59:59+05:30").getTime() - 48 * 3600 * 1000;
+  const isFresh = (p: ArticleData) => {
+    try { return new Date(p.createdAt).getTime() >= freshCutoff; } catch { return false; }
+  };
+
   // Prefer posts explicitly marked for the E-Paper; if none are marked
-  // (edition not generated yet), fall back to the last 48h of published
-  // posts so the paper is never blank.
-  const markedPosts = posts.filter((p: ArticleData & { inEpaper?: string }) => p.inEpaper === "true" || p.inEpaper === "1");
-  let paperPosts = markedPosts;
+  // (edition not generated yet), fall back to any fresh published posts
+  // so the paper is never blank.
+  let paperPosts = posts.filter((p: ArticleData & { inEpaper?: string }) => (p.inEpaper === "true" || p.inEpaper === "1") && isFresh(p));
   if (paperPosts.length === 0) {
-    const cutoff = new Date(dateParam + "T23:59:59+05:30").getTime() - 48 * 3600 * 1000;
-    paperPosts = posts.filter((p: ArticleData) => {
-      try { return new Date(p.createdAt).getTime() >= cutoff; } catch { return false; }
-    });
+    paperPosts = posts.filter(isFresh);
     if (paperPosts.length === 0) paperPosts = posts.slice(0, 15);
   }
 
