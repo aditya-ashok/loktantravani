@@ -64,7 +64,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Fallback: Try regular Gemini with audio modality
-    const fallbackUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+    const fallbackUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
     const fallbackRes = await fetch(fallbackUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },

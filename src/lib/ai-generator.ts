@@ -124,7 +124,7 @@ ${isHindi ? "CRITICAL: Write ALL text in Hindi Devanagari script. The headline, 
 Return ONLY valid JSON (no markdown fences):
 ${jsonSchema}`;
 
-  const data = await callGemini("gemini-2.0-flash", {
+  const data = await callGemini("gemini-2.5-flash", {
     contents: [{ parts: [{ text: prompt }] }],
     generationConfig: { temperature: 0.5, maxOutputTokens: 4096 },
   });
@@ -178,7 +178,7 @@ Return ONLY valid JSON:
   "imagePrompt": "detailed description for AI image generation: describe the scene, characters, expressions, props. Style: bold colorful 3D cartoon editorial illustration, Indian newspaper cartoon style, exaggerated features, satirical. Square format. NO TEXT in the image."
 }`;
 
-  const data = await callGemini("gemini-2.0-flash", {
+  const data = await callGemini("gemini-2.5-flash", {
     contents: [{ parts: [{ text: prompt }] }],
     generationConfig: { temperature: 0.7, maxOutputTokens: 1024 },
   });
@@ -215,7 +215,7 @@ export async function generateImage(prompt: string): Promise<string | null> {
 
   // Fallback: Gemini Flash with image output
   try {
-    const data = await callGemini("gemini-2.0-flash-exp", {
+    const data = await callGemini("gemini-2.5-flash", {
       contents: [{ parts: [{ text: `Generate an image: ${prompt}. Bold 3D cartoon newspaper editorial illustration style. No text in image.` }] }],
       generationConfig: { responseModalities: ["IMAGE", "TEXT"] },
     });

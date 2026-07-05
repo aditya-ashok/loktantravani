@@ -26,7 +26,7 @@ const STORAGE_BUCKET = (process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || "lokt
 async function geminiSearch(prompt: string): Promise<string> {
   const key = GEMINI_KEY();
   if (!key) throw new Error("GEMINI_API_KEY not set");
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`;
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`;
   const res = await fetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -42,10 +42,13 @@ async function geminiSearch(prompt: string): Promise<string> {
 }
 
 // ── Groq writer (Llama 3.3 70B by default) ──
+// All call sites expect JSON output, so request Groq's native JSON mode first;
+// if the model fails JSON validation, retry once in plain-text mode and let
+// parseJSON's sanitizer handle it.
 async function writeWithGroq(systemPrompt: string, userPrompt: string, maxTokens: number): Promise<string> {
   const key = GROQ_KEY();
   if (!key) return "";
-  try {
+  const call = async (jsonMode: boolean) => {
     const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -56,6 +59,7 @@ async function writeWithGroq(systemPrompt: string, userPrompt: string, maxTokens
         model: GROQ_MODEL,
         max_tokens: Math.min(maxTokens, 8000),
         temperature: 0.4,
+        ...(jsonMode ? { response_format: { type: "json_object" } } : {}),
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt },
@@ -65,6 +69,9 @@ async function writeWithGroq(systemPrompt: string, userPrompt: string, maxTokens
     if (!res.ok) return "";
     const data = await res.json();
     return data.choices?.[0]?.message?.content || "";
+  };
+  try {
+    return (await call(true)) || (await call(false));
   } catch {
     return "";
   }
@@ -112,7 +119,7 @@ async function writeWithClaude(systemPrompt: string, userPrompt: string, maxToke
         "anthropic-version": "2023-06-01",
       },
       body: JSON.stringify({
-        model: "claude-sonnet-4-20250514",
+        model: "claude-sonnet-5",
         max_tokens: maxTokens,
         system: systemPrompt,
         messages: [{ role: "user", content: userPrompt }],
@@ -130,7 +137,7 @@ async function writeWithGemini(systemPrompt: string, userPrompt: string, maxToke
   const key = GEMINI_KEY();
   if (!key) return "";
   try {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`;
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`;
     const res = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -189,6 +196,14 @@ function parseJSON(text: string): Record<string, unknown> | null {
   if (m) try { return JSON.parse(m[0]); } catch { /* */ }
   const arr = text.match(/\[[\s\S]*\]/);
   if (arr) try { return { items: JSON.parse(arr[0]) }; } catch { /* */ }
+  // Llama and other open models often emit raw newlines/tabs inside JSON
+  // strings, which JSON.parse rejects. Raw control chars are invalid inside
+  // strings and insignificant outside them, so flattening to spaces is safe.
+  const flattened = (m?.[0] || arr?.[0] || clean).replace(/[\u0000-\u001F]+/g, " ");
+  try {
+    const parsed = JSON.parse(flattened);
+    return Array.isArray(parsed) ? { items: parsed } : parsed;
+  } catch { /* */ }
   return null;
 }
 
@@ -295,9 +310,12 @@ Return ONLY a JSON array, no prose:
             );
             parsed = parseJSON(groqResult);
             if (parsed) {
+              // JSON mode may wrap the array under an arbitrary key — take the first array value found
               const items = (parsed.items as Array<{ topic: string; facts: string; sources: string }>) ||
-                           (Array.isArray(parsed) ? parsed as unknown as Array<{ topic: string; facts: string; sources: string }> : []);
-              researchBriefs = items.slice(0, perSection);
+                           (Array.isArray(parsed) ? parsed as unknown as Array<{ topic: string; facts: string; sources: string }> : null) ||
+                           (Object.values(parsed).find(Array.isArray) as Array<{ topic: string; facts: string; sources: string }> | undefined) ||
+                           [];
+              researchBriefs = items.filter(it => it && typeof it === "object" && it.topic).slice(0, perSection);
             }
           }
 
@@ -327,7 +345,7 @@ Return ONLY a JSON array, no prose:
             topic: brief.topic,
             completed, totalArticles,
             pct: Math.round((completed / totalArticles) * 100),
-            engine: "Claude",
+            engine,
           });
 
           try {
@@ -610,7 +628,7 @@ Return ONLY valid JSON:
               summary: (parsed.summary as string || "").slice(0, 120),
               savedId, completed, totalArticles,
               pct: Math.round((completed / totalArticles) * 100),
-              engine: "Claude",
+              engine,
             });
           } catch (err) {
             errors++;

@@ -22,7 +22,7 @@ async function checkGemini(): Promise<ProviderStatus> {
   if (!key) return { configured: false, ok: false, error: "GEMINI_API_KEY env var not set" };
 
   try {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`;
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`;
     const res = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -51,7 +51,7 @@ async function checkGeminiSearch(): Promise<ProviderStatus> {
   if (!key) return { configured: false, ok: false, error: "GEMINI_API_KEY env var not set" };
 
   try {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`;
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`;
     const res = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -120,7 +120,7 @@ async function checkClaude(): Promise<ProviderStatus> {
         "anthropic-version": "2023-06-01",
       },
       body: JSON.stringify({
-        model: "claude-sonnet-4-20250514",
+        model: "claude-sonnet-5",
         max_tokens: 10,
         messages: [{ role: "user", content: "Reply with the single word: OK" }],
       }),

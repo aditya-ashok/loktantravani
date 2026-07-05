@@ -12,7 +12,7 @@ export async function GET() {
   if (!key) return NextResponse.json({ topics: ["Budget 2026", "IPL 2026", "India-China Relations", "AI Regulation", "ISRO Mission", "Delhi Metro Phase 5", "UPI Global Expansion", "West Asia Crisis"] });
 
   try {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`;
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`;
     const res = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },

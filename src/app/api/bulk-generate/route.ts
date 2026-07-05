@@ -24,7 +24,7 @@ const GEMINI_KEY = () => (process.env.GEMINI_API_KEY || "").trim();
 async function gemini(prompt: string): Promise<string> {
   const key = GEMINI_KEY();
   if (!key) throw new Error("GEMINI_API_KEY not set");
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`;
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`;
   const res = await fetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },

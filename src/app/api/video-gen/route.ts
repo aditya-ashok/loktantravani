@@ -490,7 +490,7 @@ Return ONLY valid JSON array:
           "anthropic-version": "2023-06-01",
         },
         body: JSON.stringify({
-          model: "claude-sonnet-4-20250514",
+          model: "claude-sonnet-5",
           max_tokens: 2000,
           system: systemPrompt,
           messages: [{ role: "user", content: userPrompt }],
@@ -508,7 +508,7 @@ Return ONLY valid JSON array:
   // Gemini fallback
   if (GEMINI_KEY()) {
     const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_KEY()}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_KEY()}`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },

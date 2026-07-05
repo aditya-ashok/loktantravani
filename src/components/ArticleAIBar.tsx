@@ -174,7 +174,7 @@ export default function ArticleAIBar({ title, content, summary, lang, postId, ca
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          model: "gemini-2.0-flash",
+          model: "gemini-2.5-flash",
           action: "generateContent",
           body: {
             contents: [{ parts: [{ text: `Summarize this news article in exactly 3 bullet points. Each bullet should be one concise sentence (max 20 words). Return ONLY a JSON array of 3 strings, no markdown.\n\nTitle: ${title}\n\n${stripHtml(content).slice(0, 3000)}` }] }],
@@ -211,7 +211,7 @@ export default function ArticleAIBar({ title, content, summary, lang, postId, ca
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          model: "gemini-2.0-flash",
+          model: "gemini-2.5-flash",
           action: "generateContent",
           body: {
             contents: [{ parts: [{ text: `Translate this newspaper article to ${targetLang}. Maintain the HTML tags (<h2>, <p>, <blockquote>). Keep it professional and journalistic.\n\nTitle: ${title}\n\nContent:\n${content.slice(0, 5000)}\n\nReturn ONLY valid JSON:\n{"title":"translated title","content":"translated HTML content"}` }] }],
@@ -259,7 +259,7 @@ export default function ArticleAIBar({ title, content, summary, lang, postId, ca
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          model: "gemini-2.0-flash",
+          model: "gemini-2.5-flash",
           action: "generateContent",
           body: {
             contents: [

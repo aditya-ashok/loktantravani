@@ -95,7 +95,7 @@ Write a compelling 3-4 minute news anchor monologue. Make it engaging, data-driv
           "anthropic-version": "2023-06-01",
         },
         body: JSON.stringify({
-          model: "claude-sonnet-4-20250514",
+          model: "claude-sonnet-5",
           max_tokens: 2000,
           system: systemPrompt,
           messages: [{ role: "user", content: userPrompt }],
@@ -112,7 +112,7 @@ Write a compelling 3-4 minute news anchor monologue. Make it engaging, data-driv
   // Fallback: Gemini
   const geminiKey = GEMINI_KEY();
   if (!geminiKey) throw new Error("No AI API key available");
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiKey}`;
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiKey}`;
   const res = await fetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
