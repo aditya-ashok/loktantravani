@@ -172,16 +172,34 @@ const HOUSE_PROMOS = [
   </div>`,
 ];
 
-/** Estimate how full a page is and return filler promos for the slack. */
-function renderFillers(articles: ArticleData[], pageNum: number): string {
-  const words = articles.reduce((sum, a) => sum + stripHtml(a.content || "").split(/\s+/).length, 0);
-  let count = 0;
-  if (words < 500) count = 3;
-  else if (words < 900) count = 2;
-  else if (words < 1300) count = 1;
-  if (count === 0) return "";
-  const picks = Array.from({ length: count }, (_, i) => HOUSE_PROMOS[(pageNum + i) % HOUSE_PROMOS.length]);
-  return `<div class="filler-row filler-${count}">${picks.join("")}</div>`;
+/**
+ * Client-side gap filler: measures each rendered page (after images load)
+ * and inserts as many house promos as actually fit in the leftover space.
+ * Server-side word counts can't see real rendered heights, so this is the
+ * only reliable way to leave no blank column inches.
+ */
+function fillerScript(): string {
+  return `<script>
+  var PROMOS = ${JSON.stringify(HOUSE_PROMOS)};
+  window.addEventListener("load", function () {
+    var k = 0;
+    document.querySelectorAll(".page").forEach(function (page) {
+      var footer = page.querySelector(".page-footer");
+      if (!footer) return;
+      for (var i = 0; i < 4; i++) {
+        var kids = Array.prototype.filter.call(page.children, function (el) { return el !== footer; });
+        var last = kids[kids.length - 1];
+        if (!last) break;
+        var gap = page.getBoundingClientRect().bottom - last.getBoundingClientRect().bottom - 55;
+        if (gap < 140) break;
+        var holder = document.createElement("div");
+        holder.className = "filler-row filler-1";
+        holder.innerHTML = PROMOS[k++ % PROMOS.length];
+        page.insertBefore(holder, footer);
+      }
+    });
+  });
+  </script>`;
 }
 
 function renderPage(sectionName: string, articles: ArticleData[], pageNum: number, totalPages: number, dateFormatted: string) {
@@ -284,8 +302,6 @@ function renderPage(sectionName: string, articles: ArticleData[], pageNum: numbe
         ${rightCol.map(renderColArticle).join('<hr class="col-rule" />')}
       </div>
     </div>` : ""}
-
-    ${renderFillers(articles, pageNum)}
 
     <div class="page-footer">
       <span>LoktantraVani</span>
@@ -433,7 +449,7 @@ export async function GET(req: NextRequest) {
     width: 210mm; min-height: 297mm; max-width: 210mm;
     margin: 0 auto 20px; background: #ffffff;
     border: 1px solid #ccc; box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-    padding: 14px 18px 20px; position: relative;
+    padding: 14px 18px 44px; position: relative;
     page-break-after: always; overflow: hidden;
   }
 
@@ -511,7 +527,7 @@ export async function GET(req: NextRequest) {
   .art-sep { border: none; border-top: 0.5px solid #ccc; margin: 10px 0; clear: both; }
 
   .page-footer {
-    margin-top: 16px;
+    position: absolute; bottom: 12px; left: 18px; right: 18px;
     display: flex; justify-content: space-between;
     font-size: 6.5px; color: #aaa; text-transform: uppercase; letter-spacing: 2px;
     border-top: 0.5px solid #ddd; padding-top: 4px;
@@ -800,6 +816,7 @@ export async function GET(req: NextRequest) {
     const plan = pagesPlan[idx];
     return plan ? renderPage(plan.section, plan.articles, parseInt(requestedPage), totalPages, dateFormatted) : "<p>Page not found</p>";
   })() : ""}
+  ${fillerScript()}
 </body>
 </html>`;
 
