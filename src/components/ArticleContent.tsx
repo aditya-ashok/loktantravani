@@ -152,7 +152,8 @@ export default function ArticleContent({ post }: { post: Post }) {
               <img src={post.imageUrl} alt={post.title} className="w-full h-full object-cover" />
             </div>
             <PostContent content={post.content} contentHi={post.contentHi} />
-            {/* Ad after article content */}
+            {/* Sponsor campaign after article content, AdSense below */}
+            <AdBanner placement="between-articles" />
             <InArticleAd />
             <AuthorCard authorName={displayAuthor} authorPhoto={post.authorPhoto} authorDesignation={displayDesignation} authorBio={displayBio} />
             <div className="mt-8 pt-8 border-t border-black/10 dark:border-white/10">
@@ -172,7 +173,8 @@ export default function ArticleContent({ post }: { post: Post }) {
                    </div>
                  </div>
                ) : null}
-               {/* Sidebar ad — sticky */}
+               {/* Sidebar ads — sponsor campaign above AdSense */}
+               <AdBanner placement="sidebar" />
                <GoogleAd format="rectangle" />
              </div>
           </aside>

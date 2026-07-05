@@ -5,7 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { ArrowRight } from "lucide-react";
 import BlogCard from "@/components/BlogCard";
-import { HouseAd } from "@/components/GoogleAd";
+import AdBanner from "@/components/AdBanner";
 import { useLanguage } from "@/lib/language-context";
 import { getAuthorHiName } from "@/lib/authors";
 import { timeAgo } from "@/lib/utils";
@@ -115,7 +115,7 @@ export default function LandingContent({ allPosts }: { allPosts: Post[] }) {
         )}
 
         {/* Ad Placement 1 — between Politics and Global */}
-        <HouseAd placement="between-sections" />
+        <AdBanner placement="homepage-banner" houseFallback />
 
         {/* Global Impact */}
         {geoPosts.length > 0 && (
@@ -148,7 +148,7 @@ export default function LandingContent({ allPosts }: { allPosts: Post[] }) {
         )}
 
         {/* Ad Placement 2 — between Economy and Sports */}
-        <HouseAd placement="between-sections" />
+        <AdBanner placement="homepage-banner" houseFallback />
 
         {/* Sports */}
         {sportsPosts.length > 0 && (
