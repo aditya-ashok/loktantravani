@@ -121,6 +121,8 @@ export default function EpaperShareModal({ isOpen, onClose, post }: EpaperShareM
             pixelRatio: ratio,
             backgroundColor: "#FFFFFF",
             skipFonts: attempt === 2,
+            width: cardRef.current.offsetWidth,
+            height: cardRef.current.scrollHeight,
           });
           // Check if image is not blank (blank PNGs are very small)
           if (dataUrl.length > 5000) break;
@@ -157,7 +159,7 @@ export default function EpaperShareModal({ isOpen, onClose, post }: EpaperShareM
       // Fallback: try without inlining images
       try {
         if (!cardRef.current) throw new Error("no card ref");
-        const dataUrl = await toPng(cardRef.current, { cacheBust: true, quality: 1, pixelRatio: ratio, backgroundColor: "#FFFFFF", skipFonts: true });
+        const dataUrl = await toPng(cardRef.current, { cacheBust: true, quality: 1, pixelRatio: ratio, backgroundColor: "#FFFFFF", skipFonts: true, width: cardRef.current.offsetWidth, height: cardRef.current.scrollHeight });
         const link = document.createElement("a");
         link.download = `loktantravani-share.png`;
         link.href = dataUrl;
@@ -300,6 +302,7 @@ export default function EpaperShareModal({ isOpen, onClose, post }: EpaperShareM
                     crossOrigin="anonymous"
                     referrerPolicy="no-referrer"
                     className="w-full h-full object-cover"
+                    style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center 25%", display: "block" }}
                     onError={(e) => {
                       const img = e.currentTarget;
                       img.style.display = "none";
