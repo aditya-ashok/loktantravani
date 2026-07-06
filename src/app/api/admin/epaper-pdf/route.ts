@@ -89,6 +89,7 @@ async function fetchAds(): Promise<{ title: string; brand: string; imageUrl: str
         return {
           title: extract(f, "title"),
           brand: extract(f, "brand"),
+          content: extract(f, "content"),
           imageUrl: extract(f, "imageUrl"),
           link: extract(f, "link"),
           priority: parseInt(extract(f, "priority") || "5", 10),
@@ -103,7 +104,7 @@ async function fetchAds(): Promise<{ title: string; brand: string; imageUrl: str
  * Large display ad — the bottom-of-front-page block every Indian broadsheet
  * carries. Rotating brand color schemes; falls back to a house campaign.
  */
-function renderDisplayAd(ad: { title: string; brand: string; imageUrl: string; link: string } | null, idx = 0): string {
+function renderDisplayAd(ad: { title: string; brand: string; content?: string; imageUrl: string; link: string } | null, idx = 0): string {
   const schemes = [
     { bg: "#0f2a4a", fg: "#ffffff", accent: "#ff9933" },
     { bg: "#7a1010", fg: "#ffffff", accent: "#ffd8a8" },
@@ -113,6 +114,7 @@ function renderDisplayAd(ad: { title: string; brand: string; imageUrl: string; l
   const a = ad || {
     title: "The Vani Morning Brief — Tomorrow's Front Page, Tonight",
     brand: "LoktantraVani",
+    content: "India's first AI-composed daily digest, free in your inbox every morning at 7:30.",
     imageUrl: "",
     link: "https://loktantravani.in",
   };
@@ -121,12 +123,14 @@ function renderDisplayAd(ad: { title: string; brand: string; imageUrl: string; l
     : "";
   const open = a.link ? `<a href="${a.link}" target="_blank" style="text-decoration:none;">` : "";
   const close = a.link ? "</a>" : "";
-  return `${open}<div class="display-ad" style="background:${c.bg};color:${c.fg};">
+  const ctaText = a.link ? a.link.replace(/^https?:\/\/(www\.)?/, "").replace(/\/.*$/, "") : "loktantravani.in";
+  return `${open}<div class="display-ad${a.imageUrl ? "" : " dad-noimg"}" style="background:${c.bg};color:${c.fg};">
     <div class="dad-body">
       <div class="dad-label" style="color:${c.accent};">Advertisement</div>
       <div class="dad-brand" style="color:${c.accent};">${a.brand || ""}</div>
       <div class="dad-title">${a.title}</div>
-      <div class="dad-cta" style="border-color:${c.accent};color:${c.accent};">${a.link ? a.link.replace(/^https?:\/\/(www\.)?/, "") : "loktantravani.in"} →</div>
+      ${a.content ? `<div class="dad-desc">${a.content.slice(0, 220)}</div>` : ""}
+      <div class="dad-cta" style="border-color:${c.accent};color:${c.accent};">${ctaText} →</div>
     </div>
     ${img}
   </div>${close}`;
@@ -773,7 +777,12 @@ export async function GET(req: NextRequest) {
   .display-ad .dad-label { font-size: 5.5px; text-transform: uppercase; letter-spacing: 3px; opacity: 0.8; margin-bottom: 4px; }
   .display-ad .dad-brand { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 2.5px; margin-bottom: 3px; }
   .display-ad .dad-title { font-family: 'Playfair Display', serif; font-size: 20px; font-weight: 900; line-height: 1.1; margin-bottom: 8px; }
+  .display-ad .dad-desc { font-size: 9px; line-height: 1.6; opacity: 0.85; margin-bottom: 10px; max-width: 480px; }
   .display-ad .dad-cta { align-self: flex-start; font-size: 7.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; border: 1.5px solid; padding: 4px 12px; }
+  .display-ad.dad-noimg { grid-template-columns: 1fr; }
+  .display-ad.dad-noimg .dad-body { align-items: center; text-align: center; }
+  .display-ad.dad-noimg .dad-desc { max-width: 560px; }
+  .display-ad.dad-noimg .dad-cta { align-self: center; }
   .display-ad .dad-img { background-size: cover; background-position: center 25%; }
 
   /* ── Ads ── */
