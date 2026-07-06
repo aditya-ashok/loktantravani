@@ -59,6 +59,39 @@ async function fetchAds(): Promise<{ title: string; brand: string; imageUrl: str
   } catch { return []; }
 }
 
+/**
+ * Large display ad — the bottom-of-front-page block every Indian broadsheet
+ * carries. Rotating brand color schemes; falls back to a house campaign.
+ */
+function renderDisplayAd(ad: { title: string; brand: string; imageUrl: string; link: string } | null, idx = 0): string {
+  const schemes = [
+    { bg: "#0f2a4a", fg: "#ffffff", accent: "#ff9933" },
+    { bg: "#7a1010", fg: "#ffffff", accent: "#ffd8a8" },
+    { bg: "#ff9933", fg: "#1a1a1a", accent: "#7a1010" },
+  ];
+  const c = schemes[idx % schemes.length];
+  const a = ad || {
+    title: "The Vani Morning Brief — Tomorrow's Front Page, Tonight",
+    brand: "LoktantraVani",
+    imageUrl: "",
+    link: "https://loktantravani.in",
+  };
+  const img = a.imageUrl
+    ? `<div class="dad-img" style="background-image:url('${a.imageUrl}')"></div>`
+    : "";
+  const open = a.link ? `<a href="${a.link}" target="_blank" style="text-decoration:none;">` : "";
+  const close = a.link ? "</a>" : "";
+  return `${open}<div class="display-ad" style="background:${c.bg};color:${c.fg};">
+    <div class="dad-body">
+      <div class="dad-label" style="color:${c.accent};">Advertisement</div>
+      <div class="dad-brand" style="color:${c.accent};">${a.brand || ""}</div>
+      <div class="dad-title">${a.title}</div>
+      <div class="dad-cta" style="border-color:${c.accent};color:${c.accent};">${a.link ? a.link.replace(/^https?:\/\/(www\.)?/, "") : "loktantravani.in"} →</div>
+    </div>
+    ${img}
+  </div>${close}`;
+}
+
 function renderAdSlot(ad: { title: string; brand: string; imageUrl: string; link: string } | null) {
   if (!ad) return '<div class="ad-slot"><div class="ad-label">ADVERTISEMENT</div><div class="ad-content">LoktantraVani — India\'s First AI Newspaper</div></div>';
   const img = ad.imageUrl ? `<img src="${ad.imageUrl}" alt="${ad.title}" style="max-width:100%;max-height:120px;object-fit:contain;margin:8px auto;display:block;" />` : "";
@@ -660,6 +693,23 @@ export async function GET(req: NextRequest) {
   .qod-box .qod-text { font-family: 'Playfair Display', serif; font-size: 10px; font-style: italic; line-height: 1.4; color: #222; }
   .qod-box .qod-by { font-size: 7px; color: #777; margin-top: 3px; text-transform: uppercase; letter-spacing: 1px; }
 
+  /* ── Front-page teaser strip ── */
+  .fp-teasers { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: #0f2a4a; padding: 6px; margin-bottom: 10px; }
+  .teaser { display: flex; gap: 6px; padding: 4px 8px; align-items: center; border-right: 0.5px solid rgba(255,255,255,0.2); }
+  .teaser:last-child { border-right: none; }
+  .teaser-img { width: 44px; height: 40px; flex-shrink: 0; background-size: cover; background-position: center; border: 1px solid rgba(255,255,255,0.3); }
+  .teaser-cat { font-size: 5.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; color: #ff9933; margin-bottom: 1px; }
+  .teaser h4 { font-family: 'Playfair Display', serif; font-size: 8px; font-weight: 700; line-height: 1.2; color: #ffffff; }
+
+  /* ── Large display ad (bottom of front page + every 3rd page) ── */
+  .display-ad { display: grid; grid-template-columns: 1fr 190px; min-height: 120px; margin-top: 12px; page-break-inside: avoid; }
+  .display-ad .dad-body { padding: 16px 20px; display: flex; flex-direction: column; justify-content: center; }
+  .display-ad .dad-label { font-size: 5.5px; text-transform: uppercase; letter-spacing: 3px; opacity: 0.8; margin-bottom: 4px; }
+  .display-ad .dad-brand { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 2.5px; margin-bottom: 3px; }
+  .display-ad .dad-title { font-family: 'Playfair Display', serif; font-size: 20px; font-weight: 900; line-height: 1.1; margin-bottom: 8px; }
+  .display-ad .dad-cta { align-self: flex-start; font-size: 7.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; border: 1.5px solid; padding: 4px 12px; }
+  .display-ad .dad-img { background-size: cover; background-position: center; }
+
   /* ── Ads ── */
   .ad-slot {
     background: #f5f5f5; border: 0.5px solid #ddd; padding: 8px; margin: 14px 0; text-align: center;
@@ -749,6 +799,29 @@ export async function GET(req: NextRequest) {
       <div class="qod-by">— ${edition.quoteOfDay.by || "Reported"}</div>
     </div>` : "";
 
+  // Teaser strip: 4 boxed mini-stories with thumbnails, IE-style
+  const teaserPool = [
+    ...frontPageHeadlines.slice(5, 9),
+    ...paperPosts.filter((p: ArticleData) => p.imageUrl && !p.imageUrl.startsWith("data:")),
+  ];
+  const seenTeasers = new Set<string>();
+  const teasers = teaserPool.filter(t => {
+    if (seenTeasers.has(t.title)) return false;
+    seenTeasers.add(t.title);
+    return true;
+  }).slice(0, 4);
+  const teaserHTML = teasers.length >= 3 ? `
+    <div class="fp-teasers">
+      ${teasers.map(t => `
+        <div class="teaser">
+          ${t.imageUrl && !t.imageUrl.startsWith("data:") ? `<div class="teaser-img" style="background-image:url('${t.imageUrl}')"></div>` : ""}
+          <div>
+            <div class="teaser-cat">${t.category || ""}</div>
+            <h4>${t.title.slice(0, 64)}</h4>
+          </div>
+        </div>`).join("")}
+    </div>` : "";
+
   const frontPageHTML = `
   <div class="page front-page" id="page-0">
     <div class="masthead">
@@ -758,9 +831,9 @@ export async function GET(req: NextRequest) {
       <div class="byline-tag">${paperPosts.length} Articles · ${allSections.length} Sections · ${totalPages} Pages${edition ? " · AI-Composed Edition" : ""}</div>
     </div>
 
-    ${bannerHTML}
+    ${teaserHTML}
 
-    ${renderAdSlot(adsData[0] || null)}
+    ${bannerHTML}
 
     <!-- Main content: 3 columns — stories | rule | sidebar with TOC -->
     <div class="fp-layout">
@@ -819,9 +892,11 @@ export async function GET(req: NextRequest) {
 
     ${editorialHTML}
 
+    ${renderDisplayAd(adsData[0] || null, 0)}
+
     <div class="page-footer">
       <span>LoktantraVani</span>
-      <span>loktantravani.vercel.app</span>
+      <span>loktantravani.in</span>
       <span>Page 1 of ${totalPages}</span>
     </div>
   </div>`;
@@ -832,7 +907,7 @@ export async function GET(req: NextRequest) {
     const pageHTML = renderPage(plan.section, plan.articles, pageNum, totalPages, dateFormatted);
     // Insert ad after every 3rd page
     const showAd = i > 0 && i % 3 === 2;
-    const adHtml = showAd ? renderAdSlot(adsData[Math.floor(i / 3) % Math.max(1, adsData.length)] || null) : "";
+    const adHtml = showAd ? renderDisplayAd(adsData[Math.floor(i / 3) % Math.max(1, adsData.length)] || null, Math.floor(i / 3) + 1) : "";
     return pageHTML + adHtml;
   }).join("");
 
