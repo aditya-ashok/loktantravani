@@ -162,9 +162,16 @@ function renderKeyFacts(title: string, content: string, pageIdx: number): string
 /** Render a pull quote block */
 function renderPullQuote(text: string): string {
   if (!text || text.length < 30) return "";
+  let quote = text.trim().replace(/^["'"']+|["'"']+$/g, "");
+  if (quote.length > 180) {
+    quote = quote.slice(0, 180);
+    const lastSpace = quote.lastIndexOf(" ");
+    if (lastSpace > 100) quote = quote.slice(0, lastSpace);
+    quote += "…";
+  }
   return `<div class="pull-quote">
     <div class="pq-mark">"</div>
-    <div class="pq-text">${text.slice(0, 180)}</div>
+    <div class="pq-text">"${quote}"</div>
   </div>`;
 }
 
@@ -540,7 +547,7 @@ export async function GET(req: NextRequest) {
 
   /* ── Lead Story ── */
   .lead-story { margin-bottom: 14px; border-bottom: 1px solid #1a1a1a; padding-bottom: 12px; }
-  .lead-img-top { width: 100%; height: 160px; object-fit: cover; margin-bottom: 6px; }
+  .lead-img-top { width: 100%; height: 160px; object-fit: cover; object-position: center 20%; margin-bottom: 6px; }
   .lead-headline { font-family: 'Playfair Display', serif; font-size: 22px; font-weight: 900; line-height: 1.1; margin-bottom: 2px; letter-spacing: -0.5px; }
   .lead-headline-hi { font-size: 13px; color: #555; margin-bottom: 4px; font-style: italic; }
   .lead-summary { font-size: 10px; color: #444; line-height: 1.5; margin-bottom: 4px; font-style: italic; }
@@ -555,7 +562,7 @@ export async function GET(req: NextRequest) {
   .lead-grid-text p { margin-bottom: 4px; text-indent: 12px; }
   .lead-grid-text p:first-child { text-indent: 0; }
   .lead-grid-img { }
-  .lead-grid-img img { width: 100%; height: 200px; object-fit: cover; margin-bottom: 8px; }
+  .lead-grid-img img { width: 100%; height: 200px; object-fit: cover; object-position: center 20%; margin-bottom: 8px; }
 
   /* ── Two-column grid ── */
   .columns { display: grid; grid-template-columns: 1fr 1px 1fr; gap: 16px; }
@@ -565,13 +572,13 @@ export async function GET(req: NextRequest) {
 
   /* ── Column articles (compact newspaper style) ── */
   .col-article { margin-bottom: 10px; overflow: hidden; }
-  .col-art-img { width: 100%; height: 100px; object-fit: cover; margin-bottom: 4px; }
+  .col-art-img { width: 100%; height: 100px; object-fit: cover; object-position: center 20%; margin-bottom: 4px; }
   .col-article h3 { font-family: 'Playfair Display', serif; font-size: 13px; font-weight: 900; line-height: 1.15; margin-bottom: 1px; }
   .col-title-hi { font-size: 8px; color: #777; font-style: italic; margin-bottom: 2px; }
   .col-byline { font-size: 6.5px; text-transform: uppercase; letter-spacing: 1.5px; color: #999; margin-bottom: 3px; }
   .col-body { font-size: 8px; line-height: 1.45; color: #444; text-align: justify; hyphens: auto; text-indent: 10px; }
   .col-art-grid { display: grid; grid-template-columns: 1fr 90px; gap: 8px; align-items: start; }
-  .col-art-thumb { width: 90px; height: 70px; object-fit: cover; }
+  .col-art-thumb { width: 90px; height: 70px; object-fit: cover; object-position: center 20%; }
 
   /* ── Key facts, infographics, quotes ── */
   .keyfacts-box { background: #f7f7f7; border: 1px solid #ddd; padding: 8px 10px; margin: 8px 0; }
@@ -697,7 +704,7 @@ export async function GET(req: NextRequest) {
   .fp-teasers { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: #0f2a4a; padding: 6px; margin-bottom: 10px; }
   .teaser { display: flex; gap: 6px; padding: 4px 8px; align-items: center; border-right: 0.5px solid rgba(255,255,255,0.2); }
   .teaser:last-child { border-right: none; }
-  .teaser-img { width: 44px; height: 40px; flex-shrink: 0; background-size: cover; background-position: center; border: 1px solid rgba(255,255,255,0.3); }
+  .teaser-img { width: 44px; height: 40px; flex-shrink: 0; background-size: cover; background-position: center 20%; border: 1px solid rgba(255,255,255,0.3); }
   .teaser-cat { font-size: 5.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; color: #ff9933; margin-bottom: 1px; }
   .teaser h4 { font-family: 'Playfair Display', serif; font-size: 8px; font-weight: 700; line-height: 1.2; color: #ffffff; }
 
@@ -708,7 +715,7 @@ export async function GET(req: NextRequest) {
   .display-ad .dad-brand { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 2.5px; margin-bottom: 3px; }
   .display-ad .dad-title { font-family: 'Playfair Display', serif; font-size: 20px; font-weight: 900; line-height: 1.1; margin-bottom: 8px; }
   .display-ad .dad-cta { align-self: flex-start; font-size: 7.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; border: 1.5px solid; padding: 4px 12px; }
-  .display-ad .dad-img { background-size: cover; background-position: center; }
+  .display-ad .dad-img { background-size: cover; background-position: center 25%; }
 
   /* ── Ads ── */
   .ad-slot {
@@ -842,7 +849,7 @@ export async function GET(req: NextRequest) {
         ${frontPageHeadlines[0] ? `
         <div class="hl fp-lead">
           <div class="cat">${frontPageHeadlines[0].sectionName} <span style="color:#888;font-weight:400;">· p.${frontPageHeadlines[0].pageNo}</span></div>
-          ${frontPageHeadlines[0].imageUrl && !frontPageHeadlines[0].imageUrl.startsWith("data:") ? `<img src="${frontPageHeadlines[0].imageUrl}" alt="" style="width:100%;height:180px;object-fit:cover;margin-bottom:6px;" />` : ""}
+          ${frontPageHeadlines[0].imageUrl && !frontPageHeadlines[0].imageUrl.startsWith("data:") ? `<img src="${frontPageHeadlines[0].imageUrl}" alt="" style="width:100%;height:180px;object-fit:cover;object-position:center 20%;margin-bottom:6px;" />` : ""}
           <h2 style="font-size:24px;">${frontPageHeadlines[0].title}</h2>
           <p style="font-size:10px;line-height:1.5;margin-top:4px;">${(frontPageHeadlines[0].summary || "").slice(0, 250)}</p>
           <div class="fp-excerpt">${leadExcerpt.slice(0, 500)}</div>
@@ -854,7 +861,7 @@ export async function GET(req: NextRequest) {
           ${frontPageHeadlines.slice(1, 5).map(h => `
             <div class="hl">
               <div class="cat">${h.sectionName}</div>
-              ${h.imageUrl && !h.imageUrl.startsWith("data:") ? `<img src="${h.imageUrl}" alt="" style="width:100%;height:80px;object-fit:cover;margin-bottom:4px;" />` : ""}
+              ${h.imageUrl && !h.imageUrl.startsWith("data:") ? `<img src="${h.imageUrl}" alt="" style="width:100%;height:80px;object-fit:cover;object-position:center 20%;margin-bottom:4px;" />` : ""}
               <h2>${h.title}</h2>
               <p>${(h.summary || "").slice(0, 120)}</p>
               <div class="hl-byline">By ${h.author} · <span style="color:#c41e1e;">p.${h.pageNo} →</span></div>
