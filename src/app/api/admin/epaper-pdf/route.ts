@@ -535,6 +535,7 @@ export async function GET(req: NextRequest) {
       structuredQuery: {
         from: [{ collectionId: "posts" }],
         where: { fieldFilter: { field: { fieldPath: "status" }, op: "EQUAL", value: { stringValue: "published" } } },
+        orderBy: [{ field: { fieldPath: "createdAt" }, direction: "DESCENDING" }],
         limit: 200,
       },
     }),

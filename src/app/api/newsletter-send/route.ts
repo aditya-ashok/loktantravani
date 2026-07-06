@@ -57,6 +57,7 @@ async function fetchTopStories(): Promise<{ title: string; summary: string; cate
       structuredQuery: {
         from: [{ collectionId: "posts" }],
         where: { fieldFilter: { field: { fieldPath: "status" }, op: "EQUAL", value: { stringValue: "published" } } },
+        orderBy: [{ field: { fieldPath: "createdAt" }, direction: "DESCENDING" }],
         limit: 100,
       },
     }),
