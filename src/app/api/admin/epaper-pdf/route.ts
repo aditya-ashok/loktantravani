@@ -641,9 +641,18 @@ export async function GET(req: NextRequest) {
     }
   }
   // Broadsheet discipline: cap at 14 section pages (+front = 15 max).
-  // Sections keep their order, so lower-priority overflow drops first.
+  // Trim the largest sections' overflow pages first so every section —
+  // Opinion and OpEds included — keeps at least one page in the paper.
   const MAX_SECTION_PAGES = 14;
-  if (pagesPlan.length > MAX_SECTION_PAGES) pagesPlan.splice(MAX_SECTION_PAGES);
+  while (pagesPlan.length > MAX_SECTION_PAGES) {
+    const counts: Record<string, number> = {};
+    for (const pl of pagesPlan) counts[pl.section] = (counts[pl.section] || 0) + 1;
+    const fattest = Object.entries(counts).sort((a, b) => b[1] - a[1])[0];
+    if (!fattest || fattest[1] <= 1) { pagesPlan.splice(MAX_SECTION_PAGES); break; }
+    for (let i = pagesPlan.length - 1; i >= 0; i--) {
+      if (pagesPlan[i].section === fattest[0]) { pagesPlan.splice(i, 1); break; }
+    }
+  }
   const totalPages = pagesPlan.length + 1; // +1 for front page
 
   const dateFormatted = new Date(dateParam + "T00:00:00").toLocaleDateString("en-IN", {

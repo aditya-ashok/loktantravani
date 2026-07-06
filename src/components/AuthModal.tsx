@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Mail, Lock, User, Eye, EyeOff } from "lucide-react";
+import { X, Mail, Lock, User, Eye, EyeOff, Smartphone } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 
 interface AuthModalProps {
@@ -12,7 +12,7 @@ interface AuthModalProps {
 
 export default function AuthModal({ open, onClose }: AuthModalProps) {
   const { signInWithEmail, signUpWithEmail, signInWithGoogle } = useAuth();
-  const [tab, setTab] = useState<"signin" | "signup">("signin");
+  const [tab, setTab] = useState<"signin" | "signup" | "phone">("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -20,6 +20,11 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [phone, setPhone] = useState("");
+  const [otp, setOtp] = useState("");
+  const [otpSent, setOtpSent] = useState(false);
+  const confirmationRef = React.useRef<{ confirm: (code: string) => Promise<unknown> } | null>(null);
+  const verifierRef = React.useRef<{ clear: () => void } | null>(null);
 
   const reset = () => {
     setEmail("");
@@ -29,6 +34,12 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
     setError("");
     setLoading(false);
     setShowPassword(false);
+    setPhone("");
+    setOtp("");
+    setOtpSent(false);
+    confirmationRef.current = null;
+    try { verifierRef.current?.clear(); } catch { /* */ }
+    verifierRef.current = null;
   };
 
   const handleClose = () => {
@@ -36,7 +47,7 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
     onClose();
   };
 
-  const switchTab = (t: "signin" | "signup") => {
+  const switchTab = (t: "signin" | "signup" | "phone") => {
     setTab(t);
     setError("");
   };
@@ -85,6 +96,52 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
     }
   };
 
+  const handleSendOtp = async () => {
+    const clean = phone.replace(/[\s-]/g, "");
+    const full = clean.startsWith("+") ? clean : `+91${clean}`;
+    if (!/^\+\d{10,14}$/.test(full)) {
+      setError("Enter a valid mobile number (10 digits, or with country code).");
+      return;
+    }
+    setLoading(true);
+    setError("");
+    try {
+      const { auth, isFirebaseConfigured } = await import("@/lib/firebase");
+      if (!isFirebaseConfigured) throw new Error("Firebase not configured");
+      const { RecaptchaVerifier, signInWithPhoneNumber } = await import("firebase/auth");
+      if (!verifierRef.current) {
+        verifierRef.current = new RecaptchaVerifier(auth, "lv-recaptcha", { size: "invisible" });
+      }
+      confirmationRef.current = await signInWithPhoneNumber(auth, full, verifierRef.current as never);
+      setOtpSent(true);
+    } catch (err: unknown) {
+      const code = (err as { code?: string })?.code || "";
+      setError(code === "auth/too-many-requests" ? "Too many attempts — try again later."
+        : code === "auth/invalid-phone-number" ? "Invalid phone number."
+        : `Could not send OTP${code ? ` (${code})` : ""}.`);
+      try { verifierRef.current?.clear(); } catch { /* */ }
+      verifierRef.current = null;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVerifyOtp = async () => {
+    if (!otp || otp.length < 6 || !confirmationRef.current) {
+      setError("Enter the 6-digit code sent to your phone.");
+      return;
+    }
+    setLoading(true);
+    setError("");
+    try {
+      await confirmationRef.current.confirm(otp);
+      handleClose();
+    } catch {
+      setError("Incorrect code. Please check and try again.");
+      setLoading(false);
+    }
+  };
+
   const handleGoogle = async () => {
     setLoading(true);
     setError("");
@@ -117,7 +174,7 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
             {/* Header */}
             <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--nyt-border)]">
               <h2 className="text-lg font-newsreader font-bold text-[var(--nyt-black)] dark:text-white">
-                {tab === "signin" ? "Sign In" : "Create Account"}
+                {tab === "signin" ? "Sign In" : tab === "signup" ? "Create Account" : "Phone Sign In"}
               </h2>
               <button onClick={handleClose} className="text-[var(--nyt-gray)] hover:text-[var(--nyt-black)] dark:hover:text-white transition-colors">
                 <X className="w-4 h-4" />
@@ -146,10 +203,20 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
               >
                 Create Account
               </button>
+              <button
+                onClick={() => switchTab("phone")}
+                className={`flex-1 py-2.5 text-[10px] font-inter font-bold uppercase tracking-widest transition-colors ${
+                  tab === "phone"
+                    ? "text-[var(--nyt-black)] dark:text-white border-b-2 border-[var(--nyt-black)] dark:border-white"
+                    : "text-[var(--nyt-gray)]"
+                }`}
+              >
+                Phone
+              </button>
             </div>
 
             {/* Form */}
-            <form onSubmit={tab === "signin" ? handleSignIn : handleSignUp} className="px-6 py-5 space-y-4">
+            <form onSubmit={(e) => { e.preventDefault(); if (tab === "phone") { otpSent ? handleVerifyOtp() : handleSendOtp(); } else if (tab === "signin") { handleSignIn(e); } else { handleSignUp(e); } }} className="px-6 py-5 space-y-4">
               {/* Error */}
               {error && (
                 <div className="text-[11px] font-inter text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 px-3 py-2 border border-red-200 dark:border-red-800">
@@ -176,7 +243,51 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
                 </div>
               )}
 
+              {/* Phone sign-in */}
+              {tab === "phone" && (
+                <>
+                  <div>
+                    <label className="block text-[9px] font-inter font-bold uppercase tracking-widest text-[var(--nyt-gray)] mb-1.5">
+                      Mobile Number
+                    </label>
+                    <div className="relative">
+                      <Smartphone className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[var(--nyt-gray)]" />
+                      <input
+                        type="tel"
+                        value={phone}
+                        onChange={(e) => setPhone(e.target.value)}
+                        disabled={otpSent}
+                        placeholder="98765 43210 (or +91...)"
+                        className="w-full pl-9 pr-3 py-2.5 text-sm font-inter bg-white dark:bg-[#0d0d0d] border border-[var(--nyt-border)] text-[var(--nyt-black)] dark:text-white placeholder:text-[var(--nyt-gray)] focus:outline-none focus:border-[var(--nyt-black)] dark:focus:border-white transition-colors disabled:opacity-60"
+                      />
+                    </div>
+                  </div>
+                  {otpSent && (
+                    <div>
+                      <label className="block text-[9px] font-inter font-bold uppercase tracking-widest text-[var(--nyt-gray)] mb-1.5">
+                        OTP Code
+                      </label>
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        maxLength={6}
+                        value={otp}
+                        onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
+                        placeholder="6-digit code"
+                        className="w-full px-3 py-2.5 text-sm font-inter tracking-[0.4em] text-center bg-white dark:bg-[#0d0d0d] border border-[var(--nyt-border)] text-[var(--nyt-black)] dark:text-white placeholder:text-[var(--nyt-gray)] placeholder:tracking-normal focus:outline-none focus:border-[var(--nyt-black)] dark:focus:border-white transition-colors"
+                      />
+                      <button type="button" onClick={() => { setOtpSent(false); setOtp(""); }} className="mt-1.5 text-[9px] font-inter font-bold uppercase tracking-widest text-primary hover:underline">
+                        Change number / resend
+                      </button>
+                    </div>
+                  )}
+                  {/* Firebase invisible reCAPTCHA anchor */}
+                  <div id="lv-recaptcha" />
+                </>
+              )}
+
               {/* Email */}
+              {tab !== "phone" && (
               <div>
                 <label className="block text-[9px] font-inter font-bold uppercase tracking-widest text-[var(--nyt-gray)] mb-1.5">
                   Email Address
@@ -192,8 +303,10 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
                   />
                 </div>
               </div>
+              )}
 
               {/* Password */}
+              {tab !== "phone" && (
               <div>
                 <label className="block text-[9px] font-inter font-bold uppercase tracking-widest text-[var(--nyt-gray)] mb-1.5">
                   Password
@@ -216,6 +329,7 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
                   </button>
                 </div>
               </div>
+              )}
 
               {/* Confirm Password (signup only) */}
               {tab === "signup" && (
@@ -242,7 +356,7 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
                 disabled={loading}
                 className="w-full py-2.5 bg-[var(--nyt-black)] dark:bg-white text-white dark:text-black text-[11px] font-inter font-bold uppercase tracking-widest hover:bg-primary transition-colors disabled:opacity-50"
               >
-                {loading ? "Please wait..." : tab === "signin" ? "Sign In" : "Create Account"}
+                {loading ? "Please wait..." : tab === "signin" ? "Sign In" : tab === "signup" ? "Create Account" : otpSent ? "Verify & Sign In" : "Send OTP"}
               </button>
 
               {/* Divider */}
