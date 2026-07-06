@@ -369,7 +369,7 @@ CRITICAL QUALITY RULES FOR ALL ARTICLES:
 - Do NOT generate generic rebuttals without real data. If the research is thin, write a NEWS ANALYSIS instead of a fact-check
 - NEVER pad articles with vague statements like "data shows" or "experts believe" without actual data
 - Headlines must reflect the article's actual content — no clickbait that promises more than the article delivers
-${isOpinion ? "\nPERSPECTIVE: This is an OPINION/EDITORIAL column. Write in FIRST PERSON (I, my, we, our). Express a clear personal viewpoint with conviction, like a veteran columnist writing their weekly editorial. Take a strong stance from a nationalist perspective and argue it persuasively with data.\n" : ""}
+${isOpinion ? "\nPERSPECTIVE: This is an OPINION/EDITORIAL column. Write in FIRST PERSON (I, my, we, our). Express a clear personal viewpoint with conviction, like a veteran columnist writing their weekly editorial. Take a strong stance from a nationalist perspective and argue it persuasively with data.\n" : ""}${author && !/loktantravani ai/i.test(author) ? `\nBYLINE: This piece is published under the byline of ${author}. NEVER refer to ${author} in the third person — a columnist cannot report on themselves as a news subject. If the research brief describes ${author}'s own statements or actions, either write them in first person ("I said", "my address") or choose a different angle from the brief. Do not fabricate a first-person role in events; when in doubt, write about the broader issue instead.\n` : ""}
 RULES:
 - Write ONLY in ${language === "en" ? "English" : language === "hi" ? "Hindi Devanagari" : "English with Hindi headline"}
 - Do NOT invent or hallucinate ANY names, quotes, or statistics

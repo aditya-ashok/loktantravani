@@ -330,13 +330,12 @@ export default function EpaperShareModal({ isOpen, onClose, post }: EpaperShareM
                   {post.title}
                 </h3>
 
-                {/* Pull Quote — extracted from summary */}
-                <div className="my-1.5 px-3 py-2 border-l-[3px] relative" style={{ borderColor: accent, background: isBjp ? "#FF993310" : "#f9f5ef" }}>
-                  <span className="absolute -top-1 left-1 text-[20px] leading-none font-newsreader" style={{ color: accent }}>&ldquo;</span>
-                  <p className={cn("text-[8px] font-newsreader italic leading-relaxed pl-3", isHindi && "hindi")} style={{ color: "#333" }}>
+                {/* Excerpt — article summary; NOT attributed as a spoken
+                    quote (the byline author may be the story's subject) */}
+                <div className="my-1.5 px-3 py-2 border-l-[3px]" style={{ borderColor: accent, background: isBjp ? "#FF993310" : "#f9f5ef" }}>
+                  <p className={cn("text-[8px] font-newsreader italic leading-relaxed", isHindi && "hindi")} style={{ color: "#333" }}>
                     {post.summary}
                   </p>
-                  <p className="text-[6px] font-inter font-bold mt-1 pl-3" style={{ color: accent }}>— {post.author}</p>
                 </div>
 
                 {/* Author + QR */}
