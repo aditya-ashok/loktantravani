@@ -56,7 +56,18 @@ async function fetchTopStories(): Promise<{ title: string; summary: string; cate
     body: JSON.stringify({
       structuredQuery: {
         from: [{ collectionId: "posts" }],
-        where: { fieldFilter: { field: { fieldPath: "status" }, op: "EQUAL", value: { stringValue: "published" } } },
+        where: {
+          compositeFilter: {
+            op: "AND",
+            filters: [
+              { fieldFilter: { field: { fieldPath: "status" }, op: "EQUAL", value: { stringValue: "published" } } },
+              // Timestamp range also filters out legacy docs whose createdAt is
+              // a string (Firestore types don't cross-match) — exactly the docs
+              // a daily product never wants.
+              { fieldFilter: { field: { fieldPath: "createdAt" }, op: "GREATER_THAN_OR_EQUAL", value: { timestampValue: new Date(Date.now() - 72 * 3600 * 1000).toISOString() } } },
+            ],
+          },
+        },
         orderBy: [{ field: { fieldPath: "createdAt" }, direction: "DESCENDING" }],
         limit: 100,
       },
