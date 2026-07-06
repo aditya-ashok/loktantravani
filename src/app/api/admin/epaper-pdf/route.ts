@@ -281,6 +281,41 @@ function fillerScript(autoPrint = false): string {
   return `<script>
   var AUTO_PRINT = ${autoPrint ? "true" : "false"};
   var PROMOS = ${JSON.stringify(HOUSE_PROMOS)};
+  // Typesetter pass: fixed A4 pages clip overflowing content, so trim the
+  // last text block(s) with an ellipsis until every page fits above its
+  // footer. Runs before gap filling.
+  function fitPages() {
+    document.querySelectorAll(".page").forEach(function (page) {
+      var footer = page.querySelector(".page-footer");
+      if (!footer) return;
+      var limit = function () { return page.getBoundingClientRect().bottom - 42; };
+      var overflows = function () {
+        var kids = Array.prototype.filter.call(page.children, function (el) { return el !== footer; });
+        var last = kids[kids.length - 1];
+        return last && last.getBoundingClientRect().bottom > limit();
+      };
+      var guard = 300;
+      while (overflows() && guard-- > 0) {
+        var bodies = page.querySelectorAll(".col-body, .lead-content p, .lead-grid-text p, .fp-excerpt, .ab-bio");
+        var target = null;
+        for (var i = bodies.length - 1; i >= 0; i--) {
+          if (bodies[i].textContent.trim().length > 0) { target = bodies[i]; break; }
+        }
+        if (target && target.textContent.length > 90) {
+          var t = target.textContent.replace(/[…\s]+$/, "");
+          target.textContent = t.slice(0, Math.floor(t.length * 0.88)).replace(/\s+\S*$/, "") + "…";
+        } else if (target) {
+          target.remove();
+        } else {
+          // No text left to trim — drop trailing decorations (quotes, boxes)
+          var kids = Array.prototype.filter.call(page.children, function (el) { return el !== footer; });
+          var last = kids[kids.length - 1];
+          if (last) last.remove(); else break;
+        }
+      }
+    });
+  }
+
   // Image heights are fixed in CSS, so layout is stable at DOM-ready — do
   // not wait for window.load (one stalled image would block filling forever).
   function fillPages() {
@@ -323,11 +358,22 @@ function fillerScript(autoPrint = false): string {
     });
   }
   function boot() {
+    fitPages();
     fillPages();
     if (AUTO_PRINT) setTimeout(function () { window.print(); }, 900);
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot);
   else boot();
+  // Webfonts swap in after DOM-ready and change text metrics — re-typeset
+  // once fonts settle, then close any gaps that opened, then trim again.
+  if (document.fonts && document.fonts.ready) {
+    document.fonts.ready.then(function () {
+      setTimeout(function () { fitPages(); fillPages(); fitPages(); }, 150);
+    });
+  }
+  window.addEventListener("load", function () {
+    setTimeout(function () { fitPages(); }, 300);
+  });
   // Double-click any story to open it full-page on the site
   document.addEventListener("dblclick", function (e) {
     var el = e.target && e.target.closest ? e.target.closest("[data-slug]") : null;
@@ -641,7 +687,7 @@ export async function GET(req: NextRequest) {
 
   /* ── Column articles (compact newspaper style) ── */
   .col-article { margin-bottom: 10px; overflow: hidden; }
-  .col-art-img { width: 100%; aspect-ratio: 16/9; height: auto; object-fit: cover; margin-bottom: 4px; }
+  .col-art-img { width: 62%; aspect-ratio: 16/9; height: auto; object-fit: cover; display: block; margin: 0 auto 4px; }
   .col-article h3 { font-family: 'Playfair Display', serif; font-size: 13px; font-weight: 900; line-height: 1.15; margin-bottom: 1px; }
   .col-title-hi { font-size: 8px; color: #777; font-style: italic; margin-bottom: 2px; }
   .col-byline { font-size: 6.5px; text-transform: uppercase; letter-spacing: 1.5px; color: #999; margin-bottom: 3px; }
