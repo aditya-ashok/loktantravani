@@ -25,7 +25,7 @@ export async function GET(req: NextRequest) {
   const slug = (post.slug as string) || id;
   const createdAt = (post.createdAt as string) || new Date().toISOString();
 
-  const articleUrl = `https://loktantravani.vercel.app/blog/${slug}`;
+  const articleUrl = `https://loktantravani.in/blog/${slug}`;
   const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(articleUrl)}&bgcolor=ffffff&color=1a1a1a`;
 
   // Strip HTML from content for plain text excerpt
@@ -254,7 +254,7 @@ export async function GET(req: NextRequest) {
       <!-- Category -->
       <div class="cat-bar">
         <span>${category.toUpperCase()}</span>
-        <span style="letter-spacing:1px;font-size:10px;">loktantravani.vercel.app</span>
+        <span style="letter-spacing:1px;font-size:10px;">loktantravani.in</span>
       </div>
 
       <!-- Hero Image -->

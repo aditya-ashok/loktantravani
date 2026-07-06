@@ -3353,12 +3353,12 @@ function CartoonMandalaPanel() {
   };
 
   const shareToX = (headline: string) => {
-    const text = encodeURIComponent(`${headline}\n\n— LoktantraVani | India's 1st AI Newspaper\nhttps://loktantravani.vercel.app`);
+    const text = encodeURIComponent(`${headline}\n\n— LoktantraVani | India's 1st AI Newspaper\nhttps://loktantravani.in`);
     window.open(`https://x.com/intent/tweet?text=${text}`, "_blank");
   };
 
   const shareToWhatsApp = (headline: string) => {
-    const text = encodeURIComponent(`*${headline}*\n\n— LoktantraVani | India's 1st AI Newspaper\nhttps://loktantravani.vercel.app`);
+    const text = encodeURIComponent(`*${headline}*\n\n— LoktantraVani | India's 1st AI Newspaper\nhttps://loktantravani.in`);
     window.open(`https://wa.me/?text=${text}`, "_blank");
   };
 

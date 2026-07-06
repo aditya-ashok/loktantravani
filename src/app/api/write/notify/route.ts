@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: true, message: "Email not configured — skipped" });
     }
 
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://loktantravani.vercel.app";
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://loktantravani.in";
     const greeting = name ? `Dear ${name}` : "Dear Contributor";
 
     let subject: string;

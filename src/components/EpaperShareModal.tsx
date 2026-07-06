@@ -193,7 +193,7 @@ export default function EpaperShareModal({ isOpen, onClose, post }: EpaperShareM
   };
 
   const isHindi = post.language === "hi" || (post.title && /[\u0900-\u097F]/.test(post.title));
-  const gregorianDate = new Date().toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" }).toUpperCase();
+  const gregorianDate = new Date().toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "long", year: "numeric" }).toUpperCase();
 
   const vikramDisplay = "";
 
@@ -284,7 +284,7 @@ export default function EpaperShareModal({ isOpen, onClose, post }: EpaperShareM
                 </div>
                 <div className="text-right">
                   {vikramDisplay && <p className="text-[7px] font-inter font-bold" style={{ color: isBjp ? "#FF6600" : accent, lineHeight: "1.6" }}>{vikramDisplay}</p>}
-                  <p className="text-[7px] font-inter font-black uppercase px-1.5 py-0.5" style={{ color: "#fff", background: isBjp ? "#FF6600" : accent, lineHeight: "1.4", display: "inline-block" }}>{gregorianDate}</p>
+                  <p className="text-[7px] font-inter font-black uppercase px-1.5 py-0.5" style={{ color: "#fff", background: isBjp ? "#FF6600" : accent, lineHeight: "1.4", display: "inline-block", whiteSpace: "nowrap" }}>{gregorianDate}</p>
                 </div>
               </div>
 

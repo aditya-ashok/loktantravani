@@ -164,7 +164,7 @@ body { background:${theme.bg}; font-family:'Source Sans 3',sans-serif; }
   </div>
   <div class="footer">
     <span>LoktantraVani</span>
-    <span>loktantravani.vercel.app</span>
+    <span>loktantravani.in</span>
     <span>${tone.toUpperCase()}</span>
   </div>
 </div>

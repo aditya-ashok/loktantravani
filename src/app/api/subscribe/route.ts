@@ -61,7 +61,7 @@ export async function POST(req: NextRequest) {
                 <p style="font-size: 16px; line-height: 1.6;">Dear ${name || "Reader"},</p>
                 <p style="font-size: 16px; line-height: 1.6;">Welcome to <strong>LoktantraVani</strong> — the voice of democratic India. You'll now receive our daily AI-curated digest with the stories that matter most.</p>
                 <p style="font-size: 16px; line-height: 1.6;">Our AI reads hundreds of sources daily and delivers you the sharpest analysis on Politics, Geopolitics, Economy, Defence, Tech, and more.</p>
-                <a href="https://loktantravani.vercel.app" style="display: inline-block; background: #121212; color: white; padding: 12px 24px; text-decoration: none; font-size: 12px; text-transform: uppercase; letter-spacing: 2px; font-weight: bold; margin-top: 20px;">Read Today's Edition →</a>
+                <a href="https://loktantravani.in" style="display: inline-block; background: #121212; color: white; padding: 12px 24px; text-decoration: none; font-size: 12px; text-transform: uppercase; letter-spacing: 2px; font-weight: bold; margin-top: 20px;">Read Today's Edition →</a>
                 <hr style="border: 1px solid #dfdfdf; margin: 30px 0;" />
                 <p style="color: #727272; font-size: 12px;">LoktantraVani · Neo Bharat · Est. 2026</p>
               </div>

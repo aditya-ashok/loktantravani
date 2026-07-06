@@ -442,7 +442,7 @@ function renderPage(sectionName: string, articles: ArticleData[], pageNum: numbe
 
     <div class="page-footer">
       <span>LoktantraVani</span>
-      <span>loktantravani.vercel.app</span>
+      <span>loktantravani.in</span>
       <span>Page ${pageNum}</span>
     </div>
   </div>`;
