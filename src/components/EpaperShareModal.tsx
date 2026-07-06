@@ -112,12 +112,15 @@ export default function EpaperShareModal({ isOpen, onClose, post }: EpaperShareM
       let dataUrl = "";
       for (let attempt = 0; attempt < 3; attempt++) {
         try {
+          // Embed webfonts so the capture matches the preview — skipFonts
+          // renders fallback fonts with different metrics, which clipped the
+          // date chip and shifted the hero image. Skip only as a last resort.
           dataUrl = await toPng(cardRef.current, {
             cacheBust: true,
             quality: 1,
             pixelRatio: ratio,
             backgroundColor: "#FFFFFF",
-            skipFonts: true,
+            skipFonts: attempt === 2,
           });
           // Check if image is not blank (blank PNGs are very small)
           if (dataUrl.length > 5000) break;
@@ -154,7 +157,7 @@ export default function EpaperShareModal({ isOpen, onClose, post }: EpaperShareM
       // Fallback: try without inlining images
       try {
         if (!cardRef.current) throw new Error("no card ref");
-        const dataUrl = await toPng(cardRef.current, { cacheBust: true, quality: 1, pixelRatio: ratio, skipFonts: true });
+        const dataUrl = await toPng(cardRef.current, { cacheBust: true, quality: 1, pixelRatio: ratio, backgroundColor: "#FFFFFF", skipFonts: true });
         const link = document.createElement("a");
         link.download = `loktantravani-share.png`;
         link.href = dataUrl;
