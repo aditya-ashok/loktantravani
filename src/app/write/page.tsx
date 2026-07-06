@@ -1,12 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { PenSquare, CheckCircle, Send, Eye, Sparkles, ArrowRight, User, GraduationCap, Mail, Linkedin, Twitter } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { useAuth } from "@/lib/auth-context";
+import AuthModal from "@/components/AuthModal";
 
 const GUIDELINES = [
   { icon: "📰", title: "Opinion & Analysis", desc: "Share your perspective on Indian politics, economy, society, or culture." },
@@ -24,6 +25,13 @@ export default function WritePage() {
   const isContributor = userRole === "contributor" || userRole === "author" || userRole === "admin";
   const [registering, setRegistering] = useState(false);
   const [regSuccess, setRegSuccess] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  // Google OAuth is blocked inside in-app browsers (WhatsApp, Instagram, FB)
+  const [inAppBrowser, setInAppBrowser] = useState(false);
+  useEffect(() => {
+    const ua = navigator.userAgent || "";
+    setInAppBrowser(/WhatsApp|Instagram|FBAN|FBAV|FB_IAB|Line\/|wv\)/i.test(ua));
+  }, []);
   const [form, setForm] = useState({
     name: userName || "",
     education: "",
@@ -134,10 +142,27 @@ export default function WritePage() {
             {!isLoggedIn && (
               <div className="text-center">
                 <h2 className="text-3xl font-newsreader font-black mb-4 dark:text-white">Ready to Write?</h2>
-                <p className="text-sm font-inter opacity-60 mb-6 dark:text-white/60">Sign in with Google to get started.</p>
-                <button onClick={signInWithGoogle} className="bg-black text-white px-8 py-4 text-xs font-inter font-black uppercase tracking-widest hover:bg-primary transition-colors dark:bg-white dark:text-black dark:hover:bg-primary dark:hover:text-white">
-                  Sign In With Google
-                </button>
+                <p className="text-sm font-inter opacity-60 mb-6 dark:text-white/60">Sign in to get started.</p>
+                {inAppBrowser && (
+                  <div className="mb-6 mx-auto max-w-md border-2 border-primary bg-primary/5 p-4 text-left">
+                    <p className="text-xs font-inter font-bold dark:text-white">⚠️ You&apos;re inside an in-app browser</p>
+                    <p className="text-xs font-inter opacity-70 mt-1 dark:text-white/70">
+                      Google sign-in doesn&apos;t work in WhatsApp/Instagram browsers. Use <b>email sign-in below</b>, or open this page in Chrome/Safari (tap ⋮ → &quot;Open in browser&quot;).
+                    </p>
+                  </div>
+                )}
+                <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                  {!inAppBrowser && (
+                    <button onClick={signInWithGoogle} className="bg-black text-white px-8 py-4 text-xs font-inter font-black uppercase tracking-widest hover:bg-primary transition-colors dark:bg-white dark:text-black dark:hover:bg-primary dark:hover:text-white">
+                      Sign In With Google
+                    </button>
+                  )}
+                  <button onClick={() => setShowAuthModal(true)} className={inAppBrowser
+                    ? "bg-black text-white px-8 py-4 text-xs font-inter font-black uppercase tracking-widest hover:bg-primary transition-colors dark:bg-white dark:text-black"
+                    : "border-2 border-black dark:border-white px-8 py-4 text-xs font-inter font-black uppercase tracking-widest hover:bg-black hover:text-white transition-colors dark:text-white dark:hover:bg-white dark:hover:text-black"}>
+                    Sign In / Sign Up With Email
+                  </button>
+                </div>
               </div>
             )}
 
@@ -226,6 +251,7 @@ export default function WritePage() {
         </section>
       </main>
       <Footer />
+      <AuthModal open={showAuthModal} onClose={() => setShowAuthModal(false)} />
     </>
   );
 }
