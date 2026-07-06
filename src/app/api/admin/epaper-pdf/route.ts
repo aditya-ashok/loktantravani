@@ -29,9 +29,49 @@ function extract(fields: Record<string, FsValue>, key: string): string {
   return "";
 }
 
-type ArticleData = { title: string; titleHi: string; summary: string; content: string; category: string; author: string; imageUrl: string; createdAt: string };
+type ArticleData = { title: string; titleHi: string; summary: string; content: string; category: string; author: string; imageUrl: string; createdAt: string; slug?: string };
+type AuthorInfo = { photo: string; designation: string; bio: string };
 
 const SECTION_ORDER = ["India", "World", "Politics", "Geopolitics", "Economy", "Sports", "Tech", "Defence", "Opinion", "Cities", "West Asia", "Lok Post"];
+
+/** Author directory (users collection) → bio boxes for human bylines */
+async function fetchAuthors(): Promise<Record<string, AuthorInfo>> {
+  try {
+    const res = await fetch(`${BASE}/users?pageSize=200`, { cache: "no-store" });
+    if (!res.ok) return {};
+    const data = await res.json();
+    const map: Record<string, AuthorInfo> = {};
+    for (const doc of data.documents || []) {
+      const f = doc.fields || {};
+      const name = extract(f, "name").trim();
+      if (!name) continue;
+      const info = {
+        photo: extract(f, "photoUrl") || extract(f, "avatar"),
+        designation: extract(f, "designation"),
+        bio: extract(f, "bio"),
+      };
+      // Prefer the most complete profile per name
+      const cur = map[name.toLowerCase()];
+      if (!cur || (!cur.bio && info.bio) || (!cur.photo && info.photo)) map[name.toLowerCase()] = info;
+    }
+    return map;
+  } catch { return {}; }
+}
+
+function renderAuthorBox(author: string, authors: Record<string, AuthorInfo>, withBio: boolean): string {
+  const clean = (author || "").split(" — ")[0].trim();
+  if (!clean || /loktantravani ai/i.test(clean)) return "";
+  const info = authors[clean.toLowerCase()];
+  if (!info || (!info.photo && !info.bio && !info.designation)) return "";
+  return `<div class="author-box">
+    ${info.photo ? `<img class="ab-img" src="${info.photo}" alt="" onerror="this.style.display='none'" />` : ""}
+    <div>
+      <div class="ab-name">${clean}</div>
+      ${info.designation ? `<div class="ab-role">${info.designation}</div>` : ""}
+      ${withBio && info.bio ? `<div class="ab-bio">${info.bio.slice(0, 180)}</div>` : ""}
+    </div>
+  </div>`;
+}
 
 // Fetch real ads from Firestore
 async function fetchAds(): Promise<{ title: string; brand: string; imageUrl: string; link: string }[]> {
@@ -279,15 +319,20 @@ function fillerScript(): string {
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", fillPages);
   else fillPages();
+  // Double-click any story to open it full-page on the site
+  document.addEventListener("dblclick", function (e) {
+    var el = e.target && e.target.closest ? e.target.closest("[data-slug]") : null;
+    if (el) window.open("https://loktantravani.in/blog/" + el.getAttribute("data-slug"), "_blank");
+  });
   </script>`;
 }
 
-function renderPage(sectionName: string, articles: ArticleData[], pageNum: number, totalPages: number, dateFormatted: string) {
+function renderPage(sectionName: string, articles: ArticleData[], pageNum: number, totalPages: number, dateFormatted: string, authors: Record<string, AuthorInfo> = {}) {
   if (articles.length === 0) return "";
 
   const lead = articles[0];
   const rest = articles.slice(1);
-  const dateStr = (a: ArticleData) => a.createdAt ? new Date(a.createdAt).toLocaleDateString("en-IN", { month: "short", day: "numeric" }) : "";
+  const dateStr = (a: ArticleData) => a.createdAt ? new Date(a.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" }) : "";
 
   const leadImg = lead.imageUrl && !lead.imageUrl.startsWith("data:") ? lead.imageUrl : "";
   const leadBody = stripHtml(lead.content || "");
@@ -317,17 +362,18 @@ function renderPage(sectionName: string, articles: ArticleData[], pageNum: numbe
     // Alternate: full-width image above or small inline grid
     if (colIdx % 2 === 1 && hasImg) {
       // Full-width image above text
-      return `<div class="col-article">
+      return `<div class="col-article" ${a.slug ? `data-slug="${a.slug}" title="Double-click to read the full story"` : ""}>
         <img src="${a.imageUrl}" class="col-art-img" alt="" onerror="this.style.display=\'none\'" />
         <h3>${a.title}</h3>
         ${a.titleHi ? `<p class="col-title-hi">${a.titleHi}</p>` : ""}
         <div class="col-byline">By ${a.author} · ${dateStr(a)}</div>
+        ${renderAuthorBox(a.author, authors, false)}
         <p class="col-body">${body}</p>
         ${extraEl}
       </div>`;
     }
     // Text with small image grid
-    return `<div class="col-article">
+    return `<div class="col-article" ${a.slug ? `data-slug="${a.slug}" title="Double-click to read the full story"` : ""}>
       ${hasImg ? `<div class="col-art-grid"><div><h3>${a.title}</h3>
         ${a.titleHi ? `<p class="col-title-hi">${a.titleHi}</p>` : ""}
         <div class="col-byline">By ${a.author} · ${dateStr(a)}</div></div>
@@ -335,6 +381,7 @@ function renderPage(sectionName: string, articles: ArticleData[], pageNum: numbe
         : `<h3>${a.title}</h3>
         ${a.titleHi ? `<p class="col-title-hi">${a.titleHi}</p>` : ""}
         <div class="col-byline">By ${a.author} · ${dateStr(a)}</div>`}
+      ${renderAuthorBox(a.author, authors, false)}
       <p class="col-body">${body}</p>
       ${extraEl}
     </div>`;
@@ -349,11 +396,12 @@ function renderPage(sectionName: string, articles: ArticleData[], pageNum: numbe
     </div>
 
     <!-- Lead Story -->
-    <div class="lead-story">
+    <div class="lead-story" ${lead.slug ? `data-slug="${lead.slug}" title="Double-click to read the full story"` : ""}>
       ${leadLayout === "top" && leadImg ? `<img src="${leadImg}" class="lead-img-top" alt="" onerror="this.style.display=\'none\'" />` : ""}
       <h2 class="lead-headline">${lead.title}</h2>
       ${lead.titleHi ? `<div class="lead-headline-hi">${lead.titleHi}</div>` : ""}
       <div class="lead-byline">By ${lead.author} · ${dateStr(lead)} · ${sectionName}</div>
+      ${renderAuthorBox(lead.author, authors, true)}
       ${lead.summary ? `<div class="lead-summary">${lead.summary}</div>` : ""}
       ${leadLayout === "side" && leadImg
         ? `<div class="lead-grid">
@@ -419,7 +467,7 @@ export async function GET(req: NextRequest) {
   const requestedPage = req.nextUrl.searchParams.get("page");
 
   // Fetch ads + AI edition plan in parallel
-  const [adsData, edition] = await Promise.all([fetchAds(), fetchEdition(dateParam)]);
+  const [adsData, edition, authorsMap] = await Promise.all([fetchAds(), fetchEdition(dateParam), fetchAuthors()]);
 
   const res = await fetch(`${BASE}:runQuery`, {
     method: "POST",
@@ -443,6 +491,7 @@ export async function GET(req: NextRequest) {
         title: extract(f, "title"), titleHi: extract(f, "titleHi"), summary: extract(f, "summary"),
         content: extract(f, "content"), category: extract(f, "category"), author: extract(f, "author"),
         imageUrl: extract(f, "imageUrl"), createdAt: extract(f, "createdAt"),
+        slug: extract(f, "slug"),
         inEpaper: extract(f, "inEpaper"),
       };
     })
@@ -547,7 +596,7 @@ export async function GET(req: NextRequest) {
 
   /* ── Lead Story ── */
   .lead-story { margin-bottom: 14px; border-bottom: 1px solid #1a1a1a; padding-bottom: 12px; }
-  .lead-img-top { width: 100%; height: 160px; object-fit: cover; object-position: center 20%; margin-bottom: 6px; }
+  .lead-img-top { width: 62%; aspect-ratio: 16/9; height: auto; display: block; margin: 0 auto 6px; object-fit: cover; margin-bottom: 6px; }
   .lead-headline { font-family: 'Playfair Display', serif; font-size: 22px; font-weight: 900; line-height: 1.1; margin-bottom: 2px; letter-spacing: -0.5px; }
   .lead-headline-hi { font-size: 13px; color: #555; margin-bottom: 4px; font-style: italic; }
   .lead-summary { font-size: 10px; color: #444; line-height: 1.5; margin-bottom: 4px; font-style: italic; }
@@ -562,7 +611,7 @@ export async function GET(req: NextRequest) {
   .lead-grid-text p { margin-bottom: 4px; text-indent: 12px; }
   .lead-grid-text p:first-child { text-indent: 0; }
   .lead-grid-img { }
-  .lead-grid-img img { width: 100%; height: 200px; object-fit: cover; object-position: center 20%; margin-bottom: 8px; }
+  .lead-grid-img img { width: 100%; aspect-ratio: 16/9; height: auto; object-fit: cover; margin-bottom: 8px; }
 
   /* ── Two-column grid ── */
   .columns { display: grid; grid-template-columns: 1fr 1px 1fr; gap: 16px; }
@@ -572,7 +621,7 @@ export async function GET(req: NextRequest) {
 
   /* ── Column articles (compact newspaper style) ── */
   .col-article { margin-bottom: 10px; overflow: hidden; }
-  .col-art-img { width: 100%; height: 100px; object-fit: cover; object-position: center 20%; margin-bottom: 4px; }
+  .col-art-img { width: 100%; aspect-ratio: 16/9; height: auto; object-fit: cover; margin-bottom: 4px; }
   .col-article h3 { font-family: 'Playfair Display', serif; font-size: 13px; font-weight: 900; line-height: 1.15; margin-bottom: 1px; }
   .col-title-hi { font-size: 8px; color: #777; font-style: italic; margin-bottom: 2px; }
   .col-byline { font-size: 6.5px; text-transform: uppercase; letter-spacing: 1.5px; color: #999; margin-bottom: 3px; }
@@ -653,7 +702,7 @@ export async function GET(req: NextRequest) {
   /* ── Single leftover article: full width, body flows in 3 columns ── */
   .single-col .col-article { margin-bottom: 10px; }
   .single-col .col-body { column-count: 3; column-gap: 16px; column-rule: 0.5px solid #ccc; text-indent: 10px; }
-  .single-col .col-art-img { height: 140px; }
+  .single-col .col-art-img { width: 55%; aspect-ratio: 16/9; height: auto; margin: 0 auto 6px; display: block; }
 
   .read-on { font-size: 7px; color: #c41e1e; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; white-space: nowrap; }
 
@@ -699,6 +748,16 @@ export async function GET(req: NextRequest) {
   .qod-box .qod-label { font-size: 6.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 2.5px; color: #c41e1e; margin-bottom: 3px; }
   .qod-box .qod-text { font-family: 'Playfair Display', serif; font-size: 10px; font-style: italic; line-height: 1.4; color: #222; }
   .qod-box .qod-by { font-size: 7px; color: #777; margin-top: 3px; text-transform: uppercase; letter-spacing: 1px; }
+
+  /* ── Author bio box (human bylines only) ── */
+  .author-box { display: flex; gap: 8px; align-items: flex-start; background: #f7f5ef; border-left: 2px solid #c41e1e; padding: 6px 9px; margin: 6px 0; }
+  .ab-img { width: 30px; height: 30px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
+  .ab-name { font-size: 8px; font-weight: 700; }
+  .ab-role { font-size: 6.5px; color: #999; text-transform: uppercase; letter-spacing: 1px; }
+  .ab-bio { font-size: 7px; color: #555; line-height: 1.45; margin-top: 2px; }
+
+  [data-slug] { cursor: pointer; }
+  [data-slug]:hover h2, [data-slug]:hover h3 { color: #c41e1e; }
 
   /* ── Front-page teaser strip ── */
   .fp-teasers { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: #0f2a4a; padding: 6px; margin-bottom: 10px; }
@@ -849,7 +908,7 @@ export async function GET(req: NextRequest) {
         ${frontPageHeadlines[0] ? `
         <div class="hl fp-lead">
           <div class="cat">${frontPageHeadlines[0].sectionName} <span style="color:#888;font-weight:400;">· p.${frontPageHeadlines[0].pageNo}</span></div>
-          ${frontPageHeadlines[0].imageUrl && !frontPageHeadlines[0].imageUrl.startsWith("data:") ? `<img src="${frontPageHeadlines[0].imageUrl}" alt="" style="width:100%;height:180px;object-fit:cover;object-position:center 20%;margin-bottom:6px;" />` : ""}
+          ${frontPageHeadlines[0].imageUrl && !frontPageHeadlines[0].imageUrl.startsWith("data:") ? `<img src="${frontPageHeadlines[0].imageUrl}" alt="" style="width:100%;aspect-ratio:16/9;height:auto;object-fit:cover;margin-bottom:6px;" />` : ""}
           <h2 style="font-size:24px;">${frontPageHeadlines[0].title}</h2>
           <p style="font-size:10px;line-height:1.5;margin-top:4px;">${(frontPageHeadlines[0].summary || "").slice(0, 250)}</p>
           <div class="fp-excerpt">${leadExcerpt.slice(0, 500)}</div>
@@ -911,7 +970,7 @@ export async function GET(req: NextRequest) {
   // Section pages from plan (multi-page sections supported)
   const sectionPagesHTML = pagesPlan.map((plan, i) => {
     const pageNum = i + 2;
-    const pageHTML = renderPage(plan.section, plan.articles, pageNum, totalPages, dateFormatted);
+    const pageHTML = renderPage(plan.section, plan.articles, pageNum, totalPages, dateFormatted, authorsMap);
     // Insert ad after every 3rd page
     const showAd = i > 0 && i % 3 === 2;
     const adHtml = showAd ? renderDisplayAd(adsData[Math.floor(i / 3) % Math.max(1, adsData.length)] || null, Math.floor(i / 3) + 1) : "";
@@ -947,7 +1006,7 @@ export async function GET(req: NextRequest) {
   ${requestedPage && requestedPage !== "1" ? (() => {
     const idx = parseInt(requestedPage) - 2;
     const plan = pagesPlan[idx];
-    return plan ? renderPage(plan.section, plan.articles, parseInt(requestedPage), totalPages, dateFormatted) : "<p>Page not found</p>";
+    return plan ? renderPage(plan.section, plan.articles, parseInt(requestedPage), totalPages, dateFormatted, authorsMap) : "<p>Page not found</p>";
   })() : ""}
   ${fillerScript()}
 </body>
