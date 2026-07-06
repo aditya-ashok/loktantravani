@@ -771,6 +771,9 @@ export async function GET(req: NextRequest) {
   .teaser-cat { font-size: 5.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; color: #ff9933; margin-bottom: 1px; }
   .teaser h4 { font-family: 'Playfair Display', serif; font-size: 8px; font-weight: 700; line-height: 1.2; color: #ffffff; }
 
+  .page-ad-wrap { width: 210mm; max-width: 210mm; margin: 0 auto 20px; }
+  @media print { .page-ad-wrap { display: none; } }
+
   /* ── Large display ad (bottom of front page + every 3rd page) ── */
   .display-ad { display: grid; grid-template-columns: 1fr 190px; min-height: 120px; margin-top: 12px; page-break-inside: avoid; }
   .display-ad .dad-body { padding: 16px 20px; display: flex; flex-direction: column; justify-content: center; }
@@ -982,7 +985,8 @@ export async function GET(req: NextRequest) {
     const pageHTML = renderPage(plan.section, plan.articles, pageNum, totalPages, dateFormatted, authorsMap);
     // Insert ad after every 3rd page
     const showAd = i > 0 && i % 3 === 2;
-    const adHtml = showAd ? renderDisplayAd(adsData[Math.floor(i / 3) % Math.max(1, adsData.length)] || null, Math.floor(i / 3) + 1) : "";
+    // Between-page ads live outside .page — constrain them to page width
+    const adHtml = showAd ? `<div class="page-ad-wrap">${renderDisplayAd(adsData[Math.floor(i / 3) % Math.max(1, adsData.length)] || null, Math.floor(i / 3) + 1)}</div>` : "";
     return pageHTML + adHtml;
   }).join("");
 
