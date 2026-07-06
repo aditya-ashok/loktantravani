@@ -7,6 +7,7 @@ import { Newspaper, ChevronLeft, ChevronRight, Download, Cpu, Zap, Globe, Sparkl
 export default function EpaperPage() {
   const today = new Date();
   const [selectedDate, setSelectedDate] = useState(today.toISOString().split("T")[0]);
+  const [lang, setLang] = useState<"en" | "hi">("en");
 
   const formatDate = (d: string) =>
     new Date(d + "T00:00:00").toLocaleDateString("en-IN", {
@@ -149,9 +150,21 @@ export default function EpaperPage() {
             <span className="text-[9px] font-inter text-black/20">|</span>
             <span className="text-[9px] font-inter text-black/30">12 Pages · 10 Sections · AI Curated</span>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 items-center">
+            {/* Language toggle — separate English & Hindi editions */}
+            <div className="flex border border-black/15 rounded overflow-hidden">
+              {(["en", "hi"] as const).map(l => (
+                <button
+                  key={l}
+                  onClick={() => setLang(l)}
+                  className={`px-3 py-2 text-[9px] font-inter font-black uppercase tracking-[2px] transition-colors ${lang === l ? "bg-black text-white" : "bg-white text-black/50 hover:text-black"}`}
+                >
+                  {l === "en" ? "English" : "हिंदी"}
+                </button>
+              ))}
+            </div>
             <a
-              href={`/api/admin/epaper-pdf?date=${selectedDate}`}
+              href={`/api/admin/epaper-pdf?date=${selectedDate}&lang=${lang}`}
               target="_blank"
               rel="noopener noreferrer"
               className="px-4 py-2 bg-black text-white text-[9px] font-inter font-black uppercase tracking-[2px] hover:bg-primary transition-colors flex items-center gap-2 rounded"
@@ -159,10 +172,12 @@ export default function EpaperPage() {
               <Newspaper className="w-3.5 h-3.5" /> View Full
             </a>
             <a
-              href={`/api/admin/epaper-pdf?date=${selectedDate}&download=true`}
+              href={`/api/admin/epaper-pdf?date=${selectedDate}&lang=${lang}&print=1`}
+              target="_blank"
+              rel="noopener noreferrer"
               className="px-4 py-2 border border-black/15 text-[9px] font-inter font-black uppercase tracking-[2px] hover:bg-black hover:text-white transition-colors flex items-center gap-2 rounded"
             >
-              <Download className="w-3.5 h-3.5" /> PDF
+              <Download className="w-3.5 h-3.5" /> Download PDF
             </a>
           </div>
         </div>
@@ -188,7 +203,7 @@ export default function EpaperPage() {
 
           {/* Iframe */}
           <iframe
-            src={`/api/admin/epaper-pdf?date=${selectedDate}`}
+            src={`/api/admin/epaper-pdf?date=${selectedDate}&lang=${lang}`}
             className="w-full border-0"
             style={{ height: "calc(100vh - 320px)", minHeight: "650px" }}
             title="E-Paper"

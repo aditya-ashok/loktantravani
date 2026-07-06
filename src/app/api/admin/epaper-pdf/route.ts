@@ -277,8 +277,9 @@ const HOUSE_PROMOS = [
  * Server-side word counts can't see real rendered heights, so this is the
  * only reliable way to leave no blank column inches.
  */
-function fillerScript(): string {
+function fillerScript(autoPrint = false): string {
   return `<script>
+  var AUTO_PRINT = ${autoPrint ? "true" : "false"};
   var PROMOS = ${JSON.stringify(HOUSE_PROMOS)};
   // Image heights are fixed in CSS, so layout is stable at DOM-ready — do
   // not wait for window.load (one stalled image would block filling forever).
@@ -298,8 +299,8 @@ function fillerScript(): string {
         if (g < 130) break;
         inserted = document.createElement("div");
         if (g >= 300) {
-          // Tall gap: a 2-up row of square promo boxes
-          inserted.className = "filler-row filler-2";
+          // Tall gap: alternate between 2-up squares and a wide+square mixed row
+          inserted.className = k % 2 === 0 ? "filler-row filler-2" : "filler-row filler-mixed";
           inserted.innerHTML = PROMOS[k++ % PROMOS.length] + PROMOS[k++ % PROMOS.length];
         } else {
           // Short gap: one wide rectangle strip
@@ -321,8 +322,12 @@ function fillerScript(): string {
       }
     });
   }
-  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", fillPages);
-  else fillPages();
+  function boot() {
+    fillPages();
+    if (AUTO_PRINT) setTimeout(function () { window.print(); }, 900);
+  }
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot);
+  else boot();
   // Double-click any story to open it full-page on the site
   document.addEventListener("dblclick", function (e) {
     var el = e.target && e.target.closest ? e.target.closest("[data-slug]") : null;
@@ -468,10 +473,14 @@ async function fetchEdition(date: string): Promise<EditionPlan | null> {
 export async function GET(req: NextRequest) {
   const dateParam = req.nextUrl.searchParams.get("date") || new Date().toISOString().split("T")[0];
   const download = req.nextUrl.searchParams.get("download") === "true";
+  const autoPrint = req.nextUrl.searchParams.get("print") === "1";
+  const lang = req.nextUrl.searchParams.get("lang") === "hi" ? "hi" : "en";
   const requestedPage = req.nextUrl.searchParams.get("page");
 
   // Fetch ads + AI edition plan in parallel
-  const [adsData, edition, authorsMap] = await Promise.all([fetchAds(), fetchEdition(dateParam), fetchAuthors()]);
+  const [adsData, editionRaw, authorsMap] = await Promise.all([fetchAds(), fetchEdition(dateParam), fetchAuthors()]);
+  // The AI edition package is composed in English — the Hindi paper renders without it
+  const edition = lang === "hi" ? null : editionRaw;
 
   const res = await fetch(`${BASE}:runQuery`, {
     method: "POST",
@@ -496,6 +505,7 @@ export async function GET(req: NextRequest) {
         content: extract(f, "content"), category: extract(f, "category"), author: extract(f, "author"),
         imageUrl: extract(f, "imageUrl"), createdAt: extract(f, "createdAt"),
         slug: extract(f, "slug"),
+        language: extract(f, "language"),
         inEpaper: extract(f, "inEpaper"),
       };
     })
@@ -503,6 +513,12 @@ export async function GET(req: NextRequest) {
       if (!p.createdAt) return true;
       try { return new Date(p.createdAt) <= new Date(dateParam + "T23:59:59+05:30"); } catch { return true; }
     });
+
+  // Strict language separation: the Hindi paper carries only Hindi
+  // articles, the English paper only English — no mixing.
+  const langPosts = posts.filter((p: ArticleData & { language?: string }) =>
+    lang === "hi" ? p.language === "hi" : p.language !== "hi"
+  );
 
   // The paper only carries the last 2 days of news — inEpaper marks
   // accumulate across editions, so an age gate keeps old stories out.
@@ -514,10 +530,10 @@ export async function GET(req: NextRequest) {
   // Prefer posts explicitly marked for the E-Paper; if none are marked
   // (edition not generated yet), fall back to any fresh published posts
   // so the paper is never blank.
-  let paperPosts = posts.filter((p: ArticleData & { inEpaper?: string }) => (p.inEpaper === "true" || p.inEpaper === "1") && isFresh(p));
+  let paperPosts = langPosts.filter((p: ArticleData & { inEpaper?: string }) => (p.inEpaper === "true" || p.inEpaper === "1") && isFresh(p));
   if (paperPosts.length === 0) {
-    paperPosts = posts.filter(isFresh);
-    if (paperPosts.length === 0) paperPosts = posts.slice(0, 15);
+    paperPosts = langPosts.filter(isFresh);
+    if (paperPosts.length === 0) paperPosts = langPosts.slice(0, 15);
   }
 
   // Apply AI print headlines from the edition plan (keep original for matching)
@@ -715,6 +731,9 @@ export async function GET(req: NextRequest) {
   .filler-1 { grid-template-columns: 1fr; }
   .filler-2 { grid-template-columns: 1fr 1fr; }
   .filler-3 { grid-template-columns: 1fr 1fr 1fr; }
+  .filler-mixed { grid-template-columns: 2fr 1fr; }
+  .filler-mixed .promo:last-child { flex-direction: column; text-align: center; }
+  .filler-mixed .promo:last-child .promo-img { width: 100%; height: 64px; }
   .promo { padding: 12px 16px; display: flex; align-items: center; gap: 16px; text-align: left; page-break-inside: avoid; }
   .promo-img { width: 150px; height: 90px; object-fit: cover; flex-shrink: 0; border: 1.5px solid rgba(0,0,0,0.25); }
   .promo-dark .promo-img { border-color: rgba(255,153,51,0.6); }
@@ -905,7 +924,7 @@ export async function GET(req: NextRequest) {
     <div class="masthead">
       <h1>LoktantraVani</h1>
       <div class="date">${dateFormatted}</div>
-      <div class="tagline">India's First AI Newspaper — Neo Bharat Edition</div>
+      <div class="tagline">${lang === "hi" ? "भारत का पहला एआई समाचार पत्र — हिंदी संस्करण" : "India's First AI Newspaper — Neo Bharat Edition"}</div>
       <div class="byline-tag">${paperPosts.length} Articles · ${allSections.length} Sections · ${totalPages} Pages${edition ? " · AI-Composed Edition" : ""}</div>
     </div>
 
@@ -1021,7 +1040,7 @@ export async function GET(req: NextRequest) {
     const plan = pagesPlan[idx];
     return plan ? renderPage(plan.section, plan.articles, parseInt(requestedPage), totalPages, dateFormatted, authorsMap) : "<p>Page not found</p>";
   })() : ""}
-  ${fillerScript()}
+  ${fillerScript(autoPrint)}
 </body>
 </html>`;
 
