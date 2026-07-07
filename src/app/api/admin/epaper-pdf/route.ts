@@ -148,6 +148,25 @@ function stripHtml(html: string): string {
   return html.replace(/<[^>]*>/g, "").replace(/&nbsp;/g, " ").replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").trim();
 }
 
+/** Canonical article URL for QR codes */
+function articleUrl(a: { category?: string; slug?: string }): string {
+  if (!a.slug) return "";
+  const cat = (a.category || "india").toLowerCase().replace(/\s+/g, "-");
+  return `https://loktantravani.in/${cat}/${a.slug}`;
+}
+
+/** QR image via api.qrserver.com — the paper already relies on remote images */
+function qrImg(url: string, px: number): string {
+  return `<img class="qr-img" width="${px}" height="${px}" src="https://api.qrserver.com/v1/create-qr-code/?size=${px * 3}x${px * 3}&margin=1&data=${encodeURIComponent(url)}" alt="QR" onerror="this.parentNode.style.display='none'" />`;
+}
+
+/** Small right-aligned "scan for full story" row under a truncated article */
+function qrRow(a: { category?: string; slug?: string }, label = "Scan for the full story"): string {
+  const url = articleUrl(a);
+  if (!url) return "";
+  return `<div class="qr-row">${qrImg(url, 34)}<span>${label}</span></div>`;
+}
+
 function truncateWords(text: string, max: number): string {
   const words = text.split(/\s+/);
   return words.length > max ? words.slice(0, max).join(" ") + "…" : text;
@@ -423,8 +442,10 @@ function renderPage(sectionName: string, articles: ArticleData[], pageNum: numbe
 
   const leadImg = lead.imageUrl && !lead.imageUrl.startsWith("data:") ? lead.imageUrl : "";
   const leadBody = stripHtml(lead.content || "");
-  // Pages are fixed A4 — truncate to fit, point readers to the site
-  const leadTrunc = truncateWords(leadBody, 380) + ' <span class="read-on">Full story → loktantravani.in</span>';
+  // Pages are fixed A4 — truncate to fit; a QR carries readers to the rest
+  const leadIsTrunc = leadBody.split(/\s+/).filter(Boolean).length > 380;
+  const leadTrunc = truncateWords(leadBody, 380);
+  const leadQr = leadIsTrunc ? qrRow(lead, "Scan to continue reading") : "";
   const leadQuotes = extractQuotes(lead.content || "");
   const leadPullQuote = leadQuotes.length > 0 ? leadQuotes[0] : extractPullQuote(leadBody);
   // Alternate layout: even pages = image right, odd = image top
@@ -438,8 +459,12 @@ function renderPage(sectionName: string, articles: ArticleData[], pageNum: numbe
   function renderColArticle(a: ArticleData) {
     colIdx++;
     const hasImg = a.imageUrl && !a.imageUrl.startsWith("data:");
-    // Fixed A4 pages — column articles get a tight excerpt
-    const body = truncateWords(stripHtml(a.content || ""), 180) + ' <span class="read-on">→ loktantravani.in</span>';
+    // Fixed A4 pages — column articles get a tight excerpt; a QR takes
+    // readers to the full story when the excerpt cuts it short
+    const colPlain = stripHtml(a.content || "");
+    const colTruncated = colPlain.split(/\s+/).filter(Boolean).length > 180;
+    const body = truncateWords(colPlain, 180);
+    const colQr = colTruncated ? qrRow(a) : "";
     const colQuotes = extractQuotes(a.content || "");
     const colPull = colQuotes.length > 0 ? colQuotes[0] : "";
     const extraEl = colIdx % 2 === 0
@@ -456,6 +481,7 @@ function renderPage(sectionName: string, articles: ArticleData[], pageNum: numbe
         <div class="col-byline">By ${a.author} · ${dateStr(a)}</div>
         ${renderAuthorBox(a.author, authors, false)}
         <p class="col-body">${body}</p>
+        ${colQr}
         ${extraEl}
       </div>`;
     }
@@ -470,6 +496,7 @@ function renderPage(sectionName: string, articles: ArticleData[], pageNum: numbe
         <div class="col-byline">By ${a.author} · ${dateStr(a)}</div>`}
       ${renderAuthorBox(a.author, authors, false)}
       <p class="col-body">${body}</p>
+      ${colQr}
       ${extraEl}
     </div>`;
   }
@@ -498,6 +525,7 @@ function renderPage(sectionName: string, articles: ArticleData[], pageNum: numbe
         : `<div class="lead-content"><p>${leadTrunc}</p></div>
           ${renderKeyFacts(lead.title, lead.content || "", pageNum)}`
       }
+      ${leadQr}
       ${renderPullQuote(leadPullQuote)}
     </div>
 
@@ -609,7 +637,9 @@ function renderOpEdFullPages(a: ArticleData, startPageNum: number, totalPagesRef
     const nextPageNum = pageNum + 1;
     const prevPageNum = pageNum - 1;
     const contToLine = !isLast ? `<div class="opeed-cont-to">Continued on Page ${nextPageNum} →</div>` : "";
-    const readOn = isLast && slug ? `<div class="opeed-read-on">Read the fully hyperlinked, source-cited version at <strong>loktantravani.in/${catUrl}/${slug}</strong></div>` : "";
+    const readOn = isLast && slug
+      ? `<div class="opeed-read-on">${qrImg(`https://loktantravani.in/${catUrl}/${slug}`, 58)}<div class="opeed-read-on-text">Scan to read the fully hyperlinked,<br/>source-cited edition online</div></div>`
+      : "";
 
     return `<div class="page opeed-page" id="page-${pageNum}" ${slug ? `data-slug="${slug}"` : ""}>
       <div class="page-header">
@@ -927,7 +957,14 @@ export async function GET(req: NextRequest) {
   .opeed-body ul, .opeed-body ol { padding-left: 16px; margin: 4px 0 6px; }
   .opeed-body li { margin-bottom: 3px; }
   .opeed-cont-to { text-align: right; font-size: 8px; text-transform: uppercase; letter-spacing: 2px; color: #c41e1e; font-style: italic; margin-top: 10px; }
-  .opeed-read-on { text-align: center; font-size: 8px; color: #666; margin-top: 10px; padding-top: 6px; border-top: 1px solid #ccc; font-style: italic; }
+  .opeed-read-on { display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 10px; padding-top: 8px; border-top: 1px solid #ccc; }
+  .opeed-read-on .qr-img { width: 58px; height: 58px; }
+  .opeed-read-on-text { font-size: 7.5px; color: #666; font-style: italic; text-transform: uppercase; letter-spacing: 1.5px; line-height: 1.6; text-align: left; }
+
+  /* ── QR read-more rows (truncated stories) ── */
+  .qr-row { display: flex; align-items: center; justify-content: flex-end; gap: 5px; margin-top: 4px; }
+  .qr-row .qr-img { width: 34px; height: 34px; }
+  .qr-row span { font-size: 6.5px; text-transform: uppercase; letter-spacing: 1.5px; color: #999; }
 
   /* ── Two-column grid ── */
   .columns { display: grid; grid-template-columns: 1fr 1px 1fr; gap: 16px; }
