@@ -531,18 +531,26 @@ function renderPage(sectionName: string, articles: ArticleData[], pageNum: numbe
 /** Render a full-length OpEd across as many pages as it needs — no truncation.
  * Returns { html, pagesUsed } so the page-plan builder can reserve numbers. */
 function renderOpEdFullPages(a: ArticleData, startPageNum: number, totalPagesRef: { total: number }, dateFormatted: string, authors: Record<string, AuthorInfo> = {}): { html: string; pagesUsed: number } {
-  const WORDS_PER_PAGE_FIRST = 750;   // first page carries hero image + headline + byline
+  const WORDS_PER_PAGE_FIRST = 620;   // first page carries headline + deck + figure
   const WORDS_PER_PAGE_CONT  = 1150;  // continuation pages are body-only, denser
   const dateStr = a.createdAt ? new Date(a.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" }) : "";
   const hasImg = a.imageUrl && !a.imageUrl.startsWith("data:");
   const catUrl = (a.category || "opinion").toLowerCase().replace(/\s+/g, "-");
   const slug = a.slug || "";
+  // Print headlines from the edition plan are front-page teasers — a full
+  // OpEd spread carries the article's real title.
+  const displayTitle = (a as ArticleData & { origTitle?: string }).origTitle || a.title;
 
-  // Estimate pagination: budget the first page smaller, subsequent pages larger
-  const allChunks = splitHtmlChunks(a.content || "");
+  // Estimate pagination: budget the first page smaller, subsequent pages larger.
+  // Drop a leading italic byline paragraph ("<p><em>By Author — date</em></p>") —
+  // the spread's byline row already carries it, and it would steal the drop cap.
+  let allChunks = splitHtmlChunks(a.content || "");
+  if (allChunks.length > 1 && /^<p>\s*<em>\s*(By\s|द्वारा)/i.test(allChunks[0])) {
+    allChunks = allChunks.slice(1);
+  }
   if (allChunks.length === 0) {
     // No parseable chunks — fall back to single page with raw content
-    return { html: `<div class="page opeed-page" id="page-${startPageNum}"><div class="page-header"><span class="page-section">${a.category} · OpEd</span><span class="page-title">LoktantraVani</span><span class="page-info">${dateFormatted}</span></div><h2 class="opeed-headline">${a.title}</h2><div class="opeed-body">${a.content || ""}</div><div class="page-footer"><span>LoktantraVani</span><span>loktantravani.in</span><span>Page ${startPageNum}</span></div></div>`, pagesUsed: 1 };
+    return { html: `<div class="page opeed-page" id="page-${startPageNum}"><div class="page-header"><span class="page-section">${a.category} · OpEd</span><span class="page-title">LoktantraVani</span><span class="page-info">${dateFormatted}</span></div><h2 class="opeed-headline">${displayTitle}</h2><div class="opeed-body">${a.content || ""}</div><div class="page-footer"><span>LoktantraVani</span><span>loktantravani.in</span><span>Page ${startPageNum}</span></div></div>`, pagesUsed: 1 };
   }
 
   // Pack chunks — first page gets fewer words to leave room for hero
@@ -581,17 +589,19 @@ function renderOpEdFullPages(a: ArticleData, startPageNum: number, totalPagesRef
         <span class="page-info">${dateFormatted} · Page ${pageNum}</span>
       </div>
       ${isFirst ? `
-        <div class="opeed-hero">
-          ${hasImg ? `<img src="${a.imageUrl}" class="opeed-hero-img" alt="" onerror="this.style.display='none'" />` : ""}
-          <div class="opeed-hero-text">
-            <p class="opeed-kicker">OP-ED · ${(a.category || "Opinion").toUpperCase()}</p>
-            <h2 class="opeed-headline">${a.title}</h2>
-            <div class="opeed-byline">By ${a.author} · ${dateStr}${authorInfo?.designation ? ` · ${authorInfo.designation}` : ""}</div>
+        <div class="opeed-top">
+          <p class="opeed-kicker">OP-ED · ${(a.category || "Opinion").toUpperCase()}</p>
+          <h2 class="opeed-headline">${displayTitle}</h2>
+          ${a.summary ? `<p class="opeed-deck">${a.summary}</p>` : ""}
+          <div class="opeed-byline-row">
+            <span>By <strong>${a.author}</strong>${authorInfo?.designation ? ` · ${authorInfo.designation}` : ""}</span>
+            <span>${dateStr}</span>
           </div>
         </div>
+        ${hasImg ? `<figure class="opeed-figure"><img src="${a.imageUrl}" alt="" onerror="this.parentNode.style.display='none'" /></figure>` : ""}
       ` : `
         <div class="opeed-cont-header">
-          <span class="opeed-cont-title">${a.title}</span>
+          <span class="opeed-cont-title">${displayTitle}</span>
           <span class="opeed-cont-from">Continued from Page ${prevPageNum}</span>
         </div>
       `}
@@ -757,7 +767,7 @@ export async function GET(req: NextRequest) {
         let estPages = 1;
         if (chunks.length > 0) {
           let count = 0;
-          const budgets = [750, 1150];
+          const budgets = [620, 1150]; // keep in sync with renderOpEdFullPages
           for (const c of chunks) {
             const w = c.replace(/<[^>]*>/g, "").split(/\s+/).filter(Boolean).length;
             const cap = estPages === 1 ? budgets[0] : budgets[1];
@@ -875,12 +885,14 @@ export async function GET(req: NextRequest) {
 
   /* ── OpEd full-content pages (no truncation) ── */
   .opeed-page { }
-  .opeed-hero { display: grid; grid-template-columns: 2fr 3fr; gap: 12px; align-items: end; border-bottom: 2px solid #1a1a1a; padding-bottom: 10px; margin-bottom: 10px; }
-  .opeed-hero-img { width: 100%; aspect-ratio: 4/3; object-fit: cover; object-position: center 20%; }
-  .opeed-hero-text { }
-  .opeed-kicker { font-size: 8px; font-weight: 900; letter-spacing: 3px; text-transform: uppercase; color: #c41e1e; margin-bottom: 4px; }
-  .opeed-headline { font-family: 'Playfair Display', serif; font-size: 26px; font-weight: 900; line-height: 1.05; letter-spacing: -0.5px; color: #1a1a1a; margin-bottom: 6px; }
-  .opeed-byline { font-size: 8px; text-transform: uppercase; letter-spacing: 2px; color: #666; }
+  .opeed-top { margin-bottom: 8px; }
+  .opeed-kicker { font-size: 8px; font-weight: 900; letter-spacing: 3px; text-transform: uppercase; color: #c41e1e; margin-bottom: 5px; }
+  .opeed-page .opeed-headline { font-family: 'Playfair Display', serif; font-size: 29px; font-weight: 900; line-height: 1.08; letter-spacing: -0.5px; color: #111; margin-bottom: 6px; max-width: 92%; }
+  .opeed-deck { font-size: 10.5px; line-height: 1.5; font-style: italic; color: #555; max-width: 88%; margin-bottom: 8px; }
+  .opeed-byline-row { display: flex; justify-content: space-between; align-items: baseline; border-top: 1.5px solid #1a1a1a; border-bottom: 0.5px solid #999; padding: 4px 2px; font-size: 7.5px; text-transform: uppercase; letter-spacing: 2px; color: #555; }
+  .opeed-byline-row strong { color: #1a1a1a; font-weight: 700; }
+  .opeed-figure { margin: 0 0 10px; }
+  .opeed-figure img { width: 100%; height: 52mm; object-fit: cover; object-position: center 25%; display: block; }
   .opeed-cont-header { display: flex; justify-content: space-between; align-items: baseline; border-bottom: 1px solid #999; padding-bottom: 4px; margin-bottom: 8px; }
   .opeed-cont-title { font-family: 'Playfair Display', serif; font-size: 11px; font-weight: 700; font-style: italic; color: #333; }
   .opeed-cont-from { font-size: 7px; text-transform: uppercase; letter-spacing: 2px; color: #999; }
@@ -1047,7 +1059,7 @@ export async function GET(req: NextRequest) {
   .ab-bio { font-size: 7px; color: #555; line-height: 1.45; margin-top: 2px; }
 
   [data-slug] { cursor: pointer; }
-  [data-slug]:hover h2, [data-slug]:hover h3 { color: #c41e1e; }
+  [data-slug]:not(.opeed-page):hover h2, [data-slug]:not(.opeed-page):hover h3 { color: #c41e1e; }
 
   /* ── Front-page teaser strip ── */
   .fp-teasers { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: #0f2a4a; padding: 6px; margin-bottom: 10px; }
