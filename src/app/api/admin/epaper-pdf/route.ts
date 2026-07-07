@@ -353,8 +353,6 @@ function fillerScript(autoPrint = false): string {
   function fillPages() {
     var k = 0;
     document.querySelectorAll(".page").forEach(function (page) {
-      // Don't inject house promos into OpEd full-content pages.
-      if (page.classList.contains("opeed-page")) return;
       var footer = page.querySelector(".page-footer");
       if (!footer) return;
       var measure = function () {
@@ -528,11 +526,60 @@ function renderPage(sectionName: string, articles: ArticleData[], pageNum: numbe
   </div>`;
 }
 
-/** Render a full-length OpEd across as many pages as it needs — no truncation.
- * Returns { html, pagesUsed } so the page-plan builder can reserve numbers. */
+/** Indian Express edit-page convention: the argument flows as continuous
+ * prose — subheads become bold run-ins fused onto their following paragraph,
+ * and a dense 3-column body fits a standard op-ed on a single page.
+ * Shared by the page-plan estimator and the renderer so they never drift. */
+function paginateOpEdBody(content: string): string[] {
+  const WORDS_FIRST = 1500;  // masthead + figure page, 3 dense columns
+  const WORDS_CONT  = 2100;  // body-only continuation
+  let chunks = splitHtmlChunks(content || "");
+  // Drop a leading italic byline paragraph ("<p><em>By Author — date</em></p>") —
+  // the spread's byline row already carries it, and it would steal the drop cap.
+  if (chunks.length > 1 && /^<p>\s*<em>\s*(By\s|द्वारा)/i.test(chunks[0])) {
+    chunks = chunks.slice(1);
+  }
+  // Fuse h2/h3 subheads into the next paragraph as a bold run-in.
+  const fused: string[] = [];
+  let pendingRunIn = "";
+  for (const c of chunks) {
+    const h = c.match(/^<h[23][^>]*>([\s\S]*?)<\/h[23]>$/i);
+    if (h) {
+      const label = h[1].replace(/<[^>]*>/g, "").trim().replace(/[.:]\s*$/, "");
+      pendingRunIn = label ? `<strong>${label}.</strong> ` : "";
+      continue;
+    }
+    if (pendingRunIn && /^<p[\s>]/i.test(c)) {
+      fused.push(c.replace(/^(<p[^>]*>)/i, `$1${pendingRunIn}`));
+      pendingRunIn = "";
+    } else {
+      if (pendingRunIn) { fused.push(`<p>${pendingRunIn}</p>`); pendingRunIn = ""; }
+      fused.push(c);
+    }
+  }
+  if (pendingRunIn) fused.push(`<p>${pendingRunIn}</p>`);
+  if (fused.length === 0) return [];
+  // Pack into pages by word budget
+  const pages: string[] = [];
+  let cur: string[] = [];
+  let count = 0;
+  for (const c of fused) {
+    const words = c.replace(/<[^>]*>/g, "").split(/\s+/).filter(Boolean).length;
+    const cap = pages.length === 0 ? WORDS_FIRST : WORDS_CONT;
+    if (count + words > cap && cur.length > 0) {
+      pages.push(cur.join("\n"));
+      cur = [];
+      count = 0;
+    }
+    cur.push(c);
+    count += words;
+  }
+  if (cur.length > 0) pages.push(cur.join("\n"));
+  return pages;
+}
+
+/** Render a full-length OpEd across as many pages as it needs — no truncation. */
 function renderOpEdFullPages(a: ArticleData, startPageNum: number, totalPagesRef: { total: number }, dateFormatted: string, authors: Record<string, AuthorInfo> = {}): { html: string; pagesUsed: number } {
-  const WORDS_PER_PAGE_FIRST = 620;   // first page carries headline + deck + figure
-  const WORDS_PER_PAGE_CONT  = 1150;  // continuation pages are body-only, denser
   const dateStr = a.createdAt ? new Date(a.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" }) : "";
   const hasImg = a.imageUrl && !a.imageUrl.startsWith("data:");
   const catUrl = (a.category || "opinion").toLowerCase().replace(/\s+/g, "-");
@@ -540,36 +587,18 @@ function renderOpEdFullPages(a: ArticleData, startPageNum: number, totalPagesRef
   // Print headlines from the edition plan are front-page teasers — a full
   // OpEd spread carries the article's real title.
   const displayTitle = (a as ArticleData & { origTitle?: string }).origTitle || a.title;
+  // IE-style standfirst: one to two lines, not the full web summary.
+  const deck = (a.summary || "").length > 240
+    ? (a.summary || "").slice(0, 240).replace(/\s+\S*$/, "") + "…"
+    : (a.summary || "");
 
-  // Estimate pagination: budget the first page smaller, subsequent pages larger.
-  // Drop a leading italic byline paragraph ("<p><em>By Author — date</em></p>") —
-  // the spread's byline row already carries it, and it would steal the drop cap.
-  let allChunks = splitHtmlChunks(a.content || "");
-  if (allChunks.length > 1 && /^<p>\s*<em>\s*(By\s|द्वारा)/i.test(allChunks[0])) {
-    allChunks = allChunks.slice(1);
-  }
+  const allChunks = paginateOpEdBody(a.content || "");
   if (allChunks.length === 0) {
     // No parseable chunks — fall back to single page with raw content
     return { html: `<div class="page opeed-page" id="page-${startPageNum}"><div class="page-header"><span class="page-section">${a.category} · OpEd</span><span class="page-title">LoktantraVani</span><span class="page-info">${dateFormatted}</span></div><h2 class="opeed-headline">${displayTitle}</h2><div class="opeed-body">${a.content || ""}</div><div class="page-footer"><span>LoktantraVani</span><span>loktantravani.in</span><span>Page ${startPageNum}</span></div></div>`, pagesUsed: 1 };
   }
 
-  // Pack chunks — first page gets fewer words to leave room for hero
-  const pageBodies: string[] = [];
-  let cur: string[] = [];
-  let count = 0;
-  const cap = () => pageBodies.length === 0 ? WORDS_PER_PAGE_FIRST : WORDS_PER_PAGE_CONT;
-  for (const c of allChunks) {
-    const words = c.replace(/<[^>]*>/g, "").split(/\s+/).filter(Boolean).length;
-    if (count + words > cap() && cur.length > 0) {
-      pageBodies.push(cur.join("\n"));
-      cur = [];
-      count = 0;
-    }
-    cur.push(c);
-    count += words;
-  }
-  if (cur.length > 0) pageBodies.push(cur.join("\n"));
-
+  const pageBodies = allChunks; // already packed into per-page bodies
   const authorInfo = authors[a.author];
   const pagesUsed = pageBodies.length;
 
@@ -592,9 +621,9 @@ function renderOpEdFullPages(a: ArticleData, startPageNum: number, totalPagesRef
         <div class="opeed-top">
           <p class="opeed-kicker">OP-ED · ${(a.category || "Opinion").toUpperCase()}</p>
           <h2 class="opeed-headline">${displayTitle}</h2>
-          ${a.summary ? `<p class="opeed-deck">${a.summary}</p>` : ""}
+          ${deck ? `<p class="opeed-deck">${deck}</p>` : ""}
           <div class="opeed-byline-row">
-            <span>By <strong>${a.author}</strong>${authorInfo?.designation ? ` · ${authorInfo.designation}` : ""}</span>
+            <span>Written by <strong>${a.author}</strong>${authorInfo?.designation ? ` · ${authorInfo.designation}` : ""}</span>
             <span>${dateStr}</span>
           </div>
         </div>
@@ -761,20 +790,8 @@ export async function GET(req: NextRequest) {
       // Reserve one OpEd block per article, marked prerendered.
       // Page numbers are patched after the full plan is stable.
       for (const art of arts) {
-        // Estimate pages using paginateHtmlByWords with the same budgets
-        // renderOpEdFullPages uses; render happens later with real pageNum.
-        const chunks = splitHtmlChunks(art.content || "");
-        let estPages = 1;
-        if (chunks.length > 0) {
-          let count = 0;
-          const budgets = [620, 1150]; // keep in sync with renderOpEdFullPages
-          for (const c of chunks) {
-            const w = c.replace(/<[^>]*>/g, "").split(/\s+/).filter(Boolean).length;
-            const cap = estPages === 1 ? budgets[0] : budgets[1];
-            if (count + w > cap) { estPages++; count = 0; }
-            count += w;
-          }
-        }
+        // Same pagination the renderer uses — estimate cannot drift.
+        const estPages = Math.max(1, paginateOpEdBody(art.content || "").length);
         for (let pg = 0; pg < estPages; pg++) {
           pagesPlan.push({
             section: sec,
@@ -891,17 +908,17 @@ export async function GET(req: NextRequest) {
   .opeed-deck { font-size: 10.5px; line-height: 1.5; font-style: italic; color: #555; max-width: 88%; margin-bottom: 8px; }
   .opeed-byline-row { display: flex; justify-content: space-between; align-items: baseline; border-top: 1.5px solid #1a1a1a; border-bottom: 0.5px solid #999; padding: 4px 2px; font-size: 7.5px; text-transform: uppercase; letter-spacing: 2px; color: #555; }
   .opeed-byline-row strong { color: #1a1a1a; font-weight: 700; }
-  .opeed-figure { margin: 0 0 10px; }
-  .opeed-figure img { width: 100%; height: 52mm; object-fit: cover; object-position: center 25%; display: block; }
+  .opeed-figure { margin: 0 0 9px; }
+  .opeed-figure img { width: 100%; height: 38mm; object-fit: cover; object-position: center 25%; display: block; }
   .opeed-cont-header { display: flex; justify-content: space-between; align-items: baseline; border-bottom: 1px solid #999; padding-bottom: 4px; margin-bottom: 8px; }
   .opeed-cont-title { font-family: 'Playfair Display', serif; font-size: 11px; font-weight: 700; font-style: italic; color: #333; }
   .opeed-cont-from { font-size: 7px; text-transform: uppercase; letter-spacing: 2px; color: #999; }
-  .opeed-body { font-size: 9px; line-height: 1.55; color: #1a1a1a; column-count: 2; column-gap: 18px; column-rule: 0.5px solid #ccc; text-align: justify; hyphens: auto; }
-  .opeed-body p { margin-bottom: 5px; text-indent: 12px; break-inside: avoid; }
+  .opeed-body { font-size: 7.6px; line-height: 1.5; color: #1a1a1a; column-count: 3; column-gap: 16px; column-rule: 0.5px solid #ccc; text-align: justify; hyphens: auto; }
+  .opeed-body p { margin-bottom: 4px; text-indent: 10px; }
   .opeed-body p:first-child { text-indent: 0; }
-  .opeed-body p:first-child::first-letter { font-family: 'Playfair Display', serif; font-size: 32px; font-weight: 900; float: left; line-height: 0.85; margin: 4px 4px 0 0; color: #c41e1e; }
-  .opeed-body h2 { font-family: 'Playfair Display', serif; font-size: 13px; font-weight: 800; margin: 10px 0 4px; color: #1a1a1a; break-after: avoid; }
-  .opeed-body h3 { font-size: 10px; font-weight: 700; margin: 8px 0 3px; }
+  .opeed-body p:first-child::first-letter { font-family: 'Playfair Display', serif; font-size: 26px; font-weight: 900; float: left; line-height: 0.85; margin: 3px 3px 0 0; color: #c41e1e; }
+  .opeed-body h2 { font-family: 'Playfair Display', serif; font-size: 11px; font-weight: 800; margin: 8px 0 3px; color: #1a1a1a; break-after: avoid; }
+  .opeed-body h3 { font-size: 9px; font-weight: 700; margin: 6px 0 3px; }
   .opeed-body a { color: #c41e1e; text-decoration: underline; text-decoration-thickness: 0.5px; }
   .opeed-body em, .opeed-body i { font-style: italic; color: #333; }
   .opeed-body strong, .opeed-body b { font-weight: 700; }
