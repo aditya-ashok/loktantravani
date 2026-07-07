@@ -153,6 +153,36 @@ function truncateWords(text: string, max: number): string {
   return words.length > max ? words.slice(0, max).join(" ") + "…" : text;
 }
 
+/** Split HTML into block-level chunks preserving tags (p, h2, h3, blockquote, hr, ul, ol). */
+function splitHtmlChunks(html: string): string[] {
+  const re = /<(p|h2|h3|blockquote|ul|ol)([^>]*)>([\s\S]*?)<\/\1>|<hr\s*\/?>/gi;
+  const chunks: string[] = [];
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(html)) !== null) chunks.push(m[0]);
+  return chunks;
+}
+
+/** Pack HTML chunks into pages by approximate word count per page. */
+function paginateHtmlByWords(html: string, wordsPerPage: number): string[] {
+  const chunks = splitHtmlChunks(html);
+  if (chunks.length === 0) return [html];
+  const pages: string[] = [];
+  let cur: string[] = [];
+  let count = 0;
+  for (const c of chunks) {
+    const words = c.replace(/<[^>]*>/g, "").split(/\s+/).filter(Boolean).length;
+    if (count + words > wordsPerPage && cur.length > 0) {
+      pages.push(cur.join("\n"));
+      cur = [];
+      count = 0;
+    }
+    cur.push(c);
+    count += words;
+  }
+  if (cur.length > 0) pages.push(cur.join("\n"));
+  return pages;
+}
+
 /** Extract blockquotes from HTML content */
 function extractQuotes(html: string): string[] {
   const quotes: string[] = [];
@@ -286,6 +316,8 @@ function fillerScript(autoPrint = false): string {
   // footer. Runs before gap filling.
   function fitPages() {
     document.querySelectorAll(".page").forEach(function (page) {
+      // OpEd full-content pages are pre-paginated by word count — don't trim.
+      if (page.classList.contains("opeed-page")) return;
       var footer = page.querySelector(".page-footer");
       if (!footer) return;
       var limit = function () { return page.getBoundingClientRect().bottom - 42; };
@@ -321,6 +353,8 @@ function fillerScript(autoPrint = false): string {
   function fillPages() {
     var k = 0;
     document.querySelectorAll(".page").forEach(function (page) {
+      // Don't inject house promos into OpEd full-content pages.
+      if (page.classList.contains("opeed-page")) return;
       var footer = page.querySelector(".page-footer");
       if (!footer) return;
       var measure = function () {
@@ -494,6 +528,88 @@ function renderPage(sectionName: string, articles: ArticleData[], pageNum: numbe
   </div>`;
 }
 
+/** Render a full-length OpEd across as many pages as it needs — no truncation.
+ * Returns { html, pagesUsed } so the page-plan builder can reserve numbers. */
+function renderOpEdFullPages(a: ArticleData, startPageNum: number, totalPagesRef: { total: number }, dateFormatted: string, authors: Record<string, AuthorInfo> = {}): { html: string; pagesUsed: number } {
+  const WORDS_PER_PAGE_FIRST = 750;   // first page carries hero image + headline + byline
+  const WORDS_PER_PAGE_CONT  = 1150;  // continuation pages are body-only, denser
+  const dateStr = a.createdAt ? new Date(a.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" }) : "";
+  const hasImg = a.imageUrl && !a.imageUrl.startsWith("data:");
+  const catUrl = (a.category || "opinion").toLowerCase().replace(/\s+/g, "-");
+  const slug = a.slug || "";
+
+  // Estimate pagination: budget the first page smaller, subsequent pages larger
+  const allChunks = splitHtmlChunks(a.content || "");
+  if (allChunks.length === 0) {
+    // No parseable chunks — fall back to single page with raw content
+    return { html: `<div class="page opeed-page" id="page-${startPageNum}"><div class="page-header"><span class="page-section">${a.category} · OpEd</span><span class="page-title">LoktantraVani</span><span class="page-info">${dateFormatted}</span></div><h2 class="opeed-headline">${a.title}</h2><div class="opeed-body">${a.content || ""}</div><div class="page-footer"><span>LoktantraVani</span><span>loktantravani.in</span><span>Page ${startPageNum}</span></div></div>`, pagesUsed: 1 };
+  }
+
+  // Pack chunks — first page gets fewer words to leave room for hero
+  const pageBodies: string[] = [];
+  let cur: string[] = [];
+  let count = 0;
+  const cap = () => pageBodies.length === 0 ? WORDS_PER_PAGE_FIRST : WORDS_PER_PAGE_CONT;
+  for (const c of allChunks) {
+    const words = c.replace(/<[^>]*>/g, "").split(/\s+/).filter(Boolean).length;
+    if (count + words > cap() && cur.length > 0) {
+      pageBodies.push(cur.join("\n"));
+      cur = [];
+      count = 0;
+    }
+    cur.push(c);
+    count += words;
+  }
+  if (cur.length > 0) pageBodies.push(cur.join("\n"));
+
+  const authorInfo = authors[a.author];
+  const pagesUsed = pageBodies.length;
+
+  const html = pageBodies.map((body, idx) => {
+    const isFirst = idx === 0;
+    const isLast = idx === pageBodies.length - 1;
+    const pageNum = startPageNum + idx;
+    const nextPageNum = pageNum + 1;
+    const prevPageNum = pageNum - 1;
+    const contToLine = !isLast ? `<div class="opeed-cont-to">Continued on Page ${nextPageNum} →</div>` : "";
+    const readOn = isLast && slug ? `<div class="opeed-read-on">Read the fully hyperlinked, source-cited version at <strong>loktantravani.in/${catUrl}/${slug}</strong></div>` : "";
+
+    return `<div class="page opeed-page" id="page-${pageNum}" ${slug ? `data-slug="${slug}"` : ""}>
+      <div class="page-header">
+        <span class="page-section">${a.category || "Opinion"} · OPED</span>
+        <span class="page-title">LoktantraVani</span>
+        <span class="page-info">${dateFormatted} · Page ${pageNum}</span>
+      </div>
+      ${isFirst ? `
+        <div class="opeed-hero">
+          ${hasImg ? `<img src="${a.imageUrl}" class="opeed-hero-img" alt="" onerror="this.style.display='none'" />` : ""}
+          <div class="opeed-hero-text">
+            <p class="opeed-kicker">OP-ED · ${(a.category || "Opinion").toUpperCase()}</p>
+            <h2 class="opeed-headline">${a.title}</h2>
+            <div class="opeed-byline">By ${a.author} · ${dateStr}${authorInfo?.designation ? ` · ${authorInfo.designation}` : ""}</div>
+          </div>
+        </div>
+      ` : `
+        <div class="opeed-cont-header">
+          <span class="opeed-cont-title">${a.title}</span>
+          <span class="opeed-cont-from">Continued from Page ${prevPageNum}</span>
+        </div>
+      `}
+      <div class="opeed-body">${body}</div>
+      ${contToLine}
+      ${readOn}
+      <div class="page-footer">
+        <span>LoktantraVani</span>
+        <span>loktantravani.in</span>
+        <span>Page ${pageNum}${pagesUsed > 1 ? ` · ${idx + 1}/${pagesUsed}` : ""}</span>
+      </div>
+    </div>`;
+  }).join("");
+
+  void totalPagesRef; // pages counted by caller
+  return { html, pagesUsed };
+}
+
 type EditionPlan = {
   leadTitle: string;
   bannerHeadline: string;
@@ -623,11 +739,43 @@ export async function GET(req: NextRequest) {
   const extraSections = Object.keys(sections).filter(s => !SECTION_ORDER.includes(s) && sections[s].length > 0);
   const allSections = [...activeSections, ...extraSections];
 
-  // Build page plan: each section gets allocated pages
-  type PagePlan = { section: string; articles: ArticleData[]; pageLabel: string };
+  // Build page plan: each section gets allocated pages.
+  // Opinion articles render as full-length OpEd pages (one article across
+  // as many pages as its word count requires) — see renderOpEdFullPages.
+  type PagePlan = { section: string; articles: ArticleData[]; pageLabel: string; prerendered?: string };
   const pagesPlan: PagePlan[] = [];
+  const opedTempPageNum = { total: 0 };
   for (const sec of allSections) {
     const arts = sections[sec] || [];
+    if (sec === "Opinion") {
+      // Reserve one OpEd block per article, marked prerendered.
+      // Page numbers are patched after the full plan is stable.
+      for (const art of arts) {
+        // Estimate pages using paginateHtmlByWords with the same budgets
+        // renderOpEdFullPages uses; render happens later with real pageNum.
+        const chunks = splitHtmlChunks(art.content || "");
+        let estPages = 1;
+        if (chunks.length > 0) {
+          let count = 0;
+          const budgets = [750, 1150];
+          for (const c of chunks) {
+            const w = c.replace(/<[^>]*>/g, "").split(/\s+/).filter(Boolean).length;
+            const cap = estPages === 1 ? budgets[0] : budgets[1];
+            if (count + w > cap) { estPages++; count = 0; }
+            count += w;
+          }
+        }
+        for (let pg = 0; pg < estPages; pg++) {
+          pagesPlan.push({
+            section: sec,
+            articles: [art],
+            pageLabel: estPages > 1 ? `OpEd — ${(art.title || "Opinion").slice(0, 24)}… (${pg + 1}/${estPages})` : `OpEd — ${(art.title || "Opinion").slice(0, 30)}…`,
+            prerendered: pg === 0 ? "__RENDER_OPED__" : "__SKIP__", // marker; real HTML injected below
+          });
+        }
+      }
+      continue;
+    }
     const allocPages = Math.max(1, Math.min(PAGE_ALLOCATION[sec] || 1, Math.ceil(arts.length / ARTICLES_PER_PAGE)));
     for (let pg = 0; pg < allocPages; pg++) {
       const start = pg * ARTICLES_PER_PAGE;
@@ -640,24 +788,49 @@ export async function GET(req: NextRequest) {
       });
     }
   }
-  // Broadsheet discipline: cap at 14 section pages (+front = 15 max).
-  // Trim the largest sections' overflow pages first so every section —
-  // Opinion and OpEds included — keeps at least one page in the paper.
-  const MAX_SECTION_PAGES = 14;
+  void opedTempPageNum;
+  // Broadsheet discipline: cap total pages generously to accommodate
+  // full-length OpEds. Trim non-OpEd overflow first.
+  const MAX_SECTION_PAGES = 24;
   while (pagesPlan.length > MAX_SECTION_PAGES) {
     const counts: Record<string, number> = {};
-    for (const pl of pagesPlan) counts[pl.section] = (counts[pl.section] || 0) + 1;
+    for (const pl of pagesPlan) if (!pl.prerendered) counts[pl.section] = (counts[pl.section] || 0) + 1;
     const fattest = Object.entries(counts).sort((a, b) => b[1] - a[1])[0];
     if (!fattest || fattest[1] <= 1) { pagesPlan.splice(MAX_SECTION_PAGES); break; }
     for (let i = pagesPlan.length - 1; i >= 0; i--) {
-      if (pagesPlan[i].section === fattest[0]) { pagesPlan.splice(i, 1); break; }
+      if (pagesPlan[i].section === fattest[0] && !pagesPlan[i].prerendered) { pagesPlan.splice(i, 1); break; }
     }
   }
-  const totalPages = pagesPlan.length + 1; // +1 for front page
-
   const dateFormatted = new Date(dateParam + "T00:00:00").toLocaleDateString("en-IN", {
     weekday: "long", year: "numeric", month: "long", day: "numeric",
   });
+
+  // Now that page numbers are stable, render the OpEd blocks.
+  // Each OpEd article spans multiple contiguous PagePlans; render the whole
+  // block on the first plan entry and mark the rest as skip so the render
+  // loop doesn't duplicate output.
+  {
+    const totalPagesGuess = pagesPlan.length + 1;
+    let i = 0;
+    while (i < pagesPlan.length) {
+      const plan = pagesPlan[i];
+      if (plan.prerendered === "__RENDER_OPED__") {
+        const startPage = i + 2; // +1 for front page, +1 to switch from index to page number
+        const rendered = renderOpEdFullPages(plan.articles[0], startPage, { total: totalPagesGuess }, dateFormatted, authorsMap);
+        plan.prerendered = rendered.html;
+        // Skip subsequent placeholder plans for the same OpEd article
+        for (let j = 1; j < rendered.pagesUsed && i + j < pagesPlan.length; j++) {
+          if (pagesPlan[i + j].prerendered === "__SKIP__" && pagesPlan[i + j].articles[0] === plan.articles[0]) {
+            pagesPlan[i + j].prerendered = "__ALREADY_RENDERED__";
+          }
+        }
+        i += rendered.pagesUsed;
+      } else {
+        i += 1;
+      }
+    }
+  }
+  const totalPages = pagesPlan.length + 1; // +1 for front page
 
   const css = `
   @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=Noto+Serif:wght@400;700&family=Source+Serif+4:wght@400;600;700&display=swap');
@@ -699,6 +872,33 @@ export async function GET(req: NextRequest) {
   .lead-grid-text p:first-child { text-indent: 0; }
   .lead-grid-img { }
   .lead-grid-img img { width: 100%; aspect-ratio: 16/9; height: auto; object-fit: cover; margin-bottom: 8px; }
+
+  /* ── OpEd full-content pages (no truncation) ── */
+  .opeed-page { }
+  .opeed-hero { display: grid; grid-template-columns: 2fr 3fr; gap: 12px; align-items: end; border-bottom: 2px solid #1a1a1a; padding-bottom: 10px; margin-bottom: 10px; }
+  .opeed-hero-img { width: 100%; aspect-ratio: 4/3; object-fit: cover; object-position: center 20%; }
+  .opeed-hero-text { }
+  .opeed-kicker { font-size: 8px; font-weight: 900; letter-spacing: 3px; text-transform: uppercase; color: #c41e1e; margin-bottom: 4px; }
+  .opeed-headline { font-family: 'Playfair Display', serif; font-size: 26px; font-weight: 900; line-height: 1.05; letter-spacing: -0.5px; color: #1a1a1a; margin-bottom: 6px; }
+  .opeed-byline { font-size: 8px; text-transform: uppercase; letter-spacing: 2px; color: #666; }
+  .opeed-cont-header { display: flex; justify-content: space-between; align-items: baseline; border-bottom: 1px solid #999; padding-bottom: 4px; margin-bottom: 8px; }
+  .opeed-cont-title { font-family: 'Playfair Display', serif; font-size: 11px; font-weight: 700; font-style: italic; color: #333; }
+  .opeed-cont-from { font-size: 7px; text-transform: uppercase; letter-spacing: 2px; color: #999; }
+  .opeed-body { font-size: 9px; line-height: 1.55; color: #1a1a1a; column-count: 2; column-gap: 18px; column-rule: 0.5px solid #ccc; text-align: justify; hyphens: auto; }
+  .opeed-body p { margin-bottom: 5px; text-indent: 12px; break-inside: avoid; }
+  .opeed-body p:first-child { text-indent: 0; }
+  .opeed-body p:first-child::first-letter { font-family: 'Playfair Display', serif; font-size: 32px; font-weight: 900; float: left; line-height: 0.85; margin: 4px 4px 0 0; color: #c41e1e; }
+  .opeed-body h2 { font-family: 'Playfair Display', serif; font-size: 13px; font-weight: 800; margin: 10px 0 4px; color: #1a1a1a; break-after: avoid; }
+  .opeed-body h3 { font-size: 10px; font-weight: 700; margin: 8px 0 3px; }
+  .opeed-body a { color: #c41e1e; text-decoration: underline; text-decoration-thickness: 0.5px; }
+  .opeed-body em, .opeed-body i { font-style: italic; color: #333; }
+  .opeed-body strong, .opeed-body b { font-weight: 700; }
+  .opeed-body blockquote { border-left: 2px solid #c41e1e; padding-left: 8px; margin: 6px 0; font-style: italic; color: #444; }
+  .opeed-body hr { border: 0; border-top: 1px solid #ccc; margin: 8px 0; break-inside: avoid; }
+  .opeed-body ul, .opeed-body ol { padding-left: 16px; margin: 4px 0 6px; }
+  .opeed-body li { margin-bottom: 3px; }
+  .opeed-cont-to { text-align: right; font-size: 8px; text-transform: uppercase; letter-spacing: 2px; color: #c41e1e; font-style: italic; margin-top: 10px; }
+  .opeed-read-on { text-align: center; font-size: 8px; color: #666; margin-top: 10px; padding-top: 6px; border-top: 1px solid #ccc; font-style: italic; }
 
   /* ── Two-column grid ── */
   .columns { display: grid; grid-template-columns: 1fr 1px 1fr; gap: 16px; }
@@ -1065,12 +1265,21 @@ export async function GET(req: NextRequest) {
     </div>
   </div>`;
 
-  // Section pages from plan (multi-page sections supported)
+  // Section pages from plan (multi-page sections supported).
+  // OpEd plans carry prerendered multi-page HTML on their first entry;
+  // continuation entries are placeholders and emit nothing.
   const sectionPagesHTML = pagesPlan.map((plan, i) => {
     const pageNum = i + 2;
-    const pageHTML = renderPage(plan.section, plan.articles, pageNum, totalPages, dateFormatted, authorsMap);
-    // Insert ad after every 3rd page
-    const showAd = i > 0 && i % 3 === 2;
+    let pageHTML: string;
+    if (plan.prerendered === "__ALREADY_RENDERED__" || plan.prerendered === "__SKIP__") {
+      pageHTML = "";
+    } else if (plan.prerendered) {
+      pageHTML = plan.prerendered;
+    } else {
+      pageHTML = renderPage(plan.section, plan.articles, pageNum, totalPages, dateFormatted, authorsMap);
+    }
+    // Insert ad after every 3rd page (skip on empty placeholder entries)
+    const showAd = pageHTML !== "" && i > 0 && i % 3 === 2;
     // Between-page ads live outside .page — constrain them to page width
     const adHtml = showAd ? `<div class="page-ad-wrap">${renderDisplayAd(adsData[Math.floor(i / 3) % Math.max(1, adsData.length)] || null, Math.floor(i / 3) + 1)}</div>` : "";
     return pageHTML + adHtml;
@@ -1105,7 +1314,16 @@ export async function GET(req: NextRequest) {
   ${requestedPage && requestedPage !== "1" ? (() => {
     const idx = parseInt(requestedPage) - 2;
     const plan = pagesPlan[idx];
-    return plan ? renderPage(plan.section, plan.articles, parseInt(requestedPage), totalPages, dateFormatted, authorsMap) : "<p>Page not found</p>";
+    if (!plan) return "<p>Page not found</p>";
+    // OpEd pages: find the owning block (walk back to the first entry for
+    // this article) and return its full prerendered run.
+    if (plan.prerendered) {
+      let ownerIdx = idx;
+      while (ownerIdx > 0 && (pagesPlan[ownerIdx].prerendered === "__ALREADY_RENDERED__" || pagesPlan[ownerIdx].prerendered === "__SKIP__")) ownerIdx--;
+      const owner = pagesPlan[ownerIdx];
+      return owner.prerendered && !owner.prerendered.startsWith("__") ? owner.prerendered : "<p>Page not found</p>";
+    }
+    return renderPage(plan.section, plan.articles, parseInt(requestedPage), totalPages, dateFormatted, authorsMap);
   })() : ""}
   ${fillerScript(autoPrint)}
 </body>
