@@ -420,7 +420,7 @@ function fillerScript(autoPrint = false): string {
       if (inserted && leftover > 12) {
         var promoEl = inserted.querySelector(".promo");
         if (promoEl) {
-          var pad = Math.min(leftover / 2, 70);
+          var pad = Math.min(leftover / 2, 220);
           promoEl.style.paddingTop = (12 + pad) + "px";
           promoEl.style.paddingBottom = (12 + pad) + "px";
         }
@@ -825,7 +825,7 @@ export async function GET(req: NextRequest) {
     Tech: 2, Cities: 2, World: 2, "Lok Post": 1,
   };
   // Each page fits ~2 full articles or 1 lead + 2 columns
-  const ARTICLES_PER_PAGE = 5;
+  const ARTICLES_PER_PAGE = 6;
 
   const activeSections = SECTION_ORDER.filter(s => sections[s]?.length > 0);
   const extraSections = Object.keys(sections).filter(s => !SECTION_ORDER.includes(s) && sections[s].length > 0);
@@ -1265,7 +1265,7 @@ export async function GET(req: NextRequest) {
   }
 
   // Get first few sentences from lead story for front page excerpt
-  const leadExcerpt = frontPageHeadlines[0] ? stripHtml(sections[frontPageHeadlines[0].sectionName]?.[0]?.content || "").split(/[.!?]/).slice(0, 4).join(". ") + "." : "";
+  const leadExcerpt = frontPageHeadlines[0] ? stripHtml(sections[frontPageHeadlines[0].sectionName]?.[0]?.content || "").split(/[.!?]/).slice(0, 9).join(". ") + "." : "";
 
   const glanceHTML = edition?.atAGlance?.length ? `
     <div class="glance-box">
@@ -1344,7 +1344,7 @@ export async function GET(req: NextRequest) {
           ${leadDeck ? `<p class="fp-lead-deck">${leadDeck}</p>` : ""}
           <div class="fp-lead-byline"><strong>${lead0.author}</strong><span class="fp-dateline">${lead0.sectionName}</span></div>
           <div class="fp-lead-grid">
-            <div class="fp-excerpt">${leadExcerpt.slice(0, 520)} <span class="jump">Full report on P${lead0.pageNo}</span></div>
+            <div class="fp-excerpt">${leadExcerpt.slice(0, 900)} <span class="jump">Full report on P${lead0.pageNo}</span></div>
             ${lead0.imageUrl && !lead0.imageUrl.startsWith("data:") ? `
             <figure class="fp-lead-fig">
               <img src="${lead0.imageUrl}" alt="" onerror="this.parentNode.style.display='none'" />

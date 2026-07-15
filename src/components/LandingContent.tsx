@@ -41,66 +41,113 @@ export default function LandingContent({ allPosts }: { allPosts: Post[] }) {
   const opinionPosts = allPosts.filter(p => p.category === "Opinion");
   const cartoonPosts = allPosts.filter(p => p.category === "Lok Post");
   const featuredPost = allPosts[0];
-  const latestPosts = allPosts.slice(1, 5);
+  const secondWell = allPosts.slice(1, 4);
+  const latestRail = allPosts.slice(4, 13);
 
   if (!featuredPost) return null;
 
   const featuredAuthor = lang === "hi" ? getAuthorHiName(featuredPost.author) : featuredPost.author;
+  const postHref = (p: Post) => `/${p.category.toLowerCase().replace(/\s+/g, "-")}/${p.slug}`;
+  const postTitle = (p: Post) => (lang === "hi" && p.titleHi ? p.titleHi : p.title);
+  const postSummary = (p: Post) => (lang === "hi" && p.summaryHi ? p.summaryHi : p.summary);
 
   return (
     <>
+      {/* ── HT-style news well: lead | secondary stack | latest rail ── */}
       <div className="max-w-screen-xl mx-auto px-4 md:px-8 py-6">
-        {/* Compact hero — image beside text instead of a full-width banner */}
-        <Link
-          href={`/${featuredPost.category.toLowerCase().replace(/\s+/g, "-")}/${featuredPost.slug}`}
-          className="group grid md:grid-cols-[0.45fr_0.55fr] rounded-2xl border border-[var(--nyt-border)] bg-white/95 dark:bg-[#111] overflow-hidden shadow-[0_20px_60px_-45px_rgba(0,0,0,0.35)] transition hover:shadow-[0_28px_80px_-55px_rgba(0,0,0,0.4)] mb-8"
-        >
-          {featuredPost.imageUrl && (
-            <div className="relative aspect-[16/10] md:aspect-auto md:min-h-[260px] overflow-hidden">
-              <Image
-                src={featuredPost.imageUrl}
-                alt={featuredPost.title}
-                fill
-                sizes="(max-width: 768px) 100vw, 45vw"
-                className="object-cover transition-transform duration-500 group-hover:scale-105"
-                priority
-                unoptimized
-              />
-            </div>
-          )}
-          <div className="p-6 md:p-8 flex flex-col justify-center">
+        <div className="grid grid-cols-1 lg:grid-cols-[5fr_4fr_3fr] gap-6 lg:gap-0 pb-8 border-b-2 border-black dark:border-white/40">
+
+          {/* Lead story — headline first, broadsheet style */}
+          <Link href={postHref(featuredPost)} className="group lg:pr-7 lg:border-r border-[var(--nyt-border)]">
             <p className="text-[9px] uppercase tracking-[0.3em] font-black text-primary mb-2">
               {featuredPost.category}
             </p>
-            <h2 className="font-newsreader text-2xl md:text-3xl font-black leading-tight tracking-tight text-[var(--nyt-black)] dark:text-white group-hover:text-primary transition-colors">
-              {lang === "hi" && featuredPost.titleHi ? featuredPost.titleHi : featuredPost.title}
-            </h2>
-            <p className="mt-3 text-sm leading-6 text-[var(--nyt-gray)] dark:text-white/70 line-clamp-3">
-              {lang === "hi" && featuredPost.summaryHi ? featuredPost.summaryHi : featuredPost.summary}
+            <h1 className="font-newsreader text-3xl md:text-[2.6rem] font-black leading-[1.05] tracking-tight text-[var(--nyt-black)] dark:text-white group-hover:text-primary transition-colors">
+              {postTitle(featuredPost)}
+            </h1>
+            <p className="mt-3 font-newsreader italic text-base leading-6 text-[var(--nyt-gray)] dark:text-white/70 line-clamp-3">
+              {postSummary(featuredPost)}
             </p>
-            <div className="mt-4 flex flex-wrap gap-3 text-[9px] font-semibold uppercase tracking-[0.22em] text-[var(--nyt-gray)] dark:text-white/50">
-              <span>{featuredAuthor}</span>
+            <div className="mt-3 py-1.5 border-t border-b border-[var(--nyt-border)] flex flex-wrap gap-2 text-[9px] font-semibold uppercase tracking-[0.22em] text-[var(--nyt-gray)] dark:text-white/50">
+              <span className="text-[var(--nyt-black)] dark:text-white font-black">{featuredAuthor}</span>
               <span>·</span>
               <span>{timeAgo(featuredPost.createdAt as Date)}</span>
               <span>·</span>
               <span>{featuredPost.readingTimeMin} {t("min read", "मिनट पढ़ें")}</span>
             </div>
+            {featuredPost.imageUrl && (
+              <figure className="mt-4">
+                <div className="relative aspect-[16/9] overflow-hidden">
+                  <Image
+                    src={featuredPost.imageUrl}
+                    alt={featuredPost.title}
+                    fill
+                    sizes="(max-width: 1024px) 100vw, 42vw"
+                    className="object-cover transition-transform duration-500 group-hover:scale-[1.02]"
+                    priority
+                    unoptimized
+                  />
+                </div>
+                <figcaption className="pt-1.5 border-b border-[var(--nyt-border)] pb-1 text-[10px] leading-snug text-[var(--nyt-gray)] dark:text-white/50">
+                  {postTitle(featuredPost)}
+                </figcaption>
+              </figure>
+            )}
+          </Link>
+
+          {/* Secondary stack — hairline-divided, first with image */}
+          <div className="lg:px-7 lg:border-r border-[var(--nyt-border)] divide-y divide-[var(--nyt-border)]">
+            {secondWell.map((post, i) => (
+              <Link key={post.slug} href={postHref(post)} className="group block py-4 first:pt-0 last:pb-0">
+                {i === 0 && post.imageUrl && (
+                  <div className="relative aspect-[16/9] overflow-hidden mb-3">
+                    <Image src={post.imageUrl} alt={post.title} fill sizes="(max-width: 1024px) 100vw, 33vw" className="object-cover transition-transform duration-500 group-hover:scale-[1.02]" unoptimized />
+                  </div>
+                )}
+                <p className="text-[8px] uppercase tracking-[0.25em] font-black text-primary mb-1">{post.category}</p>
+                <h2 className="font-newsreader text-lg md:text-xl font-black leading-snug text-[var(--nyt-black)] dark:text-white group-hover:text-primary transition-colors">
+                  {postTitle(post)}
+                </h2>
+                <p className="mt-1.5 text-[13px] leading-5 text-[var(--nyt-gray)] dark:text-white/60 line-clamp-2">
+                  {postSummary(post)}
+                </p>
+                <p className="mt-1.5 text-[8.5px] font-semibold uppercase tracking-[0.2em] text-[var(--nyt-gray)] dark:text-white/45">
+                  {lang === "hi" ? getAuthorHiName(post.author) : post.author} · {timeAgo(post.createdAt as Date)}
+                </p>
+              </Link>
+            ))}
           </div>
-        </Link>
+
+          {/* Latest news rail — HT signature */}
+          <div className="lg:pl-7">
+            <div className="flex items-center gap-2 border-b-2 border-black dark:border-white/60 pb-2">
+              <span className="w-2 h-2 rounded-full bg-red-600 animate-pulse" />
+              <h3 className="text-[11px] font-inter font-black uppercase tracking-[0.2em] text-[var(--nyt-black)] dark:text-white">
+                {t("Latest News", "ताज़ा खबरें")}
+              </h3>
+              <Link href="/blog" className="ml-auto text-[9px] font-inter font-bold uppercase tracking-widest text-primary hover:underline">
+                {t("All", "सभी")}
+              </Link>
+            </div>
+            <ul className="divide-y divide-[var(--nyt-border)]">
+              {latestRail.map((post) => (
+                <li key={post.slug}>
+                  <Link href={postHref(post)} className="group block py-2.5">
+                    <p className="text-[8.5px] font-bold uppercase tracking-[0.18em] text-red-600 mb-0.5">
+                      {timeAgo(post.createdAt as Date)} · {post.category}
+                    </p>
+                    <h4 className="font-newsreader text-[15px] font-bold leading-snug text-[var(--nyt-black)] dark:text-white group-hover:text-primary transition-colors">
+                      {postTitle(post)}
+                    </h4>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
       </div>
 
       <div className="max-w-screen-xl mx-auto px-4 md:px-8">
-        {/* Latest headlines strip */}
-        {latestPosts.length > 0 && (
-          <div className="pb-8 border-b border-[var(--nyt-border)]">
-            <SectionHeader en="Latest Headlines" hi="ताज़ा खबरें" href="/blog" />
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-              {latestPosts.map((post) => (
-                <BlogCard key={post.slug} post={post} />
-              ))}
-            </div>
-          </div>
-        )}
 
         <ForYouFeed />
 
