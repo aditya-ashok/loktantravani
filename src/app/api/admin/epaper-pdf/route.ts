@@ -318,6 +318,22 @@ const HOUSE_PROMOS = [
       <div class="promo-cta">Chat now → loktantravani.in</div>
     </div>
   </div>`,
+  `<div class="promo promo-border">
+    <div class="promo-text">
+      <div class="promo-kicker">On Instagram</div>
+      <div class="promo-title">Court2Class</div>
+      <div class="promo-body">Law explained like a classroom, argued like a courtroom — judgments, bare acts and legal current affairs in 60-second reels. From the desk of Adv. Bhavya Razshree.</div>
+      <div class="promo-cta">Follow → instagram.com/Court2Class</div>
+    </div>
+  </div>`,
+  `<div class="promo promo-dark">
+    <div class="promo-text">
+      <div class="promo-kicker">On Facebook</div>
+      <div class="promo-title">Court2Class</div>
+      <div class="promo-body">Daily case briefs, career guidance for law aspirants, and live Q&A sessions on the new criminal codes. Join the community on Facebook.</div>
+      <div class="promo-cta">Like the page → facebook.com/Court2Class</div>
+    </div>
+  </div>`,
 ];
 
 /**
@@ -335,11 +351,12 @@ function fillerScript(autoPrint = false): string {
   // footer. Runs before gap filling.
   function fitPages() {
     document.querySelectorAll(".page").forEach(function (page) {
-      // OpEd full-content pages are pre-paginated by word count — don't trim.
-      if (page.classList.contains("opeed-page")) return;
+      // OpEd pages are pre-paginated; the front page is hand-budgeted.
+      // Trimming either mid-image-load guts real content permanently.
+      if (page.classList.contains("opeed-page") || page.classList.contains("front-page")) return;
       var footer = page.querySelector(".page-footer");
       if (!footer) return;
-      var limit = function () { return page.getBoundingClientRect().bottom - 42; };
+      var limit = function () { return page.getBoundingClientRect().bottom - 54; };
       var overflows = function () {
         var kids = Array.prototype.filter.call(page.children, function (el) { return el !== footer; });
         var last = kids[kids.length - 1];
@@ -372,15 +389,17 @@ function fillerScript(autoPrint = false): string {
   function fillPages() {
     var k = 0;
     document.querySelectorAll(".page").forEach(function (page) {
+      // The front page carries a real display ad — no house promos there.
+      if (page.classList.contains("front-page")) return;
       var footer = page.querySelector(".page-footer");
       if (!footer) return;
       var measure = function () {
         var kids = Array.prototype.filter.call(page.children, function (el) { return el !== footer; });
         var last = kids[kids.length - 1];
-        return last ? page.getBoundingClientRect().bottom - last.getBoundingClientRect().bottom - 40 : 0;
+        return last ? page.getBoundingClientRect().bottom - last.getBoundingClientRect().bottom - 50 : 0;
       };
       var inserted = null;
-      for (var i = 0; i < 6; i++) {
+      for (var i = 0; i < 3; i++) {
         var g = measure();
         if (g < 130) break;
         inserted = document.createElement("div");
@@ -408,23 +427,27 @@ function fillerScript(autoPrint = false): string {
       }
     });
   }
-  function boot() {
+  // Trimming is destructive — measuring while images/webfonts are still
+  // loading guts real content that would have fit. Typeset exactly once,
+  // after BOTH window.load and fonts.ready settle the metrics (with a
+  // hard 8s fallback in case a stalled image never fires load).
+  var typesetDone = false;
+  function typeset() {
+    if (typesetDone) return;
+    typesetDone = true;
     fitPages();
     fillPages();
-    if (AUTO_PRINT) setTimeout(function () { window.print(); }, 900);
+    if (AUTO_PRINT) setTimeout(function () { window.print(); }, 400);
   }
-  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot);
-  else boot();
-  // Webfonts swap in after DOM-ready and change text metrics — re-typeset
-  // once fonts settle, then close any gaps that opened, then trim again.
+  var loadDone = document.readyState === "complete";
+  var fontsDone = !(document.fonts && document.fonts.ready);
+  function maybeTypeset() { if (loadDone && fontsDone) setTimeout(typeset, 120); }
+  window.addEventListener("load", function () { loadDone = true; maybeTypeset(); });
   if (document.fonts && document.fonts.ready) {
-    document.fonts.ready.then(function () {
-      setTimeout(function () { fitPages(); fillPages(); fitPages(); }, 150);
-    });
+    document.fonts.ready.then(function () { fontsDone = true; maybeTypeset(); });
   }
-  window.addEventListener("load", function () {
-    setTimeout(function () { fitPages(); }, 300);
-  });
+  setTimeout(typeset, 8000);
+  maybeTypeset();
   // Double-click any story to open it full-page on the site
   document.addEventListener("dblclick", function (e) {
     var el = e.target && e.target.closest ? e.target.closest("[data-slug]") : null;
@@ -443,8 +466,8 @@ function renderPage(sectionName: string, articles: ArticleData[], pageNum: numbe
   const leadImg = lead.imageUrl && !lead.imageUrl.startsWith("data:") ? lead.imageUrl : "";
   const leadBody = stripHtml(lead.content || "");
   // Pages are fixed A4 — truncate to fit; a QR carries readers to the rest
-  const leadIsTrunc = leadBody.split(/\s+/).filter(Boolean).length > 380;
-  const leadTrunc = truncateWords(leadBody, 380);
+  const leadIsTrunc = leadBody.split(/\s+/).filter(Boolean).length > 900;
+  const leadTrunc = truncateWords(leadBody, 900);
   const leadQr = leadIsTrunc ? qrRow(lead, "Scan to continue reading") : "";
   const leadQuotes = extractQuotes(lead.content || "");
   const leadPullQuote = leadQuotes.length > 0 ? leadQuotes[0] : extractPullQuote(leadBody);
@@ -462,8 +485,8 @@ function renderPage(sectionName: string, articles: ArticleData[], pageNum: numbe
     // Fixed A4 pages — column articles get a tight excerpt; a QR takes
     // readers to the full story when the excerpt cuts it short
     const colPlain = stripHtml(a.content || "");
-    const colTruncated = colPlain.split(/\s+/).filter(Boolean).length > 180;
-    const body = truncateWords(colPlain, 180);
+    const colTruncated = colPlain.split(/\s+/).filter(Boolean).length > 400;
+    const body = truncateWords(colPlain, 400);
     const colQr = colTruncated ? qrRow(a) : "";
     const colQuotes = extractQuotes(a.content || "");
     const colPull = colQuotes.length > 0 ? colQuotes[0] : "";
@@ -559,8 +582,8 @@ function renderPage(sectionName: string, articles: ArticleData[], pageNum: numbe
  * and a dense 3-column body fits a standard op-ed on a single page.
  * Shared by the page-plan estimator and the renderer so they never drift. */
 function paginateOpEdBody(content: string): string[] {
-  const WORDS_FIRST = 1500;  // masthead + figure page, 3 dense columns
-  const WORDS_CONT  = 2100;  // body-only continuation
+  const WORDS_FIRST = 3400;  // masthead + figure page, 3 dense columns
+  const WORDS_CONT  = 4600;  // body-only continuation
   let chunks = splitHtmlChunks(content || "");
   // Drop a leading italic byline paragraph ("<p><em>By Author — date</em></p>") —
   // the spread's byline row already carries it, and it would steal the drop cap.
@@ -802,7 +825,7 @@ export async function GET(req: NextRequest) {
     Tech: 2, Cities: 2, World: 2, "Lok Post": 1,
   };
   // Each page fits ~2 full articles or 1 lead + 2 columns
-  const ARTICLES_PER_PAGE = 2;
+  const ARTICLES_PER_PAGE = 5;
 
   const activeSections = SECTION_ORDER.filter(s => sections[s]?.length > 0);
   const extraSections = Object.keys(sections).filter(s => !SECTION_ORDER.includes(s) && sections[s].length > 0);
@@ -817,9 +840,18 @@ export async function GET(req: NextRequest) {
   for (const sec of allSections) {
     const arts = sections[sec] || [];
     if (sec === "Opinion") {
-      // Reserve one OpEd block per article, marked prerendered.
+      // Long-form gets the full OpEd spread; short op-eds share an
+      // edit page like a real broadsheet (rendered via renderPage below).
+      const isLongForm = (a: ArticleData) => stripHtml(a.content || "").split(/\s+/).filter(Boolean).length > 1200;
+      const longForm = arts.filter(isLongForm);
+      const shorts = arts.filter(a => !isLongForm(a));
+      for (let pg = 0; pg < Math.ceil(shorts.length / ARTICLES_PER_PAGE); pg++) {
+        const chunk = shorts.slice(pg * ARTICLES_PER_PAGE, (pg + 1) * ARTICLES_PER_PAGE);
+        if (chunk.length) pagesPlan.push({ section: sec, articles: chunk, pageLabel: "Opinion" });
+      }
+      // Reserve one OpEd block per long-form article, marked prerendered.
       // Page numbers are patched after the full plan is stable.
-      for (const art of arts) {
+      for (const art of longForm) {
         // Same pagination the renderer uses — estimate cannot drift.
         const estPages = Math.max(1, paginateOpEdBody(art.content || "").length);
         for (let pg = 0; pg < estPages; pg++) {
@@ -846,6 +878,17 @@ export async function GET(req: NextRequest) {
     }
   }
   void opedTempPageNum;
+  // A2 pages hold several stories — merge adjacent thin section plans so
+  // no page carries one lonely article in a sea of house promos.
+  for (let i = 0; i < pagesPlan.length - 1; ) {
+    const a = pagesPlan[i], b = pagesPlan[i + 1];
+    if (!a.prerendered && !b.prerendered && a.articles.length + b.articles.length <= ARTICLES_PER_PAGE) {
+      a.section = a.section === b.section ? a.section : `${a.section} · ${b.section}`;
+      a.pageLabel = a.section;
+      a.articles = a.articles.concat(b.articles);
+      pagesPlan.splice(i + 1, 1);
+    } else i++;
+  }
   // Broadsheet discipline: cap total pages generously to accommodate
   // full-length OpEds. Trim non-OpEd overflow first.
   const MAX_SECTION_PAGES = 24;
@@ -892,14 +935,14 @@ export async function GET(req: NextRequest) {
   const css = `
   @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=Noto+Serif:wght@400;700&family=Source+Serif+4:wght@400;600;700&display=swap');
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  @page { size: A4 portrait; margin: 0.5cm; }
-  body { font-family: 'Noto Serif', 'Source Serif 4', Georgia, serif; color: #1a1a1a; background: #f0f0f0; font-size: 8px; line-height: 1.4; }
+  @page { size: A2 portrait; margin: 0.6cm; }
+  body { font-family: 'Noto Serif', 'Source Serif 4', Georgia, serif; color: #1a1a1a; background: #f0f0f0; font-size: 9px; line-height: 1.45; }
 
   .page {
-    width: 210mm; height: 297mm; max-width: 210mm;
+    width: 420mm; height: 594mm; max-width: 420mm;
     margin: 0 auto 20px; background: #ffffff;
     border: 1px solid #ccc; box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-    padding: 14px 18px 44px; position: relative;
+    padding: 18px 24px 50px; position: relative;
     page-break-after: always; overflow: hidden;
   }
 
@@ -907,24 +950,24 @@ export async function GET(req: NextRequest) {
     display: flex; justify-content: space-between; align-items: baseline;
     border-bottom: 2px solid #1a1a1a; padding-bottom: 4px; margin-bottom: 12px;
   }
-  .page-section { font-family: 'Playfair Display', serif; font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: 3px; color: #c41e1e; }
-  .page-title { font-family: 'Playfair Display', serif; font-size: 16px; font-weight: 900; letter-spacing: -0.5px; }
-  .page-info { font-size: 7px; color: #888; letter-spacing: 1px; text-transform: uppercase; }
+  .page-section { font-family: 'Playfair Display', serif; font-size: 13px; font-weight: 900; text-transform: uppercase; letter-spacing: 3px; color: #c41e1e; }
+  .page-title { font-family: 'Playfair Display', serif; font-size: 21px; font-weight: 900; letter-spacing: -0.5px; }
+  .page-info { font-size: 9px; color: #888; letter-spacing: 1px; text-transform: uppercase; }
 
   /* ── Lead Story ── */
   .lead-story { margin-bottom: 14px; border-bottom: 1px solid #1a1a1a; padding-bottom: 12px; }
   .lead-img-top { width: 62%; aspect-ratio: 16/9; height: auto; display: block; margin: 0 auto 6px; object-fit: cover; margin-bottom: 6px; }
-  .lead-headline { font-family: 'Playfair Display', serif; font-size: 22px; font-weight: 900; line-height: 1.1; margin-bottom: 2px; letter-spacing: -0.5px; }
+  .lead-headline { font-family: 'Playfair Display', serif; font-size: 34px; font-weight: 900; line-height: 1.1; margin-bottom: 2px; letter-spacing: -0.5px; }
   .lead-headline-hi { font-size: 13px; color: #555; margin-bottom: 4px; font-style: italic; }
-  .lead-summary { font-size: 10px; color: #444; line-height: 1.5; margin-bottom: 4px; font-style: italic; }
+  .lead-summary { font-size: 12px; color: #444; line-height: 1.5; margin-bottom: 4px; font-style: italic; }
   .lead-byline { font-size: 7px; text-transform: uppercase; letter-spacing: 2px; color: #888; margin-bottom: 6px; }
-  .lead-content { font-size: 8.5px; line-height: 1.5; color: #333; column-count: 3; column-gap: 18px; column-rule: 0.5px solid #ccc; text-align: justify; hyphens: auto; }
+  .lead-content { font-size: 9px; line-height: 1.5; color: #333; column-count: 5; column-gap: 18px; column-rule: 0.5px solid #ccc; text-align: justify; hyphens: auto; }
   .lead-content p { margin-bottom: 4px; text-indent: 12px; }
   .lead-content p:first-child { text-indent: 0; }
 
   /* Lead grid layout: text left, image right */
   .lead-grid { display: grid; grid-template-columns: 3fr 2fr; gap: 16px; margin-top: 6px; }
-  .lead-grid-text { font-size: 8.5px; line-height: 1.5; color: #333; text-align: justify; hyphens: auto; column-count: 2; column-gap: 14px; column-rule: 0.5px solid #ccc; }
+  .lead-grid-text { font-size: 9px; line-height: 1.5; color: #333; text-align: justify; hyphens: auto; column-count: 3; column-gap: 14px; column-rule: 0.5px solid #ccc; }
   .lead-grid-text p { margin-bottom: 4px; text-indent: 12px; }
   .lead-grid-text p:first-child { text-indent: 0; }
   .lead-grid-img { }
@@ -933,20 +976,20 @@ export async function GET(req: NextRequest) {
   /* ── OpEd full-content pages (no truncation) ── */
   .opeed-page { }
   .opeed-top { margin-bottom: 8px; }
-  .opeed-kicker { font-size: 8px; font-weight: 900; letter-spacing: 3px; text-transform: uppercase; color: #c41e1e; margin-bottom: 5px; }
-  .opeed-page .opeed-headline { font-family: 'Playfair Display', serif; font-size: 29px; font-weight: 900; line-height: 1.08; letter-spacing: -0.5px; color: #111; margin-bottom: 6px; max-width: 92%; }
-  .opeed-deck { font-size: 10.5px; line-height: 1.5; font-style: italic; color: #555; max-width: 88%; margin-bottom: 8px; }
-  .opeed-byline-row { display: flex; justify-content: space-between; align-items: baseline; border-top: 1.5px solid #1a1a1a; border-bottom: 0.5px solid #999; padding: 4px 2px; font-size: 7.5px; text-transform: uppercase; letter-spacing: 2px; color: #555; }
+  .opeed-kicker { font-size: 10px; font-weight: 900; letter-spacing: 3px; text-transform: uppercase; color: #c41e1e; margin-bottom: 5px; }
+  .opeed-page .opeed-headline { font-family: 'Playfair Display', serif; font-size: 44px; font-weight: 900; line-height: 1.08; letter-spacing: -0.5px; color: #111; margin-bottom: 6px; max-width: 92%; }
+  .opeed-deck { font-size: 14px; line-height: 1.5; font-style: italic; color: #555; max-width: 88%; margin-bottom: 8px; }
+  .opeed-byline-row { display: flex; justify-content: space-between; align-items: baseline; border-top: 1.5px solid #1a1a1a; border-bottom: 0.5px solid #999; padding: 5px 2px; font-size: 10px; text-transform: uppercase; letter-spacing: 2px; color: #555; }
   .opeed-byline-row strong { color: #1a1a1a; font-weight: 700; }
   .opeed-figure { margin: 0 0 9px; }
-  .opeed-figure img { width: 100%; height: 38mm; object-fit: cover; object-position: center 25%; display: block; }
+  .opeed-figure img { width: 100%; height: 72mm; object-fit: cover; object-position: center 25%; display: block; }
   .opeed-cont-header { display: flex; justify-content: space-between; align-items: baseline; border-bottom: 1px solid #999; padding-bottom: 4px; margin-bottom: 8px; }
-  .opeed-cont-title { font-family: 'Playfair Display', serif; font-size: 11px; font-weight: 700; font-style: italic; color: #333; }
-  .opeed-cont-from { font-size: 7px; text-transform: uppercase; letter-spacing: 2px; color: #999; }
-  .opeed-body { font-size: 7.6px; line-height: 1.5; color: #1a1a1a; column-count: 3; column-gap: 16px; column-rule: 0.5px solid #ccc; text-align: justify; hyphens: auto; }
+  .opeed-cont-title { font-family: 'Playfair Display', serif; font-size: 14px; font-weight: 700; font-style: italic; color: #333; }
+  .opeed-cont-from { font-size: 9px; text-transform: uppercase; letter-spacing: 2px; color: #999; }
+  .opeed-body { font-size: 9px; line-height: 1.52; color: #1a1a1a; column-count: 4; column-gap: 18px; column-rule: 0.5px solid #ccc; text-align: justify; hyphens: auto; }
   .opeed-body p { margin-bottom: 4px; text-indent: 10px; }
   .opeed-body p:first-child { text-indent: 0; }
-  .opeed-body p:first-child::first-letter { font-family: 'Playfair Display', serif; font-size: 26px; font-weight: 900; float: left; line-height: 0.85; margin: 3px 3px 0 0; color: #c41e1e; }
+  .opeed-body p:first-child::first-letter { font-family: 'Playfair Display', serif; font-size: 34px; font-weight: 900; float: left; line-height: 0.85; margin: 3px 3px 0 0; color: #c41e1e; }
   .opeed-body h2 { font-family: 'Playfair Display', serif; font-size: 11px; font-weight: 800; margin: 8px 0 3px; color: #1a1a1a; break-after: avoid; }
   .opeed-body h3 { font-size: 9px; font-weight: 700; margin: 6px 0 3px; }
   .opeed-body a { color: #c41e1e; text-decoration: underline; text-decoration-thickness: 0.5px; }
@@ -956,10 +999,10 @@ export async function GET(req: NextRequest) {
   .opeed-body hr { border: 0; border-top: 1px solid #ccc; margin: 8px 0; break-inside: avoid; }
   .opeed-body ul, .opeed-body ol { padding-left: 16px; margin: 4px 0 6px; }
   .opeed-body li { margin-bottom: 3px; }
-  .opeed-cont-to { text-align: right; font-size: 8px; text-transform: uppercase; letter-spacing: 2px; color: #c41e1e; font-style: italic; margin-top: 10px; }
+  .opeed-cont-to { text-align: right; font-size: 10px; text-transform: uppercase; letter-spacing: 2px; color: #c41e1e; font-style: italic; margin-top: 10px; }
   .opeed-read-on { display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 10px; padding-top: 8px; border-top: 1px solid #ccc; }
   .opeed-read-on .qr-img { width: 58px; height: 58px; }
-  .opeed-read-on-text { font-size: 7.5px; color: #666; font-style: italic; text-transform: uppercase; letter-spacing: 1.5px; line-height: 1.6; text-align: left; }
+  .opeed-read-on-text { font-size: 10px; color: #666; font-style: italic; text-transform: uppercase; letter-spacing: 1.5px; line-height: 1.6; text-align: left; }
 
   /* ── QR read-more rows (truncated stories) ── */
   .qr-row { display: flex; align-items: center; justify-content: flex-end; gap: 5px; margin-top: 4px; }
@@ -975,21 +1018,23 @@ export async function GET(req: NextRequest) {
   /* ── Column articles (compact newspaper style) ── */
   .col-article { margin-bottom: 10px; overflow: hidden; }
   .col-art-img { width: 62%; aspect-ratio: 16/9; height: auto; object-fit: cover; display: block; margin: 0 auto 4px; }
-  .col-article h3 { font-family: 'Playfair Display', serif; font-size: 13px; font-weight: 900; line-height: 1.15; margin-bottom: 1px; }
+  .col-article h3 { font-family: 'Playfair Display', serif; font-size: 18px; font-weight: 900; line-height: 1.15; margin-bottom: 1px; }
   .col-title-hi { font-size: 8px; color: #777; font-style: italic; margin-bottom: 2px; }
   .col-byline { font-size: 6.5px; text-transform: uppercase; letter-spacing: 1.5px; color: #999; margin-bottom: 3px; }
-  .col-body { font-size: 8px; line-height: 1.45; color: #444; text-align: justify; hyphens: auto; text-indent: 10px; }
+  .col-body { font-size: 9px; line-height: 1.48; color: #444; text-align: justify; hyphens: auto; text-indent: 10px; column-count: 2; column-gap: 14px; column-rule: 0.5px solid #ddd; }
   .col-art-grid { display: grid; grid-template-columns: 1fr 90px; gap: 8px; align-items: start; }
   .col-art-thumb { width: 90px; height: 70px; object-fit: cover; object-position: center 20%; }
 
   /* ── Key facts, infographics, quotes ── */
-  .keyfacts-box { background: #f7f7f7; border: 1px solid #ddd; padding: 8px 10px; margin: 8px 0; }
-  .keyfacts-box .kf-title { font-size: 7px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: #c41e1e; margin-bottom: 4px; }
-  .keyfacts-box .kf-item { font-size: 7.5px; line-height: 1.5; color: #333; padding: 2px 0; border-bottom: 0.5px dotted #d4c9b8; }
+  .keyfacts-box { border-top: 2px solid #1a1a1a; border-bottom: 0.5px solid #999; padding: 5px 0 4px; margin: 8px 0; }
+  .keyfacts-box .kf-title { font-size: 7px; font-weight: 900; text-transform: uppercase; letter-spacing: 2px; color: #c41e1e; margin-bottom: 3px; }
+  .keyfacts-box .kf-item { font-size: 7.5px; line-height: 1.5; color: #333; padding: 2px 0; border-bottom: 0.5px dotted #ccc; }
+  .keyfacts-box .kf-item:last-child { border-bottom: none; }
 
-  .infographic-box { background: #1a1a1a; color: #fff; padding: 10px 12px; margin: 8px 0; }
-  .infographic-box .kf-title { font-size: 7px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: #ff9933; margin-bottom: 4px; }
-  .infographic-box .info-item { font-size: 7.5px; line-height: 1.5; color: #ddd; padding: 2px 0; border-bottom: 0.5px solid #333; }
+  .infographic-box { border-top: 2px solid #1a1a1a; border-bottom: 0.5px solid #999; padding: 5px 0 4px; margin: 8px 0; }
+  .infographic-box .kf-title { font-size: 7px; font-weight: 900; text-transform: uppercase; letter-spacing: 2px; color: #c41e1e; margin-bottom: 3px; }
+  .infographic-box .info-item { font-size: 7.5px; line-height: 1.5; color: #333; padding: 2px 0; border-bottom: 0.5px dotted #ccc; }
+  .infographic-box .info-item:last-child { border-bottom: none; }
 
   .timeline-box { border-left: 2px solid #c41e1e; padding: 6px 0 6px 12px; margin: 8px 0; }
   .timeline-box .kf-title { font-size: 7px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: #c41e1e; margin-bottom: 4px; }
@@ -1020,37 +1065,57 @@ export async function GET(req: NextRequest) {
   }
 
   /* ── Front page ── */
-  .front-page .masthead { text-align: center; border-bottom: 3px double #1a1a1a; padding-bottom: 10px; margin-bottom: 16px; }
-  .front-page .masthead h1 { font-family: 'Playfair Display', serif; font-size: 48px; font-weight: 900; letter-spacing: -1px; line-height: 1; }
-  .front-page .masthead .date { font-size: 9px; text-transform: uppercase; letter-spacing: 4px; color: #555; margin-top: 2px; }
-  .front-page .masthead .tagline { font-size: 7px; text-transform: uppercase; letter-spacing: 4px; color: #888; margin-top: 1px; }
-  .front-page .masthead .byline-tag { font-size: 6.5px; color: #c41e1e; letter-spacing: 2px; text-transform: uppercase; margin-top: 2px; }
+  .front-page .masthead { margin-bottom: 10px; }
+  .mh-utility { display: flex; justify-content: space-between; font-size: 9px; text-transform: uppercase; letter-spacing: 1.5px; color: #555; border-bottom: 0.5px solid #999; padding-bottom: 3px; }
+  .mh-name { position: relative; text-align: center; padding: 8px 0 4px; }
+  .mh-name h1 { font-family: 'Playfair Display', serif; font-size: 76px; font-weight: 900; letter-spacing: -1px; line-height: 1; color: #111; }
+  .mh-crest { position: absolute; left: 6px; top: 50%; transform: translateY(-50%); width: 46px; height: 46px; background: #c41e1e; color: #fff; font-family: 'Noto Serif', serif; font-weight: 700; font-size: 22px; display: flex; align-items: center; justify-content: center; }
+  .mh-tagstrip { display: flex; align-items: center; gap: 10px; margin-top: 2px; }
+  .mh-rule { flex: 1; border-top: 1.5px solid #1a1a1a; }
+  .mh-tag { font-size: 9.5px; text-transform: uppercase; letter-spacing: 4.5px; color: #444; white-space: nowrap; }
 
   /* ── Front page 3-column layout ── */
-  .fp-layout { display: grid; grid-template-columns: 5fr 1px 2.5fr; gap: 14px; margin-top: 10px; }
-  .fp-rule { background: #bbb; }
+  .fp-layout { display: grid; grid-template-columns: 5fr 1px 2.2fr; gap: 12px; margin-top: 0; }
+  .fp-rule { background: #ccc; width: 0.5px; justify-self: center; }
   .fp-main { }
   .fp-sidebar { }
 
-  .fp-lead { margin-bottom: 10px; border-bottom: 1.5px solid #1a1a1a; padding-bottom: 8px; }
-  .fp-excerpt { font-size: 8px; line-height: 1.5; color: #444; column-count: 2; column-gap: 14px; column-rule: 0.5px solid #ddd; margin-top: 6px; text-align: justify; }
-  .fp-sub-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  /* Lead story — headline across the main well, HT-style */
+  .fp-lead { margin-bottom: 8px; }
+  .fp-lead-head { font-family: 'Playfair Display', serif; font-size: 46px; font-weight: 900; line-height: 1.04; letter-spacing: -0.5px; color: #111; margin-bottom: 4px; }
+  .fp-lead-deck { font-size: 13px; font-style: italic; color: #555; line-height: 1.45; margin-bottom: 5px; max-width: 95%; }
+  .fp-lead-byline { font-size: 9px; text-transform: uppercase; letter-spacing: 1.5px; color: #666; border-top: 0.5px solid #999; border-bottom: 0.5px solid #ddd; padding: 3px 0; margin-bottom: 6px; display: flex; gap: 10px; }
+  .fp-lead-byline strong { color: #111; }
+  .fp-dateline { color: #c41e1e; font-weight: 700; }
+  .fp-lead-grid { display: grid; grid-template-columns: 3fr 2fr; gap: 12px; align-items: start; }
+  .fp-excerpt { font-size: 9px; line-height: 1.52; color: #333; column-count: 3; column-gap: 14px; column-rule: 0.5px solid #ddd; text-align: justify; hyphens: auto; }
+  .fp-lead-fig img { width: 100%; aspect-ratio: 16/10; object-fit: cover; object-position: center 22%; display: block; }
+  .fp-lead-fig figcaption { font-size: 6.5px; color: #666; padding-top: 2px; line-height: 1.4; border-bottom: 0.5px solid #ddd; padding-bottom: 3px; }
+  .jump { font-size: 6.5px; color: #c41e1e; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; white-space: nowrap; }
 
-  .front-page .hl { margin-bottom: 8px; border-bottom: 0.5px solid #ddd; padding-bottom: 6px; }
-  .front-page .hl h2 { font-family: 'Playfair Display', serif; font-size: 13px; font-weight: 900; line-height: 1.15; }
-  .front-page .hl .cat { font-size: 6.5px; color: #c41e1e; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 1px; }
-  .front-page .hl p { font-size: 8px; color: #444; margin-top: 2px; line-height: 1.4; }
-  .front-page .hl .hl-byline { font-size: 6px; color: #999; text-transform: uppercase; letter-spacing: 1px; margin-top: 2px; }
+  .fp-cutoff { border: none; border-top: 1px solid #1a1a1a; margin: 8px 0; }
 
-  .fp-sidebar .hl h2 { font-size: 11px; }
-  .fp-sidebar .hl p { font-size: 7px; }
+  /* Sub-stories — three columns split by hairlines, no card boxes */
+  .fp-sub-grid { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; }
+  .fp-sub { padding: 0 10px; border-left: 0.5px solid #ccc; }
+  .fp-sub:first-child { padding-left: 0; border-left: none; }
+  .fp-sub:last-child { padding-right: 0; }
+  .fp-sub-img { width: 100%; height: 130px; object-fit: cover; object-position: center 20%; margin-bottom: 4px; display: block; }
+  .fp-sub h2 { font-family: 'Playfair Display', serif; font-size: 19px; font-weight: 900; line-height: 1.12; color: #111; margin-bottom: 2px; }
+  .fp-sub-byline { font-size: 8px; text-transform: uppercase; letter-spacing: 1.2px; color: #777; margin-bottom: 3px; display: flex; gap: 8px; }
+  .fp-sub-byline strong { color: #222; }
+  .fp-sub p { font-size: 9px; color: #333; line-height: 1.48; text-align: justify; hyphens: auto; }
 
-  /* Vertical TOC in right sidebar */
-  .toc-vertical { border: 1.5px solid #1a1a1a; padding: 8px 10px; margin-top: 10px; }
-  .toc-vertical h3 { font-size: 7px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 4px; border-bottom: 0.5px solid #ccc; padding-bottom: 3px; }
-  .toc-v-item { display: flex; justify-content: space-between; font-size: 7px; padding: 2px 0; border-bottom: 0.5px dotted #ddd; }
-  .toc-v-item span:first-child { font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; }
-  .toc-v-item .page-no { color: #c41e1e; font-weight: 700; }
+  /* Right rail briefs */
+  .front-page .hl { margin-bottom: 7px; border-bottom: 0.5px solid #ddd; padding-bottom: 6px; }
+  .front-page .hl h2 { font-family: 'Playfair Display', serif; font-size: 15px; font-weight: 900; line-height: 1.15; color: #111; }
+  .front-page .hl .cat { font-size: 8px; color: #c41e1e; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 1px; }
+  .front-page .hl p { font-size: 9px; color: #444; margin-top: 2px; line-height: 1.42; }
+
+  /* Bottom index strip — replaces the boxed TOC */
+  .fp-index { display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px; border-top: 1.5px solid #1a1a1a; border-bottom: 0.5px solid #999; padding: 5px 0; margin-top: 10px; font-size: 9px; text-transform: uppercase; letter-spacing: 1px; color: #444; }
+  .fp-index-item strong { color: #111; font-weight: 700; }
+  .fp-index-sep { color: #ccc; }
 
   /* ── Single leftover article: full width, body flows in 3 columns ── */
   .single-col .col-article { margin-bottom: 10px; }
@@ -1084,29 +1149,27 @@ export async function GET(req: NextRequest) {
   .promo-body { font-size: 7.5px; line-height: 1.5; opacity: 0.85; margin-bottom: 6px; }
   .promo-cta { font-size: 7.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; }
 
-  /* ── AI edition blocks ── */
-  .banner-block { text-align: center; border-bottom: 2px solid #1a1a1a; padding: 4px 0 10px; margin-bottom: 10px; }
-  .banner-headline { font-family: 'Playfair Display', serif; font-size: 34px; font-weight: 900; line-height: 1.05; letter-spacing: -0.5px; }
-  .banner-deck { font-size: 10px; font-style: italic; color: #555; margin-top: 4px; }
+  /* ── AI edition blocks — newsprint rules, no card boxes ── */
+  .glance-box { border-top: 2px solid #1a1a1a; padding-top: 4px; margin-bottom: 9px; }
+  .glance-box h3 { font-size: 9.5px; font-weight: 900; text-transform: uppercase; letter-spacing: 2.5px; color: #c41e1e; padding-bottom: 3px; margin-bottom: 2px; }
+  .glance-item { font-size: 9px; line-height: 1.5; color: #333; padding: 2.5px 0; border-bottom: 0.5px dotted #ccc; }
+  .glance-item:last-child { border-bottom: 0.5px solid #999; }
 
-  .glance-box { border: 2px solid #1a1a1a; padding: 8px 10px; margin-bottom: 10px; background: #fbf9f4; }
-  .glance-box h3 { font-size: 8px; font-weight: 700; text-transform: uppercase; letter-spacing: 2.5px; color: #c41e1e; border-bottom: 1px solid #1a1a1a; padding-bottom: 3px; margin-bottom: 5px; }
-  .glance-item { font-size: 7.5px; line-height: 1.5; color: #333; padding: 2px 0; border-bottom: 0.5px dotted #ccc; }
-  .glance-item:last-child { border-bottom: none; }
-
-  .editorial-box { border-top: 3px double #1a1a1a; border-bottom: 3px double #1a1a1a; padding: 10px 14px; margin-top: 12px; background: #fdfcf9; }
-  .editorial-box .ed-label { font-size: 7px; font-weight: 700; text-transform: uppercase; letter-spacing: 3px; color: #c41e1e; margin-bottom: 3px; }
-  .editorial-box h3 { font-family: 'Playfair Display', serif; font-size: 14px; font-weight: 900; margin-bottom: 5px; }
-  .editorial-box p { font-size: 8px; line-height: 1.55; color: #333; text-align: justify; margin-bottom: 4px; text-indent: 12px; }
+  /* Editorial — the paper's comment band, three columns across the page */
+  .editorial-box { border-top: 3px double #1a1a1a; padding: 8px 0 6px; margin-top: 10px; }
+  .editorial-box .ed-label { font-size: 7px; font-weight: 900; text-transform: uppercase; letter-spacing: 3px; color: #c41e1e; margin-bottom: 2px; }
+  .editorial-box h3 { font-family: 'Playfair Display', serif; font-size: 20px; font-weight: 900; font-style: italic; margin-bottom: 4px; color: #111; }
+  .editorial-box .ed-cols { column-count: 5; column-gap: 14px; column-rule: 0.5px solid #ddd; }
+  .editorial-box p { font-size: 9px; line-height: 1.5; color: #333; text-align: justify; margin-bottom: 4px; text-indent: 10px; hyphens: auto; }
   .editorial-box p:first-of-type { text-indent: 0; }
 
-  .qod-box { border-left: 3px solid #c41e1e; background: #faf7f2; padding: 8px 10px; margin: 10px 0; }
-  .qod-box .qod-label { font-size: 6.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 2.5px; color: #c41e1e; margin-bottom: 3px; }
-  .qod-box .qod-text { font-family: 'Playfair Display', serif; font-size: 10px; font-style: italic; line-height: 1.4; color: #222; }
-  .qod-box .qod-by { font-size: 7px; color: #777; margin-top: 3px; text-transform: uppercase; letter-spacing: 1px; }
+  .qod-box { text-align: center; border-top: 0.5px solid #999; padding: 7px 6px 2px; margin-top: 2px; }
+  .qod-box .qod-label { font-size: 6px; font-weight: 700; text-transform: uppercase; letter-spacing: 2.5px; color: #c41e1e; margin-bottom: 3px; }
+  .qod-box .qod-text { font-family: 'Playfair Display', serif; font-size: 13px; font-style: italic; line-height: 1.4; color: #222; }
+  .qod-box .qod-by { font-size: 6.5px; color: #777; margin-top: 3px; text-transform: uppercase; letter-spacing: 1px; }
 
   /* ── Author bio box (human bylines only) ── */
-  .author-box { display: flex; gap: 8px; align-items: flex-start; background: #f7f5ef; border-left: 2px solid #c41e1e; padding: 6px 9px; margin: 6px 0; }
+  .author-box { display: flex; gap: 8px; align-items: flex-start; border-top: 0.5px solid #ccc; border-bottom: 0.5px solid #ccc; padding: 5px 2px; margin: 6px 0; }
   .ab-img { width: 30px; height: 30px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
   .ab-name { font-size: 8px; font-weight: 700; }
   .ab-role { font-size: 6.5px; color: #999; text-transform: uppercase; letter-spacing: 1px; }
@@ -1115,15 +1178,16 @@ export async function GET(req: NextRequest) {
   [data-slug] { cursor: pointer; }
   [data-slug]:not(.opeed-page):hover h2, [data-slug]:not(.opeed-page):hover h3 { color: #c41e1e; }
 
-  /* ── Front-page teaser strip ── */
-  .fp-teasers { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: #0f2a4a; padding: 6px; margin-bottom: 10px; }
-  .teaser { display: flex; gap: 6px; padding: 4px 8px; align-items: center; border-right: 0.5px solid rgba(255,255,255,0.2); }
+  /* ── Front-page "Inside" teaser strip — white, rule-bound, newsprint ── */
+  .fp-teasers { display: grid; grid-template-columns: 40px repeat(6, 1fr); align-items: center; border-top: 1.5px solid #1a1a1a; border-bottom: 0.5px solid #1a1a1a; padding: 5px 0; margin-bottom: 10px; }
+  .teasers-label { writing-mode: vertical-rl; transform: rotate(180deg); font-size: 9px; font-weight: 900; text-transform: uppercase; letter-spacing: 3px; color: #c41e1e; text-align: center; border-right: 0.5px solid #ccc; padding: 2px 0; height: 100%; display: flex; align-items: center; justify-content: center; }
+  .teaser { display: flex; gap: 6px; padding: 2px 8px; align-items: center; border-right: 0.5px solid #ccc; }
   .teaser:last-child { border-right: none; }
-  .teaser-img { width: 44px; height: 40px; flex-shrink: 0; background-size: cover; background-position: center 20%; border: 1px solid rgba(255,255,255,0.3); }
-  .teaser-cat { font-size: 5.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; color: #ff9933; margin-bottom: 1px; }
-  .teaser h4 { font-family: 'Playfair Display', serif; font-size: 8px; font-weight: 700; line-height: 1.2; color: #ffffff; }
+  .teaser-img { width: 64px; height: 56px; flex-shrink: 0; background-size: cover; background-position: center 20%; }
+  .teaser-cat { font-size: 7.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; color: #c41e1e; margin-bottom: 1px; }
+  .teaser h4 { font-family: 'Playfair Display', serif; font-size: 11px; font-weight: 700; line-height: 1.2; color: #111; }
 
-  .page-ad-wrap { width: 210mm; max-width: 210mm; margin: 0 auto 20px; }
+  .page-ad-wrap { width: 420mm; max-width: 420mm; margin: 0 auto 20px; }
   @media print { .page-ad-wrap { display: none; } }
 
   /* ── Large display ad (bottom of front page + every 3rd page) ── */
@@ -1163,7 +1227,7 @@ export async function GET(req: NextRequest) {
 
   @media print {
     .nav-bar { display: none; }
-    .page { box-shadow: none; border: none; margin: 0; padding: 10px 14px 40px; page-break-after: always; background: #fff; width: 210mm; height: 297mm; }
+    .page { box-shadow: none; border: none; margin: 0; padding: 12px 16px 44px; page-break-after: always; background: #fff; width: 420mm; height: 594mm; }
     body { background: #fff; }
   }
   @media screen and (max-width: 768px) {
@@ -1203,23 +1267,17 @@ export async function GET(req: NextRequest) {
   // Get first few sentences from lead story for front page excerpt
   const leadExcerpt = frontPageHeadlines[0] ? stripHtml(sections[frontPageHeadlines[0].sectionName]?.[0]?.content || "").split(/[.!?]/).slice(0, 4).join(". ") + "." : "";
 
-  const bannerHTML = edition?.bannerHeadline ? `
-    <div class="banner-block">
-      <h2 class="banner-headline">${edition.bannerHeadline}</h2>
-      ${edition.deck ? `<p class="banner-deck">${edition.deck}</p>` : ""}
-    </div>` : "";
-
   const glanceHTML = edition?.atAGlance?.length ? `
     <div class="glance-box">
-      <h3>Today at a Glance</h3>
-      ${edition.atAGlance.map(g => `<div class="glance-item">▸ ${g}</div>`).join("")}
+      <h3>At a Glance</h3>
+      ${edition.atAGlance.map(g => `<div class="glance-item">${g}</div>`).join("")}
     </div>` : "";
 
   const editorialHTML = edition?.editorial?.body ? `
     <div class="editorial-box">
-      <div class="ed-label">✒ The LoktantraVani View</div>
+      <div class="ed-label">Comment · The LoktantraVani View</div>
       <h3>${edition.editorial.title || "Editorial"}</h3>
-      ${edition.editorial.body.split(/\n+/).map(p => `<p>${p}</p>`).join("")}
+      <div class="ed-cols">${edition.editorial.body.split(/\n+/).map(p => `<p>${p}</p>`).join("")}</div>
     </div>` : "";
 
   const qodHTML = edition?.quoteOfDay?.text ? `
@@ -1231,7 +1289,7 @@ export async function GET(req: NextRequest) {
 
   // Teaser strip: 4 boxed mini-stories with thumbnails, IE-style
   const teaserPool = [
-    ...frontPageHeadlines.slice(5, 9),
+    ...frontPageHeadlines.slice(5, 13),
     ...paperPosts.filter((p: ArticleData) => p.imageUrl && !p.imageUrl.startsWith("data:")),
   ];
   const seenTeasers = new Set<string>();
@@ -1239,9 +1297,10 @@ export async function GET(req: NextRequest) {
     if (seenTeasers.has(t.title)) return false;
     seenTeasers.add(t.title);
     return true;
-  }).slice(0, 4);
+  }).slice(0, 6);
   const teaserHTML = teasers.length >= 3 ? `
     <div class="fp-teasers">
+      <div class="teasers-label">Inside</div>
       ${teasers.map(t => `
         <div class="teaser">
           ${t.imageUrl && !t.imageUrl.startsWith("data:") ? `<div class="teaser-img" style="background-image:url('${t.imageUrl}')"></div>` : ""}
@@ -1252,42 +1311,58 @@ export async function GET(req: NextRequest) {
         </div>`).join("")}
     </div>` : "";
 
+  // HT-style lead: the AI banner headline (when present) IS the lead headline —
+  // a broadsheet doesn't run a hammer and a lead head for the same story.
+  const lead0 = frontPageHeadlines[0];
+  const leadHeadline = edition?.bannerHeadline || lead0?.title || "";
+  const leadDeck = edition?.deck || (lead0?.summary || "").slice(0, 200);
+
   const frontPageHTML = `
   <div class="page front-page" id="page-0">
     <div class="masthead">
-      <h1>LoktantraVani</h1>
-      <div class="date">${dateFormatted}</div>
-      <div class="tagline">${lang === "hi" ? "भारत का पहला एआई समाचार पत्र — हिंदी संस्करण" : "India's First AI Newspaper — Neo Bharat Edition"}</div>
-      <div class="byline-tag">${paperPosts.length} Articles · ${allSections.length} Sections · ${totalPages} Pages${edition ? " · AI-Composed Edition" : ""}</div>
+      <div class="mh-utility">
+        <span>loktantravani.in</span>
+        <span>${lang === "hi" ? "नई दिल्ली · हिंदी संस्करण" : "New Delhi · Neo Bharat Edition"}</span>
+        <span>${dateFormatted} · ${totalPages} Pages</span>
+      </div>
+      <div class="mh-name">
+        <div class="mh-crest">लो</div>
+        <h1>LoktantraVani</h1>
+      </div>
+      <div class="mh-tagstrip"><span class="mh-rule"></span><span class="mh-tag">${lang === "hi" ? "भारत का पहला एआई समाचार पत्र" : "First in AI · Last Word in News"}</span><span class="mh-rule"></span></div>
     </div>
 
     ${teaserHTML}
 
-    ${bannerHTML}
-
-    <!-- Main content: 3 columns — stories | rule | sidebar with TOC -->
+    <!-- Main news grid: stories | hairline | right rail -->
     <div class="fp-layout">
       <div class="fp-main">
-        <!-- Lead Story -->
-        ${frontPageHeadlines[0] ? `
-        <div class="hl fp-lead">
-          <div class="cat">${frontPageHeadlines[0].sectionName} <span style="color:#888;font-weight:400;">· p.${frontPageHeadlines[0].pageNo}</span></div>
-          ${frontPageHeadlines[0].imageUrl && !frontPageHeadlines[0].imageUrl.startsWith("data:") ? `<img src="${frontPageHeadlines[0].imageUrl}" alt="" style="width:100%;aspect-ratio:16/9;height:auto;object-fit:cover;margin-bottom:6px;" />` : ""}
-          <h2 style="font-size:24px;">${frontPageHeadlines[0].title}</h2>
-          <p style="font-size:10px;line-height:1.5;margin-top:4px;">${(frontPageHeadlines[0].summary || "").slice(0, 250)}</p>
-          <div class="fp-excerpt">${leadExcerpt.slice(0, 500)}</div>
-          <div class="hl-byline">By ${frontPageHeadlines[0].author} · <span style="color:#c41e1e;">More on page ${frontPageHeadlines[0].pageNo} →</span></div>
+        <!-- Lead Story: headline across main well, body columns + photo right -->
+        ${lead0 ? `
+        <div class="fp-lead" ${lead0.slug ? `data-slug="${lead0.slug}"` : ""}>
+          <h2 class="fp-lead-head">${leadHeadline}</h2>
+          ${leadDeck ? `<p class="fp-lead-deck">${leadDeck}</p>` : ""}
+          <div class="fp-lead-byline"><strong>${lead0.author}</strong><span class="fp-dateline">${lead0.sectionName}</span></div>
+          <div class="fp-lead-grid">
+            <div class="fp-excerpt">${leadExcerpt.slice(0, 520)} <span class="jump">Full report on P${lead0.pageNo}</span></div>
+            ${lead0.imageUrl && !lead0.imageUrl.startsWith("data:") ? `
+            <figure class="fp-lead-fig">
+              <img src="${lead0.imageUrl}" alt="" onerror="this.parentNode.style.display='none'" />
+              <figcaption>${(lead0.origTitle || lead0.title).slice(0, 90)}</figcaption>
+            </figure>` : ""}
+          </div>
         </div>` : ""}
 
-        <!-- 2-column sub-stories -->
+        <hr class="fp-cutoff" />
+
+        <!-- Sub-stories: three columns split by hairlines, newsprint style -->
         <div class="fp-sub-grid">
-          ${frontPageHeadlines.slice(1, 5).map(h => `
-            <div class="hl">
-              <div class="cat">${h.sectionName}</div>
-              ${h.imageUrl && !h.imageUrl.startsWith("data:") ? `<img src="${h.imageUrl}" alt="" style="width:100%;height:80px;object-fit:cover;object-position:center 20%;margin-bottom:4px;" />` : ""}
+          ${frontPageHeadlines.slice(1, 5).map((h, i) => `
+            <div class="fp-sub" ${h.slug ? `data-slug="${h.slug}"` : ""}>
+              ${i < 2 && h.imageUrl && !h.imageUrl.startsWith("data:") ? `<img class="fp-sub-img" src="${h.imageUrl}" alt="" onerror="this.style.display='none'" />` : ""}
               <h2>${h.title}</h2>
-              <p>${(h.summary || "").slice(0, 120)}</p>
-              <div class="hl-byline">By ${h.author} · <span style="color:#c41e1e;">p.${h.pageNo} →</span></div>
+              <div class="fp-sub-byline"><strong>${h.author}</strong><span class="fp-dateline">${h.sectionName}</span></div>
+              <p>${(h.summary || "").slice(0, i < 2 ? 170 : 260)} <span class="jump">P${h.pageNo}</span></p>
             </div>
           `).join("")}
         </div>
@@ -1295,32 +1370,29 @@ export async function GET(req: NextRequest) {
 
       <div class="fp-rule"></div>
 
-      <!-- Right sidebar: at a glance + more headlines + TOC at bottom -->
+      <!-- Right rail: glance digest, briefs, quote -->
       <div class="fp-sidebar">
         ${glanceHTML}
-        ${frontPageHeadlines.slice(5, 10).map(h => `
-          <div class="hl">
+        ${frontPageHeadlines.slice(5, 12).map(h => `
+          <div class="hl" ${h.slug ? `data-slug="${h.slug}"` : ""}>
             <div class="cat">${h.sectionName}</div>
             <h2>${h.title}</h2>
-            <p>${(h.summary || "").slice(0, 80)} <span style="color:#c41e1e;font-size:7px;">→ p.${h.pageNo}</span></p>
+            <p>${(h.summary || "").slice(0, 85)} <span class="jump">P${h.pageNo}</span></p>
           </div>
         `).join("")}
-
         ${qodHTML}
-
-        <!-- Today's Paper TOC — vertical on right -->
-        <div class="toc-vertical">
-          <h3>Today's Paper</h3>
-          ${allSections.map(s => {
-            const pg = sectionStartPages[s] || 2;
-            const count = sections[s]?.length || 0;
-            return `<div class="toc-v-item"><span>${s} (${count})</span><span class="page-no">p.${pg}</span></div>`;
-          }).join("")}
-        </div>
       </div>
     </div>
 
+    <!-- Bottom bands: comment feature + index strip -->
     ${editorialHTML}
+
+    <div class="fp-index">
+      ${allSections.map(s => {
+        const pg = sectionStartPages[s] || 2;
+        return `<span class="fp-index-item"><strong>${s}</strong> P${pg}</span>`;
+      }).join("<span class='fp-index-sep'>|</span>")}
+    </div>
 
     ${renderDisplayAd(adsData[0] || null, 0)}
 
