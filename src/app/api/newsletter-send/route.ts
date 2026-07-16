@@ -10,6 +10,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { setDoc } from "@/lib/firestore-rest";
+import { unsubToken } from "@/lib/unsub";
 import { verifyAuth, unauthorized } from "@/lib/api-auth";
 
 export const maxDuration = 300;
@@ -18,6 +19,10 @@ const PROJECT_ID = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || "loktantravani
 const BASE = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents`;
 const RESEND_KEY = () => (process.env.RESEND_API_KEY || "").trim();
 const SITE = (process.env.NEXT_PUBLIC_SITE_URL || "https://loktantravani.in").replace(/\/$/, "");
+// The daily brief is written by the AI newsroom — it mails from its own desk.
+const NEWSLETTER_FROM = (process.env.RESEND_FROM_NEWSLETTER || "LoktantraVani AI <ai@loktantravani.in>").trim();
+
+const unsubUrl = (email: string) => `${SITE}/api/subscribe/unsubscribe?email=${encodeURIComponent(email)}&token=${unsubToken(email)}`;
 const MAX_RECIPIENTS = 500;
 
 const str = (f: Record<string, any> | undefined, k: string) => f?.[k]?.stringValue || "";
@@ -132,7 +137,7 @@ function buildEmailHTML(dateFormatted: string, plan: any, stories: { title: stri
     </div>
     <div style="padding:16px 24px;border-top:1px solid #e0dcd2;text-align:center;">
       <div style="font-size:11px;color:#888;">LoktantraVani — लोकतंत्रवाणी · India's 1st AI Newspaper</div>
-      <div style="font-size:10px;color:#aaa;margin-top:4px;">You receive this because you subscribed at loktantravani.in</div>
+      <div style="font-size:10px;color:#aaa;margin-top:4px;">You receive this because you subscribed at loktantravani.in · <a href="{{UNSUB_URL}}" style="color:#aaa;">Unsubscribe</a></div>
     </div>
   </div>
   </div>`;
@@ -154,9 +159,11 @@ export async function GET(req: NextRequest) {
 
   const date = req.nextUrl.searchParams.get("date") || new Date().toISOString().split("T")[0];
   const force = req.nextUrl.searchParams.get("force") === "true";
+  // ?test=someone@x.com sends only to that address and skips the daily marker
+  const testTo = (req.nextUrl.searchParams.get("test") || "").toLowerCase().trim();
 
   // Once-per-day guard
-  if (!force) {
+  if (!force && !testTo) {
     try {
       const marker = await fetch(`${BASE}/newsletter/${date}`, { cache: "no-store" });
       if (marker.ok) {
@@ -168,11 +175,12 @@ export async function GET(req: NextRequest) {
     } catch { /* proceed */ }
   }
 
-  const [subscribers, plan, stories] = await Promise.all([
-    fetchSubscribers(),
+  const [fetchedSubs, plan, stories] = await Promise.all([
+    testTo ? Promise.resolve([]) : fetchSubscribers(),
     fetchEditionPlan(date),
     fetchTopStories(),
   ]);
+  const subscribers = testTo ? [{ email: testTo, name: "" }] : fetchedSubs;
 
   if (subscribers.length === 0) return NextResponse.json({ error: "No active subscribers found" }, { status: 422 });
   if (stories.length === 0) return NextResponse.json({ error: "No published stories to send" }, { status: 422 });
@@ -190,10 +198,14 @@ export async function GET(req: NextRequest) {
   const errors: string[] = [];
   for (let i = 0; i < subscribers.length; i += 100) {
     const batch = subscribers.slice(i, i + 100).map(s => ({
-      from: "LoktantraVani <noreply@loktantravani.com>",
+      from: NEWSLETTER_FROM,
       to: s.email,
       subject,
-      html,
+      html: html.replace("{{UNSUB_URL}}", unsubUrl(s.email)),
+      headers: {
+        "List-Unsubscribe": `<${unsubUrl(s.email)}>`,
+        "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+      },
     }));
     try {
       const res = await fetch("https://api.resend.com/emails/batch", {
@@ -211,8 +223,9 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  // Record the send
+  // Record the send (not for test mode)
   try {
+    if (testTo) return NextResponse.json({ success: sent > 0, test: testTo, date, subject, sent, errors: errors.length ? errors : undefined });
     await setDoc(`newsletter/${date}`, {
       sentAt: new Date().toISOString(),
       recipients: sent,
