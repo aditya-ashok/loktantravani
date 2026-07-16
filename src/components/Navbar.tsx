@@ -88,7 +88,10 @@ export default function Navbar() {
       <div className="border-b border-[var(--nyt-border)] dark:border-[var(--nyt-border)] px-4 md:px-8 h-8 flex items-center">
         {/* Left: date — truncates on mobile to avoid overlap */}
         <span className="font-inter text-[var(--nyt-gray)] flex items-baseline gap-1 sm:gap-2 tracking-wide min-w-0 flex-1">
-          <span className="text-[9px] sm:text-[11px] font-bold text-[var(--nyt-black)] dark:text-white truncate max-w-[180px] sm:max-w-none">
+          {/* Date is computed at render time — static/ISR HTML carries an older
+              date than the client, so suppress the text-mismatch (React #418
+              killed all page interactivity when hydration failed here). */}
+          <span suppressHydrationWarning className="text-[9px] sm:text-[11px] font-bold text-[var(--nyt-black)] dark:text-white truncate max-w-[180px] sm:max-w-none">
             {formatNavDate(lang).main}
           </span>
         </span>

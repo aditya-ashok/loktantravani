@@ -71,7 +71,9 @@ export default function LandingContent({ allPosts }: { allPosts: Post[] }) {
             <div className="mt-3 py-1.5 border-t border-b border-[var(--nyt-border)] flex flex-wrap gap-2 text-[9px] font-semibold uppercase tracking-[0.22em] text-[var(--nyt-gray)] dark:text-white/50">
               <span className="text-[var(--nyt-black)] dark:text-white font-black">{featuredAuthor}</span>
               <span>·</span>
-              <span>{timeAgo(featuredPost.createdAt as Date)}</span>
+              {/* Relative time drifts between ISR snapshot and client — an
+                  unsuppressed text mismatch here crashes hydration (#418) */}
+              <span suppressHydrationWarning>{timeAgo(featuredPost.createdAt as Date)}</span>
               <span>·</span>
               <span>{featuredPost.readingTimeMin} {t("min read", "मिनट पढ़ें")}</span>
             </div>
@@ -111,7 +113,7 @@ export default function LandingContent({ allPosts }: { allPosts: Post[] }) {
                 <p className="mt-1.5 text-[13px] leading-5 text-[var(--nyt-gray)] dark:text-white/60 line-clamp-2">
                   {postSummary(post)}
                 </p>
-                <p className="mt-1.5 text-[8.5px] font-semibold uppercase tracking-[0.2em] text-[var(--nyt-gray)] dark:text-white/45">
+                <p suppressHydrationWarning className="mt-1.5 text-[8.5px] font-semibold uppercase tracking-[0.2em] text-[var(--nyt-gray)] dark:text-white/45">
                   {lang === "hi" ? getAuthorHiName(post.author) : post.author} · {timeAgo(post.createdAt as Date)}
                 </p>
               </Link>
@@ -133,7 +135,7 @@ export default function LandingContent({ allPosts }: { allPosts: Post[] }) {
               {latestRail.map((post) => (
                 <li key={post.slug}>
                   <Link href={postHref(post)} className="group block py-2.5">
-                    <p className="text-[8.5px] font-bold uppercase tracking-[0.18em] text-red-600 mb-0.5">
+                    <p suppressHydrationWarning className="text-[8.5px] font-bold uppercase tracking-[0.18em] text-red-600 mb-0.5">
                       {timeAgo(post.createdAt as Date)} · {post.category}
                     </p>
                     <h4 className="font-newsreader text-[15px] font-bold leading-snug text-[var(--nyt-black)] dark:text-white group-hover:text-primary transition-colors">

@@ -86,7 +86,7 @@ export default function BlogCard({
                 </p>
               </div>
               <div className="mt-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                <p className="text-[9px] sm:text-[10px] font-inter font-semibold uppercase tracking-wider text-[var(--nyt-gray)] dark:text-white/40">
+                <p suppressHydrationWarning className="text-[9px] sm:text-[10px] font-inter font-semibold uppercase tracking-wider text-[var(--nyt-gray)] dark:text-white/40">
                   By {authorName} · {timeAgo(post.createdAt as Date)} · {post.readingTimeMin} min read
                 </p>
                 <button
@@ -128,7 +128,7 @@ export default function BlogCard({
                 {title}
               </h4>
               <div className="flex items-center justify-between mt-1">
-                <p className="text-[10px] font-inter text-[var(--nyt-gray)] dark:text-white/40">
+                <p suppressHydrationWarning className="text-[10px] font-inter text-[var(--nyt-gray)] dark:text-white/40">
                   {timeAgo(post.createdAt as Date)}
                 </p>
                 <button 
@@ -203,7 +203,7 @@ export default function BlogCard({
             {summary}
           </p>
           <div className="mt-3 flex items-center justify-between">
-            <p className="text-[10px] font-inter font-semibold uppercase tracking-wider text-[var(--nyt-gray)] dark:text-white/40">
+            <p suppressHydrationWarning className="text-[10px] font-inter font-semibold uppercase tracking-wider text-[var(--nyt-gray)] dark:text-white/40">
               By {authorName} · {timeAgo(post.createdAt as Date)}
             </p>
             <button
