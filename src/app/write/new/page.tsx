@@ -77,8 +77,22 @@ export default function WriteNewPage() {
         }),
       });
       const data = await res.json();
-      if (data.success) setSubmitted(true);
-      else setError(data.error || "Submission failed");
+      if (data.success) {
+        setSubmitted(true);
+        // Generate the AI cover in the background — keepalive lets it
+        // complete even if the writer navigates away immediately.
+        if (data.needsImage && data.postId) {
+          fetch("/api/generate-image", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            keepalive: true,
+            body: JSON.stringify({
+              prompt: `News photograph for the headline: "${title}". ${summary.slice(0, 140)}. Photojournalistic, realistic, no text or logos, no faces of real politicians.`,
+              postId: data.postId,
+            }),
+          }).catch(() => {});
+        }
+      } else setError(data.error || "Submission failed");
     } catch { setError("Submission failed"); }
     setSubmitting(false);
   };

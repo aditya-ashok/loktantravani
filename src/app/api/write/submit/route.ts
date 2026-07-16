@@ -4,7 +4,6 @@
  */
 import { NextRequest, NextResponse } from "next/server";
 
-export const maxDuration = 60; // allow time for cover-image generation
 import { createDoc, generateSlug, getDoc, getStockImageUrl } from "@/lib/firestore-rest";
 
 export async function POST(req: NextRequest) {
@@ -56,22 +55,10 @@ export async function POST(req: NextRequest) {
       submittedByName: (user.name as string) || "",
     });
 
-    // No image supplied → generate an AI cover from the headline (stock
-    // fallback already set above if this fails or times out)
-    if (!imageUrl) {
-      try {
-        await fetch(`${req.nextUrl.origin}/api/generate-image`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            prompt: `News photograph for the headline: "${title}". ${(summary || "").slice(0, 140)}. Photojournalistic, realistic, no text or logos, no faces of real politicians.`,
-            postId,
-          }),
-        });
-      } catch { /* stock image stays */ }
-    }
-
-    return NextResponse.json({ success: true, postId });
+    // Cover image: the client fires /api/generate-image with this postId
+    // after we return — generating in-request made submits hang ~12s and
+    // read as broken. Stock image above stays the fallback either way.
+    return NextResponse.json({ success: true, postId, needsImage: !imageUrl });
   } catch (error) {
     return NextResponse.json({ error: String(error) }, { status: 500 });
   }
