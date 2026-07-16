@@ -13,7 +13,7 @@ import { setDoc } from "@/lib/firestore-rest";
 export const maxDuration = 60;
 
 const GEMINI_KEY = () => (process.env.GEMINI_API_KEY || "").trim();
-const STORAGE_BUCKET = process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || "loktantravani-2d159.firebasestorage.app";
+const STORAGE_BUCKET = (process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || "loktantravani-2d159.firebasestorage.app").trim();
 
 async function generateImage(prompt: string): Promise<Buffer | null> {
   const key = GEMINI_KEY();

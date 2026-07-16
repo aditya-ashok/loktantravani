@@ -77,7 +77,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setAuthLoading(false);
           return;
         }
-        const { onAuthStateChanged } = await import("firebase/auth");
+        const { onAuthStateChanged, getRedirectResult } = await import("firebase/auth");
+        // Complete a pending signInWithRedirect round-trip, if any (popup fallback)
+        getRedirectResult(auth).catch(() => { /* no pending redirect */ });
         unsubscribe = onAuthStateChanged(auth, (user) => {
           setFirebaseUser(user);
           if (user) {
@@ -100,23 +102,37 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const signInWithGoogle = useCallback(async () => {
+    const { auth, isFirebaseConfigured } = await import("./firebase");
+    if (!isFirebaseConfigured) throw new Error("Sign-in is temporarily unavailable.");
+    const { GoogleAuthProvider, signInWithPopup, signInWithRedirect } = await import("firebase/auth");
+    const provider = new GoogleAuthProvider();
+    provider.setCustomParameters({ prompt: "select_account" });
+    // In-app browsers (WhatsApp/Instagram/FB) block OAuth popups outright —
+    // go straight to the redirect flow there.
+    const ua = typeof navigator !== "undefined" ? navigator.userAgent : "";
+    const inApp = /WhatsApp|Instagram|FBAN|FBAV|FB_IAB|Line\/|wv\)/i.test(ua);
+    if (inApp) {
+      await signInWithRedirect(auth, provider);
+      return;
+    }
     try {
-      const { auth, isFirebaseConfigured } = await import("./firebase");
-      if (!isFirebaseConfigured) {
-        alert("Firebase not configured.");
+      await signInWithPopup(auth, provider);
+      // onAuthStateChanged fires and resolves role via server API
+    } catch (err: unknown) {
+      const code = (err as { code?: string })?.code || "";
+      if (code === "auth/popup-closed-by-user") return; // user changed their mind
+      // Popup blocked or environment can't host one — same sign-in via redirect
+      if (["auth/popup-blocked", "auth/cancelled-popup-request", "auth/operation-not-supported-in-this-environment", "auth/internal-error"].includes(code)) {
+        await signInWithRedirect(auth, provider);
         return;
       }
-      const { GoogleAuthProvider, signInWithPopup } = await import("firebase/auth");
-      const provider = new GoogleAuthProvider();
-      provider.setCustomParameters({ prompt: "select_account" });
-      await signInWithPopup(auth, provider);
-      // onAuthStateChanged will fire and resolve role via server API
-    } catch (err: unknown) {
-      const code = (err as { code?: string })?.code;
-      if (code && code !== "auth/popup-closed-by-user") {
-        console.error("Google sign-in error:", code);
-        alert(`Sign-in error: ${code}`);
+      if (code === "auth/operation-not-allowed") {
+        throw new Error("Google sign-in isn't enabled yet — use email meanwhile.");
       }
+      if (code === "auth/unauthorized-domain") {
+        throw new Error("This domain isn't authorised for sign-in yet.");
+      }
+      throw new Error((err as Error).message || "Google sign-in failed.");
     }
   }, []);
 
