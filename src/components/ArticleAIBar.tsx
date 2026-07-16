@@ -1,13 +1,12 @@
 "use client";
 
-import React, { useState, useRef, useCallback, useEffect } from "react";
-import { Volume2, VolumeX, Languages, Sparkles, Loader2, Pause, Play, MessageCircle, Send, X } from "lucide-react";
+import React, { useState, useRef, useCallback, useEffect, useMemo } from "react";
+import { Volume2, VolumeX, Languages, Sparkles, Loader2, Play, MessageCircle, Send, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface ArticleAIBarProps {
   title: string;
   content: string; // HTML content
-  summary: string;
   lang: string;
   postId: string;
   category: string;
@@ -49,7 +48,8 @@ function sanitizeHtml(html: string): string {
   return html;
 }
 
-export default function ArticleAIBar({ title, content, summary, lang, postId, category }: ArticleAIBarProps) {
+export default function ArticleAIBar({ title, content, lang, postId, category }: ArticleAIBarProps) {
+  const articleText = useMemo(() => stripHtml(content), [content]);
   // ── Voice Narration State ──
   const [playing, setPlaying] = useState(false);
   const [paused, setPaused] = useState(false);
@@ -102,7 +102,7 @@ export default function ArticleAIBar({ title, content, summary, lang, postId, ca
     setPlaying(true);
     setPaused(false);
 
-    const plainText = `${title}. ${stripHtml(content).slice(0, 3500)}`;
+    const plainText = `${title}. ${articleText.slice(0, 3500)}`;
 
     try {
       const res = await fetch("/api/tts", {
@@ -151,7 +151,7 @@ export default function ArticleAIBar({ title, content, summary, lang, postId, ca
       speechSynthesis.speak(utter);
     };
     speakNext();
-  }, [playing, paused, title, content, lang]);
+  }, [playing, paused, title, articleText, lang]);
 
   const handleStop = useCallback(() => {
     if (audioRef.current) { audioRef.current.pause(); audioRef.current = null; }
@@ -177,8 +177,8 @@ export default function ArticleAIBar({ title, content, summary, lang, postId, ca
           model: "gemini-2.5-flash",
           action: "generateContent",
           body: {
-            contents: [{ parts: [{ text: `Summarize this news article in exactly 3 bullet points. Each bullet should be one concise sentence (max 20 words). Return ONLY a JSON array of 3 strings, no markdown.\n\nTitle: ${title}\n\n${stripHtml(content).slice(0, 3000)}` }] }],
-            generationConfig: { temperature: 0.2, maxOutputTokens: 512 },
+            contents: [{ parts: [{ text: `Summarize this news article in exactly 3 bullet points. Each bullet should be one concise sentence (max 20 words). Return ONLY a JSON array of 3 strings, no markdown.\n\nTitle: ${title}\n\n${articleText.slice(0, 2400)}` }] }],
+            generationConfig: { temperature: 0.2, maxOutputTokens: 256, thinkingConfig: { thinkingBudget: 0 } },
           },
         }),
       });
@@ -215,7 +215,7 @@ export default function ArticleAIBar({ title, content, summary, lang, postId, ca
           action: "generateContent",
           body: {
             contents: [{ parts: [{ text: `Translate this newspaper article to ${targetLang}. Maintain the HTML tags (<h2>, <p>, <blockquote>). Keep it professional and journalistic.\n\nTitle: ${title}\n\nContent:\n${content.slice(0, 5000)}\n\nReturn ONLY valid JSON:\n{"title":"translated title","content":"translated HTML content"}` }] }],
-            generationConfig: { temperature: 0.3, maxOutputTokens: 6000 },
+            generationConfig: { temperature: 0.3, maxOutputTokens: 6000, thinkingConfig: { thinkingBudget: 0 } },
           },
         }),
       });
@@ -249,7 +249,7 @@ export default function ArticleAIBar({ title, content, summary, lang, postId, ca
     setChatLoading(true);
 
     try {
-      const articleContext = `Title: ${title}\n\nContent: ${stripHtml(content).slice(0, 4000)}`;
+      const articleContext = `Title: ${title}\n\nContent: ${articleText.slice(0, 2600)}`;
       const conversationHistory = chatMessages
         .slice(-6)
         .map((m) => `${m.role === "user" ? "User" : "Assistant"}: ${m.text}`)
@@ -279,7 +279,7 @@ Reply in ${lang === "hi" ? "Hindi" : "English"}:`,
                 ],
               },
             ],
-            generationConfig: { temperature: 0.4, maxOutputTokens: 300 },
+            generationConfig: { temperature: 0.4, maxOutputTokens: 300, thinkingConfig: { thinkingBudget: 0 } },
           },
         }),
       });
@@ -293,19 +293,27 @@ Reply in ${lang === "hi" ? "Hindi" : "English"}:`,
     setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
   };
 
+  const toolButtonClass = "group flex min-h-10 items-center gap-2 rounded-full px-4 py-2 text-[10px] font-inter font-black uppercase tracking-widest border transition-all focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 dark:focus:ring-offset-black";
+
   return (
     <>
       {/* AI Toolbar */}
-      <div className="flex items-center gap-2 flex-wrap mb-6">
+      <section aria-label="AI reading tools" className="mb-6 rounded-2xl border border-black/10 bg-[var(--nyt-light-gray)] p-3 dark:border-white/10 dark:bg-white/5">
+        <div className="mb-3 flex items-center gap-2 px-1">
+          <Sparkles className="h-3.5 w-3.5 text-primary" />
+          <span className="text-[10px] font-inter font-black uppercase tracking-[0.18em] dark:text-white">AI reading tools</span>
+          <span className="hidden text-[10px] font-inter opacity-50 sm:inline dark:text-white/60">Quick context, translation, and answers</span>
+        </div>
+        <div className="flex items-center gap-2 flex-wrap">
         {/* TL;DR */}
         <button
           onClick={handleTldr}
           disabled={tldrLoading}
           className={cn(
-            "flex items-center gap-2 px-4 py-2 text-[10px] font-inter font-black uppercase tracking-widest border-2 transition-all",
+            toolButtonClass,
             showTldr && tldr
-              ? "border-primary bg-primary text-white"
-              : "border-black dark:border-white/30 hover:border-primary hover:text-primary dark:text-white"
+              ? "border-primary bg-primary text-white shadow-sm"
+              : "border-black/20 bg-white hover:border-primary hover:text-primary dark:border-white/20 dark:bg-black/20 dark:text-white"
           )}
         >
           {tldrLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
@@ -317,10 +325,10 @@ Reply in ${lang === "hi" ? "Hindi" : "English"}:`,
           onClick={playing ? (paused ? handleListen : handleStop) : handleListen}
           disabled={ttsLoading}
           className={cn(
-            "flex items-center gap-2 px-4 py-2 text-[10px] font-inter font-black uppercase tracking-widest border-2 transition-all",
+            toolButtonClass,
             playing
-              ? "border-green-500 bg-green-500 text-white"
-              : "border-black dark:border-white/30 hover:border-green-500 hover:text-green-600 dark:text-white"
+              ? "border-green-500 bg-green-500 text-white shadow-sm"
+              : "border-black/20 bg-white hover:border-green-500 hover:text-green-600 dark:border-white/20 dark:bg-black/20 dark:text-white"
           )}
         >
           {ttsLoading ? (
@@ -338,10 +346,10 @@ Reply in ${lang === "hi" ? "Hindi" : "English"}:`,
           onClick={handleTranslate}
           disabled={translating}
           className={cn(
-            "flex items-center gap-2 px-4 py-2 text-[10px] font-inter font-black uppercase tracking-widest border-2 transition-all",
+            toolButtonClass,
             showTranslation && translated
-              ? "border-blue-500 bg-blue-500 text-white"
-              : "border-black dark:border-white/30 hover:border-blue-500 hover:text-blue-600 dark:text-white"
+              ? "border-blue-500 bg-blue-500 text-white shadow-sm"
+              : "border-black/20 bg-white hover:border-blue-500 hover:text-blue-600 dark:border-white/20 dark:bg-black/20 dark:text-white"
           )}
         >
           {translating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Languages className="w-3.5 h-3.5" />}
@@ -352,16 +360,17 @@ Reply in ${lang === "hi" ? "Hindi" : "English"}:`,
         <button
           onClick={() => setChatOpen(!chatOpen)}
           className={cn(
-            "flex items-center gap-2 px-4 py-2 text-[10px] font-inter font-black uppercase tracking-widest border-2 transition-all",
+            toolButtonClass,
             chatOpen
-              ? "border-purple-500 bg-purple-500 text-white"
-              : "border-black dark:border-white/30 hover:border-purple-500 hover:text-purple-600 dark:text-white"
+              ? "border-purple-500 bg-purple-500 text-white shadow-sm"
+              : "border-black/20 bg-white hover:border-purple-500 hover:text-purple-600 dark:border-white/20 dark:bg-black/20 dark:text-white"
           )}
         >
           <MessageCircle className="w-3.5 h-3.5" />
           Ask AI
         </button>
-      </div>
+        </div>
+      </section>
 
       {/* TL;DR Panel */}
       {showTldr && (
@@ -388,7 +397,7 @@ Reply in ${lang === "hi" ? "Hindi" : "English"}:`,
       )}
 
       {/* Translation Panel */}
-      {showTranslation && translated && (
+      {showTranslation && (
         <div className="mb-8 p-5 border-2 border-blue-500 bg-blue-50 dark:bg-blue-900/10">
           <div className="flex items-center gap-2 mb-3">
             <Languages className="w-4 h-4 text-blue-600" />
@@ -396,7 +405,7 @@ Reply in ${lang === "hi" ? "Hindi" : "English"}:`,
               AI Translation — {lang === "hi" ? "English" : "Hindi"}
             </span>
           </div>
-          {translating ? (
+          {translating || !translated ? (
             <div className="flex items-center gap-2 text-sm font-inter opacity-60">
               <Loader2 className="w-4 h-4 animate-spin" /> Translating...
             </div>

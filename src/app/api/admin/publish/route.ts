@@ -5,7 +5,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { setDoc } from "@/lib/firestore-rest";
+import { setDoc, getDoc, queryByField } from "@/lib/firestore-rest";
 import { verifyAuth, unauthorized } from "@/lib/api-auth";
 
 export async function POST(req: NextRequest) {
@@ -50,6 +50,33 @@ export async function POST(req: NextRequest) {
       status: "published",
       publishedAt: new Date().toISOString(),
     });
+
+    // Email the author that their piece is live — contributors get their
+    // submission email; house authors resolve via the users collection.
+    try {
+      const post = await getDoc(`posts/${id}`);
+      if (post) {
+        let email = (post.submittedByEmail as string) || "";
+        const authorName = ((post.author as string) || "").split(" — ")[0].trim();
+        if (!email && authorName) {
+          const matches = await queryByField("users", "name", authorName, 5);
+          email = (matches.find(m => (m.email as string)?.includes("@"))?.email as string) || "";
+        }
+        if (email) {
+          await fetch(`${req.nextUrl.origin}/api/write/notify`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              type: "approved",
+              email,
+              name: (post.submittedByName as string) || authorName,
+              title: post.title,
+              slug: post.slug,
+            }),
+          });
+        }
+      }
+    } catch { /* email is best-effort */ }
 
     // Send push notification to subscribers (fire-and-forget)
     const origin = req.nextUrl.origin;

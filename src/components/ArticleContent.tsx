@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { ArrowLeft, Clock, Eye, Sparkles, Newspaper, Edit3 } from "lucide-react";
+import { ArrowLeft, Clock, Eye, Sparkles, Newspaper, Edit3, Save, X, Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
 import ArticleAIBar from "@/components/ArticleAIBar";
 import ReadingProgress from "@/components/ReadingProgress";
@@ -44,11 +44,48 @@ function AuthorCard({ authorName, authorPhoto, authorDesignation, authorBio }: {
   );
 }
 
+const cn2 = (...cls: (string | false | undefined)[]) => cls.filter(Boolean).join(" ");
+
 export default function ArticleContent({ post }: { post: Post }) {
   const { lang, t } = useLanguage();
   const { userRole } = useAuth();
   const isAdmin = userRole === "admin";
   const [shareCardOpen, setShareCardOpen] = useState(false);
+  // Admin live edit — the article page becomes the editor
+  const [liveEdit, setLiveEdit] = useState(false);
+  const [liveSaving, setLiveSaving] = useState(false);
+  const titleRef = useRef<HTMLHeadingElement>(null);
+  const contentWrapRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const contentEl = contentWrapRef.current?.querySelector(".post-content") as HTMLElement | null;
+    if (titleRef.current) titleRef.current.contentEditable = liveEdit ? "true" : "false";
+    if (contentEl) contentEl.contentEditable = liveEdit ? "true" : "false";
+  }, [liveEdit]);
+
+  const saveLiveEdit = async () => {
+    const contentEl = contentWrapRef.current?.querySelector(".post-content") as HTMLElement | null;
+    const newTitle = titleRef.current?.innerText.trim() || post.title;
+    const newContent = contentEl?.innerHTML || post.content;
+    setLiveSaving(true);
+    try {
+      const res = await fetch("/api/admin/update-post", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: post.id, title: newTitle, content: newContent }),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      await fetch("/api/revalidate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ paths: ["/", `/${cat}/${post.slug}`, `/blog/${post.slug}`] }),
+      }).catch(() => {});
+      window.location.reload();
+    } catch (e) {
+      alert("Save failed: " + String(e));
+      setLiveSaving(false);
+    }
+  };
   // Hindi-language articles always render author info in Hindi regardless of UI lang
   const useHindi = lang === "hi" || post.language === "hi";
   const title = useHindi && post.titleHi ? post.titleHi : post.title;
@@ -105,7 +142,7 @@ export default function ArticleContent({ post }: { post: Post }) {
             <span className="text-[10px] font-inter font-bold opacity-40 uppercase">{formatDate(post.createdAt as Date, lang)}</span>
           </div>
 
-          <h1 className="text-3xl md:text-4xl lg:text-5xl font-newsreader font-black leading-[1.1] tracking-tight mb-6 dark:text-white">{title}</h1>
+          <h1 ref={titleRef} suppressContentEditableWarning className={cn2("text-3xl md:text-4xl lg:text-5xl font-newsreader font-black leading-[1.1] tracking-tight mb-6 dark:text-white", liveEdit && "outline-dashed outline-2 outline-primary/60 px-1 focus:outline-primary")}>{title}</h1>
           <p className="text-xl font-newsreader italic opacity-60 max-w-3xl mb-8 dark:text-white/60">{summary}</p>
           
           <div className="flex flex-col sm:flex-row sm:items-center gap-4 pb-8 border-b-4 border-double border-black dark:border-white/20">
@@ -131,27 +168,54 @@ export default function ArticleContent({ post }: { post: Post }) {
                <button onClick={() => setShareCardOpen(true)} className="flex items-center gap-1.5 px-2 sm:px-3 py-1.5 border-2 border-black dark:border-white text-[9px] sm:text-[10px] font-inter font-black uppercase tracking-widest hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-all bg-white dark:bg-black shadow-[2px_2px_0px_0px_#000] dark:shadow-[2px_2px_0px_0px_#fff]">
                  <Newspaper className="w-3 h-3 sm:w-3.5 sm:h-3.5" /> Share Card
                </button>
-               {isAdmin && (
-                 <Link
-                   href="/admin"
-                   className="flex items-center gap-1.5 px-2 sm:px-3 py-1.5 bg-primary text-white text-[9px] sm:text-[10px] font-inter font-black uppercase tracking-widest hover:bg-black transition-all shadow-[2px_2px_0px_0px_#000]"
-                 >
-                   <Edit3 className="w-3 h-3 sm:w-3.5 sm:h-3.5" /> Edit
-                 </Link>
+               {isAdmin && !liveEdit && (
+                 <>
+                   <button
+                     onClick={() => setLiveEdit(true)}
+                     className="flex items-center gap-1.5 px-2 sm:px-3 py-1.5 bg-black text-white text-[9px] sm:text-[10px] font-inter font-black uppercase tracking-widest hover:bg-primary transition-all shadow-[2px_2px_0px_0px_#000]"
+                   >
+                     <Edit3 className="w-3 h-3 sm:w-3.5 sm:h-3.5" /> Live Edit
+                   </button>
+                   <Link
+                     href="/admin"
+                     className="flex items-center gap-1.5 px-2 sm:px-3 py-1.5 bg-primary text-white text-[9px] sm:text-[10px] font-inter font-black uppercase tracking-widest hover:bg-black transition-all shadow-[2px_2px_0px_0px_#000]"
+                   >
+                     <Edit3 className="w-3 h-3 sm:w-3.5 sm:h-3.5" /> Admin
+                   </Link>
+                 </>
+               )}
+               {isAdmin && liveEdit && (
+                 <>
+                   <button
+                     onClick={saveLiveEdit}
+                     disabled={liveSaving}
+                     className="flex items-center gap-1.5 px-3 py-1.5 bg-green-600 text-white text-[9px] sm:text-[10px] font-inter font-black uppercase tracking-widest hover:bg-green-700 transition-all shadow-[2px_2px_0px_0px_#000] disabled:opacity-50"
+                   >
+                     {liveSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />} {liveSaving ? "Saving…" : "Save"}
+                   </button>
+                   <button
+                     onClick={() => window.location.reload()}
+                     className="flex items-center gap-1.5 px-3 py-1.5 border-2 border-black dark:border-white text-[9px] sm:text-[10px] font-inter font-black uppercase tracking-widest hover:bg-black hover:text-white dark:text-white transition-all"
+                   >
+                     <X className="w-3.5 h-3.5" /> Cancel
+                   </button>
+                 </>
                )}
                <ShareButtons url={url} title={post.title} />
             </div>
           </div>
         </motion.div>
 
-        <ArticleAIBar title={title} content={post.content} summary={summary} lang={lang} postId={post.id} category={post.category} />
+        <ArticleAIBar title={title} content={post.content} lang={lang} postId={post.id} category={post.category} />
 
         <div className="grid grid-cols-12 gap-6 lg:gap-12 mt-8 lg:mt-12">
           <div className="col-span-12 lg:col-span-8">
             <div className="aspect-[16/9] overflow-hidden mb-8 lg:mb-12 border border-black/20 sm:border-2 sm:border-black dark:border-white/10">
               <img src={post.imageUrl} alt={post.title} className="w-full h-full object-cover" />
             </div>
-            <PostContent content={post.content} contentHi={post.contentHi} />
+            <div ref={contentWrapRef} className={cn2(liveEdit && "outline-dashed outline-2 outline-primary/60 p-2 -m-2")}>
+              <PostContent content={post.content} contentHi={post.contentHi} />
+            </div>
             {/* Sponsor campaign after article content, AdSense below */}
             <AdBanner placement="between-articles" />
             <InArticleAd />

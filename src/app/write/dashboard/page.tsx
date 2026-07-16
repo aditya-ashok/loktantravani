@@ -137,6 +137,9 @@ export default function WriteDashboardPage() {
                         </div>
                         <h3 className="text-lg font-newsreader font-black truncate dark:text-white">{post.title}</h3>
                         {post.summary && <p className="text-xs font-inter opacity-60 mt-1 line-clamp-2 dark:text-white/60">{post.summary}</p>}
+                        <p className="text-[9px] font-inter font-bold uppercase tracking-widest opacity-40 mt-2 dark:text-white/40">
+                          {(post.createdAt ? new Date(post.createdAt as unknown as string).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) : "")} · {post.readingTimeMin || 1} min read · {(post.viewCount || 0).toLocaleString()} views
+                        </p>
                         {(post as Post & { rejectionReason?: string }).rejectionReason && post.status === "rejected" && (
                           <div className="mt-2 bg-red-50 dark:bg-red-500/10 border-l-4 border-red-400 px-3 py-2">
                             <p className="text-[9px] font-inter font-bold uppercase tracking-widest text-red-600 dark:text-red-400 mb-1">Editor Feedback</p>
@@ -145,9 +148,17 @@ export default function WriteDashboardPage() {
                         )}
                       </div>
                       {post.status === "published" && (
-                        <Link href={`/blog/${post.slug}`} className="flex items-center gap-1 text-[9px] font-inter font-bold uppercase tracking-widest text-primary hover:underline shrink-0">
-                          <Eye className="w-3 h-3" /> View
-                        </Link>
+                        <div className="flex flex-col gap-2 shrink-0 items-end">
+                          <Link href={`/${(post.category || "opinion").toLowerCase().replace(/\s+/g, "-")}/${post.slug}`} className="flex items-center gap-1 text-[9px] font-inter font-bold uppercase tracking-widest text-primary hover:underline">
+                            <Eye className="w-3 h-3" /> View Live
+                          </Link>
+                          <button
+                            onClick={() => { navigator.clipboard.writeText(`https://loktantravani.in/${(post.category || "opinion").toLowerCase().replace(/\s+/g, "-")}/${post.slug}`); }}
+                            className="text-[8px] font-inter font-bold uppercase tracking-widest opacity-40 hover:opacity-100 hover:text-primary"
+                          >
+                            Copy Link
+                          </button>
+                        </div>
                       )}
                     </div>
                   </div>

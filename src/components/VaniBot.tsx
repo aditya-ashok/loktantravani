@@ -17,7 +17,7 @@ interface VaniBotProps {
 }
 
 export default function VaniBot({ articleContext, articleTitle }: VaniBotProps) {
-  const { lang, t } = useLanguage();
+  const { t } = useLanguage();
   const [isOpen, setIsOpen] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
@@ -36,22 +36,40 @@ export default function VaniBot({ articleContext, articleTitle }: VaniBotProps) 
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [headlines, setHeadlines] = useState("");
+  const [contextReady, setContextReady] = useState(false);
+  const [error, setError] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  // Fetch recent headlines for broader context
+  // Load broader context only after the reader opens the assistant. This keeps
+  // the floating widget out of the page's initial network work.
   useEffect(() => {
+    if (!isOpen || contextReady) return;
+    const controller = new AbortController();
     (async () => {
       try {
-        const res = await fetch("/api/admin/list-posts?limit=15");
+        const cached = sessionStorage.getItem("lv_vani_headlines");
+        if (cached) {
+          setHeadlines(cached);
+          setContextReady(true);
+          return;
+        }
+        const res = await fetch("/api/admin/list-posts?limit=15", { signal: controller.signal });
+        if (!res.ok) return;
         const data = await res.json();
         if (data.posts) {
-          setHeadlines(data.posts.map((p: { title: string; summary?: string; category?: string }) =>
-            `- [${p.category || "News"}] ${p.title}${p.summary ? ` — ${p.summary.slice(0, 100)}` : ""}`
-          ).join("\n"));
+          const context = data.posts.slice(0, 8).map((p: { title: string; summary?: string; category?: string }) =>
+            `- [${p.category || "News"}] ${p.title}${p.summary ? ` — ${p.summary.slice(0, 60)}` : ""}`
+          ).join("\n");
+          sessionStorage.setItem("lv_vani_headlines", context);
+          setHeadlines(context);
         }
-      } catch { /* ignore */ }
+      } catch { /* Context is helpful, but never blocks a question. */
+      } finally {
+        if (!controller.signal.aborted) setContextReady(true);
+      }
     })();
-  }, []);
+    return () => controller.abort();
+  }, [isOpen, contextReady]);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -65,6 +83,7 @@ export default function VaniBot({ articleContext, articleTitle }: VaniBotProps) 
 
     const userMsg = input.trim();
     setInput("");
+    setError("");
     setMessages(prev => [...prev, { role: "user", content: userMsg }]);
     setLoading(true);
 
@@ -81,10 +100,10 @@ export default function VaniBot({ articleContext, articleTitle }: VaniBotProps) 
 ${articleTitle ? `You are currently discussing: "${articleTitle}".
 Article context: "${articleContext?.slice(0, 3000)}".` : ""}
 ${headlines ? `Today's headlines on LoktantraVani:\n${headlines}` : ""}
-Be concise, professional, and insightful. Answer questions about any article or news topic.
+Be concise, professional, and insightful. Use 2 short paragraphs or fewer. Answer questions about any article or news topic.
 Answer in the same language as the user's query (Hindi or English).`
             },
-            ...messages.slice(-5), // Send last 5 for context
+            ...messages.slice(-4),
             { role: "user", content: userMsg }
           ]
         }),
@@ -92,8 +111,11 @@ Answer in the same language as the user's query (Hindi or English).`
       const data = await res.json();
       if (data.result) {
         setMessages(prev => [...prev, { role: "assistant", content: data.result }]);
+      } else {
+        throw new Error(data.error || "No answer returned");
       }
-    } catch (error) {
+    } catch {
+      setError(t("I couldn't reach Vani AI. Please try again.", "वाणी एआई से संपर्क नहीं हो पाया। कृपया फिर कोशिश करें।"));
       setMessages(prev => [...prev, { role: "assistant", content: "Sorry, I'm having trouble connecting right now." }]);
     } finally {
       setLoading(false);
@@ -105,6 +127,7 @@ Answer in the same language as the user's query (Hindi or English).`
       {/* Floating Toggle */}
       <button 
         onClick={() => setIsOpen(!isOpen)}
+        aria-label={t("Open Vani AI assistant", "वाणी एआई सहायक खोलें")}
         className={cn(
           "fixed bottom-6 right-6 z-[100] w-14 h-14 bg-black text-white border-2 border-primary flex items-center justify-center hover:scale-110 transition-all shadow-[8px_8px_0px_0px_rgba(255,153,51,0.3)]",
           isOpen && "scale-0 opacity-0"
@@ -135,10 +158,10 @@ Answer in the same language as the user's query (Hindi or English).`
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <button onClick={() => setIsExpanded(!isExpanded)} className="opacity-40 hover:opacity-100 transition-opacity">
+                <button onClick={() => setIsExpanded(!isExpanded)} aria-label={isExpanded ? "Minimize Vani AI" : "Expand Vani AI"} className="opacity-40 hover:opacity-100 transition-opacity">
                   {isExpanded ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
                 </button>
-                <button onClick={() => setIsOpen(false)} className="opacity-40 hover:opacity-100 transition-opacity">
+                <button onClick={() => setIsOpen(false)} aria-label="Close Vani AI" className="opacity-40 hover:opacity-100 transition-opacity">
                   <X className="w-4 h-4" />
                 </button>
               </div>
@@ -155,6 +178,7 @@ Answer in the same language as the user's query (Hindi or English).`
             {/* Messages */}
             <div 
               ref={scrollRef}
+              aria-live="polite"
               className="flex-1 overflow-y-auto p-4 space-y-4 font-inter text-sm"
             >
               {messages.map((m, i) => (
@@ -186,6 +210,7 @@ Answer in the same language as the user's query (Hindi or English).`
                       </div>
                   </div>
               )}
+              {error && <p className="text-xs font-inter text-red-600 dark:text-red-400">{error}</p>}
             </div>
 
             {/* Input */}
@@ -200,6 +225,7 @@ Answer in the same language as the user's query (Hindi or English).`
               <button 
                 type="submit"
                 disabled={!input.trim() || loading}
+                aria-label={t("Send message", "संदेश भेजें")}
                 className="bg-black dark:bg-white text-white dark:text-black px-4 font-inter font-black text-[10px] uppercase tracking-widest hover:bg-primary transition-colors disabled:opacity-50"
               >
                 <Send className="w-4 h-4" />

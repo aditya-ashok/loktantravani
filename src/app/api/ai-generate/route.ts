@@ -220,33 +220,42 @@ export async function POST(req: NextRequest) {
       if (!messages || !Array.isArray(messages)) {
         return NextResponse.json({ error: "Messages required" }, { status: 400 });
       }
+      if (messages.length > 7) {
+        return NextResponse.json({ error: "Conversation is too long. Start a new question." }, { status: 400 });
+      }
       const apiKey = process.env.GEMINI_API_KEY;
       if (!apiKey) {
         return NextResponse.json({ result: "Sorry, AI service is not configured." });
       }
       // Convert messages to Gemini format (must start with user turn)
-      const systemMsg = messages.find((m: { role: string }) => m.role === "system");
+      const systemMsg = messages.find((m: { role: string; content?: string }) => m.role === "system");
       const chatMsgs = messages.filter((m: { role: string }) => m.role !== "system");
       // Gemini requires first message to be "user" — skip leading assistant messages
       const firstUserIdx = chatMsgs.findIndex((m: { role: string }) => m.role === "user");
       const validMsgs = firstUserIdx >= 0 ? chatMsgs.slice(firstUserIdx) : chatMsgs;
-      const contents = validMsgs.map((m: { role: string; content: string }) => ({
+      const contents = validMsgs.map((m: { role: string; content?: string }) => ({
         role: m.role === "assistant" ? "model" : "user",
-        parts: [{ text: m.content }],
+        parts: [{ text: String(m.content || "").slice(0, 1800) }],
       }));
+      if (!contents.length || contents.some((m: { parts: { text: string }[] }) => !m.parts[0].text.trim())) {
+        return NextResponse.json({ error: "A message is empty" }, { status: 400 });
+      }
       const res = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            systemInstruction: systemMsg ? { parts: [{ text: systemMsg.content }] } : undefined,
+            systemInstruction: systemMsg ? { parts: [{ text: String(systemMsg.content || "").slice(0, 3600) }] } : undefined,
             contents,
-            generationConfig: { temperature: 0.7, maxOutputTokens: 1024 },
+            generationConfig: { temperature: 0.5, maxOutputTokens: 480, thinkingConfig: { thinkingBudget: 0 } },
           }),
         }
       );
       const data = await res.json();
+      if (!res.ok) {
+        return NextResponse.json({ error: data?.error?.message || "AI service is unavailable" }, { status: res.status });
+      }
       const reply = data?.candidates?.[0]?.content?.parts?.[0]?.text || "Sorry, I couldn't generate a response.";
       return NextResponse.json({ result: reply });
     }

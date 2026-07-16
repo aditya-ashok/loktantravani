@@ -156,6 +156,41 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
     }
   };
 
+  const handleForgotPassword = async () => {
+    if (!email) { setError("Enter your email first, then tap Forgot password."); return; }
+    setLoading(true); setError("");
+    try {
+      const { auth, isFirebaseConfigured } = await import("@/lib/firebase");
+      if (!isFirebaseConfigured) throw new Error("Sign-in is temporarily unavailable.");
+      const { sendPasswordResetEmail } = await import("firebase/auth");
+      await sendPasswordResetEmail(auth, email).catch(() => { /* don't reveal which emails exist */ });
+      setNotice(`If an account exists for ${email}, a password-reset link is on its way. Check your inbox.`);
+    } catch (err: unknown) {
+      setError((err as Error).message || "Could not send the reset email.");
+    } finally { setLoading(false); }
+  };
+
+  const handleEmailLink = async () => {
+    if (!email) { setError("Enter your email first — we'll send a one-tap sign-in link."); return; }
+    setLoading(true); setError("");
+    try {
+      const { auth, isFirebaseConfigured } = await import("@/lib/firebase");
+      if (!isFirebaseConfigured) throw new Error("Sign-in is temporarily unavailable.");
+      const { sendSignInLinkToEmail } = await import("firebase/auth");
+      await sendSignInLinkToEmail(auth, email, {
+        url: `${window.location.origin}/auth/finish`,
+        handleCodeInApp: true,
+      });
+      try { localStorage.setItem("lv_link_email", email); } catch { /* */ }
+      setNotice(`Sign-in link sent to ${email} — open it on this device and you're in. No password needed.`);
+    } catch (err: unknown) {
+      const code = (err as { code?: string })?.code || "";
+      setError(code === "auth/operation-not-allowed"
+        ? "One-tap links aren't switched on yet — use password or Google meanwhile."
+        : (err as Error).message || "Could not send the link.");
+    } finally { setLoading(false); }
+  };
+
   const handleGoogle = async () => {
     setLoading(true); setError("");
     try {
@@ -272,6 +307,16 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
                     <div className="relative">
                       <User className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[var(--nyt-gray)]" />
                       <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="Your name (creates your account)" className={inputCls} autoFocus />
+                    </div>
+                  )}
+                  {!offerSignup && (
+                    <div className="flex items-center justify-between -mt-1">
+                      <button type="button" onClick={handleForgotPassword} className="text-[9px] font-inter font-bold uppercase tracking-widest text-[var(--nyt-gray)] hover:text-primary transition-colors">
+                        Forgot password?
+                      </button>
+                      <button type="button" onClick={handleEmailLink} className="text-[9px] font-inter font-bold uppercase tracking-widest text-primary hover:underline">
+                        ✨ Email me a sign-in link
+                      </button>
                     </div>
                   )}
                 </>

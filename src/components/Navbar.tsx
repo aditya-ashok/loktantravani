@@ -126,8 +126,8 @@ export default function Navbar() {
               <LogIn className="w-3 h-3" /> {t("Sign In", "साइन इन")}
             </button>
           )}
-          <Link href="/write" className="hidden md:block text-[9px] font-inter font-bold uppercase tracking-widest text-primary hover:underline">
-            ✍️ {t("Write With Us", "हमारे साथ लिखें")}
+          <Link href={["contributor", "author", "admin"].includes(userRole) ? "/write/dashboard" : "/write"} className="hidden md:block text-[9px] font-inter font-bold uppercase tracking-widest text-primary hover:underline">
+            ✍️ {["contributor", "author", "admin"].includes(userRole) ? t("My Articles", "मेरे लेख") : t("Write With Us", "हमारे साथ लिखें")}
           </Link>
           <Link href="/premium" className="hidden md:block bg-gradient-to-r from-purple-600 via-pink-600 to-orange-500 text-white text-[9px] font-inter font-black uppercase tracking-widest px-4 py-1.5 rounded-sm hover:shadow-lg hover:shadow-purple-500/30 transition-all">
             ⚡ {t("GO ULTRA", "अल्ट्रा")}
@@ -365,8 +365,8 @@ export default function Navbar() {
                 <Link href="/epaper" onClick={() => setMobileOpen(false)} className="flex items-center gap-2 text-[13px] font-inter font-bold uppercase tracking-wider py-3 border-b border-[var(--nyt-border)]/50 text-primary">
                   {t("E-Paper", "ई-पेपर")}
                 </Link>
-                <Link href="/write" onClick={() => setMobileOpen(false)} className="flex items-center gap-2 text-[13px] font-inter font-bold uppercase tracking-wider py-3 border-b border-[var(--nyt-border)]/50 text-primary">
-                  ✍️ {t("Write With Us", "हमारे साथ लिखें")}
+                <Link href={["contributor", "author", "admin"].includes(userRole) ? "/write/dashboard" : "/write"} onClick={() => setMobileOpen(false)} className="flex items-center gap-2 text-[13px] font-inter font-bold uppercase tracking-wider py-3 border-b border-[var(--nyt-border)]/50 text-primary">
+                  ✍️ {["contributor", "author", "admin"].includes(userRole) ? t("My Articles", "मेरे लेख") : t("Write With Us", "हमारे साथ लिखें")}
                 </Link>
               </div>
 
