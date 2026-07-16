@@ -113,6 +113,7 @@ export interface UserProfile {
   designationHi?: string;
   nameHi?: string;
   city?: string;
+  phone?: string;
   twitter?: string;
   linkedin?: string;
   education?: string;

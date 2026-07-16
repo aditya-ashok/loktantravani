@@ -21,7 +21,7 @@ const GUIDELINES = [
 const CATEGORIES = ["Opinion", "India", "Politics", "Economy", "Tech", "Culture", "Cities", "World", "Defence", "Sports"];
 
 export default function WritePage() {
-  const { isLoggedIn, userId, userName, userEmail, userRole, signInWithGoogle } = useAuth();
+  const { isLoggedIn, userId, userName, userEmail, userRole, setUserRole, signInWithGoogle } = useAuth();
   const isContributor = userRole === "contributor" || userRole === "author" || userRole === "admin";
   const [registering, setRegistering] = useState(false);
   const [regSuccess, setRegSuccess] = useState(false);
@@ -34,6 +34,7 @@ export default function WritePage() {
   }, []);
   const [form, setForm] = useState({
     name: userName || "",
+    phone: "",
     education: "",
     age: "",
     gender: "",
@@ -54,6 +55,7 @@ export default function WritePage() {
           uid: userId,
           email: userEmail,
           name: form.name || userName,
+          phone: form.phone,
           education: form.education,
           age: form.age ? parseInt(form.age) : null,
           gender: form.gender,
@@ -64,7 +66,11 @@ export default function WritePage() {
         }),
       });
       const data = await res.json();
-      if (data.success) setRegSuccess(true);
+      if (data.success) {
+        setRegSuccess(true);
+        // Reflect the new role immediately — no reload, no "Access Required"
+        setUserRole((data.role as "contributor") || "contributor");
+      }
     } catch { /* */ }
     setRegistering(false);
   };
@@ -181,6 +187,10 @@ export default function WritePage() {
                     <input value={userEmail || ""} disabled className="w-full border-2 border-black/20 px-4 py-3 font-inter text-sm bg-gray-50 dark:bg-white/5 dark:text-white/40 mt-1" />
                   </div>
                   <div>
+                    <label className="text-[9px] font-inter font-black uppercase tracking-widest opacity-60 dark:text-white/60">Phone (WhatsApp) *</label>
+                    <input type="tel" value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} placeholder="+91 98765 43210" className="w-full border-2 border-black dark:border-white/30 px-4 py-3 font-inter text-sm bg-transparent dark:text-white placeholder:opacity-40 mt-1" />
+                  </div>
+                  <div>
                     <label className="text-[9px] font-inter font-black uppercase tracking-widest opacity-60 dark:text-white/60">Education</label>
                     <input value={form.education} onChange={e => setForm({ ...form, education: e.target.value })} placeholder="e.g., BA Political Science" className="w-full border-2 border-black dark:border-white/30 px-4 py-3 font-inter text-sm bg-transparent dark:text-white placeholder:opacity-40 mt-1" />
                   </div>
@@ -215,7 +225,7 @@ export default function WritePage() {
                     <textarea value={form.bio} onChange={e => setForm({ ...form, bio: e.target.value })} rows={3} placeholder="Tell us about your interests and expertise..." className="w-full border-2 border-black dark:border-white/30 px-4 py-3 font-inter text-sm bg-transparent dark:text-white placeholder:opacity-40 mt-1 resize-none" />
                   </div>
                 </div>
-                <button onClick={handleRegister} disabled={registering || !form.name} className="mt-6 bg-black text-white px-8 py-4 text-xs font-inter font-black uppercase tracking-widest hover:bg-primary transition-colors disabled:opacity-40 dark:bg-white dark:text-black dark:hover:bg-primary dark:hover:text-white">
+                <button onClick={handleRegister} disabled={registering || !form.name || !form.phone} className="mt-6 bg-black text-white px-8 py-4 text-xs font-inter font-black uppercase tracking-widest hover:bg-primary transition-colors disabled:opacity-40 dark:bg-white dark:text-black dark:hover:bg-primary dark:hover:text-white">
                   {registering ? "Registering..." : "Register as Contributor"}
                 </button>
               </div>

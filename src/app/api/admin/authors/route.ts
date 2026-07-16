@@ -36,6 +36,7 @@ export async function GET(req: NextRequest) {
         name: extract("name"),
         nameHi: extract("nameHi"),
         email: extract("email"),
+        phone: extract("phone"),
         role: extract("role"),
         bio: extract("bio"),
         bioHi: extract("bioHi"),

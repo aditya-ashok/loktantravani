@@ -8,7 +8,7 @@ import { setDoc, getDoc } from "@/lib/firestore-rest";
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { uid, name, email, education, age, gender, college, linkedin, twitter, bio, photoUrl } = body;
+    const { uid, name, email, phone, education, age, gender, college, linkedin, twitter, bio, photoUrl } = body;
 
     if (!uid || !email || !name) {
       return NextResponse.json({ error: "uid, name, and email required" }, { status: 400 });
@@ -27,6 +27,7 @@ export async function POST(req: NextRequest) {
       name,
       email,
       role: "contributor",
+      phone: phone || "",
       education: education || "",
       age: age || null,
       gender: gender || "",

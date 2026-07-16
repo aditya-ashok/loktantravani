@@ -92,13 +92,22 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // 3. Upsert profile under real UID
-    await firestoreSet(`users/${uid}`, {
-      name: name || email.split("@")[0],
-      email,
-      role: resolvedRole,
-      avatar: avatar || "",
-    });
+    // 3. Upsert profile under real UID — but NEVER overwrite an existing
+    // role or name: a transient read failure above must not demote a
+    // registered contributor back to guest ("Access Required" bug).
+    const docExists = !!uidDoc?.fields;
+    const upsert: Record<string, unknown> = { email };
+    if (!docExists) {
+      upsert.role = resolvedRole;
+      upsert.name = name || email.split("@")[0];
+      upsert.avatar = avatar || "";
+    } else {
+      if (!uidDoc.fields?.name?.stringValue && name) upsert.name = name;
+      if (!uidDoc.fields?.avatar?.stringValue && avatar) upsert.avatar = avatar;
+      // Promote from email-matched admin/author docs, never demote
+      if (resolvedRole !== "guest" && uidDoc.fields?.role?.stringValue !== resolvedRole) upsert.role = resolvedRole;
+    }
+    await firestoreSet(`users/${uid}`, upsert);
 
     // Return interests if available
     const interests = uidDoc?.fields?.interests?.arrayValue?.values?.map((v: any) => v.stringValue) || [];

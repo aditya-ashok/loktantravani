@@ -4299,6 +4299,8 @@ function AuthorsManagementPanel() {
     setUploading(false);
   };
 
+  const [roleFilter, setRoleFilter] = useState("all");
+
   const generateBio = async () => {
     if (!form.name) return;
     setGeneratingBio(true);
@@ -4477,6 +4479,22 @@ function AuthorsManagementPanel() {
         </div>
       )}
 
+      {/* Role filter — guest writers who registered via /write show as CONTRIBUTOR */}
+      <div className="flex flex-wrap gap-2">
+        {["all", "admin", "author", "contributor", "guest"].map(r => (
+          <button
+            key={r}
+            onClick={() => setRoleFilter(r)}
+            className={cn(
+              "px-3 py-1.5 text-[9px] font-inter font-black uppercase tracking-widest border-2",
+              roleFilter === r ? "bg-black text-white border-black" : "border-black/20 hover:border-black"
+            )}
+          >
+            {r === "all" ? `All (${authors.length})` : `${r} (${authors.filter(x => (x.role as string) === r).length})`}
+          </button>
+        ))}
+      </div>
+
       {/* Authors List */}
       {loading ? (
         <div className="bg-white border-2 border-black p-12 text-center"><Loader2 className="w-8 h-8 animate-spin mx-auto opacity-20" /></div>
@@ -4487,7 +4505,7 @@ function AuthorsManagementPanel() {
         </div>
       ) : (
         <div className="space-y-2">
-          {authors.map(a => (
+          {authors.filter(a => roleFilter === "all" || (a.role as string) === roleFilter).map(a => (
             <div key={a.id as string} className="bg-white border-2 border-black p-4 flex items-center gap-4 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-shadow">
               <div className="w-14 h-14 border-2 border-black bg-black/5 flex-shrink-0 overflow-hidden">
                 {(a.photoUrl as string) ? (
@@ -4504,13 +4522,15 @@ function AuthorsManagementPanel() {
                   <span className={cn(
                     "px-2 py-0.5 text-[7px] font-inter font-black uppercase tracking-widest",
                     (a.role as string) === "admin" ? "bg-red-100 text-red-700" :
-                    (a.role as string) === "author" ? "bg-blue-100 text-blue-700" : "bg-gray-100 text-gray-600"
+                    (a.role as string) === "author" ? "bg-blue-100 text-blue-700" :
+                    (a.role as string) === "contributor" ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-600"
                   )}>
                     {a.role as string}
                   </span>
                 </div>
                 <p className="text-[10px] font-inter opacity-50 truncate">
                   {(a.designation as string) || ""} {(a.designation as string) && "·"} {a.email as string}
+                  {(a.phone as string) && ` · 📱 ${a.phone}`}
                   {(a.college as string) && ` · ${a.college}`}
                 </p>
                 {(a.bio as string) && <p className="text-[10px] font-inter opacity-40 truncate mt-0.5">{(a.bio as string).slice(0, 100)}</p>}
@@ -4547,6 +4567,32 @@ function SubscribersPanel() {
   const [subscribers, setSubscribers] = useState<{ id: string; email: string; name: string; subscribedAt: string; active: boolean }[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const [bcSubject, setBcSubject] = useState("");
+  const [bcMessage, setBcMessage] = useState("");
+  const [bcSending, setBcSending] = useState(false);
+  const [bcResult, setBcResult] = useState("");
+
+  const sendBroadcast = async () => {
+    const activeCount = subscribers.filter(s => s.active).length;
+    if (!bcSubject.trim() || !bcMessage.trim()) { setBcResult("Subject and message are both required."); return; }
+    if (!confirm(`Send this message to ${activeCount} active subscriber${activeCount === 1 ? "" : "s"} from ai@loktantravani.in?`)) return;
+    setBcSending(true); setBcResult("");
+    try {
+      const res = await fetch("/api/admin/broadcast", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ subject: bcSubject.trim(), message: bcMessage }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setBcResult(`✓ Sent to ${data.sent} subscriber${data.sent === 1 ? "" : "s"}.`);
+        setBcSubject(""); setBcMessage("");
+      } else {
+        setBcResult(`Failed: ${data.error || (data.errors || []).join("; ") || "unknown error"}`);
+      }
+    } catch (e) { setBcResult(`Failed: ${String(e)}`); }
+    setBcSending(false);
+  };
 
   const fetchSubscribers = useCallback(async () => {
     setLoading(true);
@@ -4604,6 +4650,39 @@ function SubscribersPanel() {
           <button onClick={exportCSV} disabled={subscribers.length === 0} className="px-3 py-2 bg-green-600 text-white text-xs font-inter font-black uppercase tracking-widest hover:opacity-90 flex items-center gap-2 disabled:opacity-50">
             <Download className="w-3 h-3" /> Export CSV
           </button>
+        </div>
+      </div>
+
+      {/* One-click broadcast to every active subscriber */}
+      <div className="bg-white border-2 border-black p-4 space-y-3 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+        <div className="flex items-center justify-between">
+          <p className="text-xs font-inter font-black uppercase tracking-widest">📣 Message all subscribers</p>
+          <p className="text-[9px] font-inter font-bold uppercase tracking-widest opacity-40">from ai@loktantravani.in</p>
+        </div>
+        <input
+          type="text"
+          placeholder="Subject..."
+          value={bcSubject}
+          onChange={e => setBcSubject(e.target.value)}
+          className="w-full border-2 border-black px-3 py-2 text-sm font-inter outline-none placeholder:opacity-30"
+        />
+        <textarea
+          placeholder="Write your message... (plain text or HTML — it's wrapped in the LoktantraVani template with unsubscribe links)"
+          value={bcMessage}
+          onChange={e => setBcMessage(e.target.value)}
+          rows={4}
+          className="w-full border-2 border-black px-3 py-2 text-sm font-inter outline-none placeholder:opacity-30 resize-y"
+        />
+        <div className="flex items-center gap-3">
+          <button
+            onClick={sendBroadcast}
+            disabled={bcSending || !bcSubject.trim() || !bcMessage.trim()}
+            className="px-5 py-2.5 bg-black text-white text-xs font-inter font-black uppercase tracking-widest hover:bg-primary disabled:opacity-40 flex items-center gap-2"
+          >
+            {bcSending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
+            {bcSending ? "Sending..." : `Send to ${subscribers.filter(s => s.active).length} active`}
+          </button>
+          {bcResult && <p className={cn("text-[11px] font-inter font-bold", bcResult.startsWith("✓") ? "text-green-600" : "text-red-600")}>{bcResult}</p>}
         </div>
       </div>
 
