@@ -72,21 +72,19 @@ export async function POST(req: NextRequest) {
         </div>`;
     }
 
+    // Sender must be on a Resend-verified domain; RESEND_FROM overrides
+    // (e.g. "LoktantraVani <onboarding@resend.dev>" before DNS is verified).
+    const from = (process.env.RESEND_FROM || "LoktantraVani <noreply@loktantravani.in>").trim();
     const res = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
-      body: JSON.stringify({
-        from: "LoktantraVani <noreply@loktantravani.com>",
-        to: email,
-        subject,
-        html,
-      }),
+      body: JSON.stringify({ from, to: email, subject, html }),
     });
 
     if (!res.ok) {
       const err = await res.text();
       console.warn("Resend error:", err);
-      return NextResponse.json({ success: true, emailSent: false, message: "Email failed but action completed" });
+      return NextResponse.json({ success: true, emailSent: false, message: "Email failed but action completed", resendError: err.slice(0, 300) });
     }
 
     return NextResponse.json({ success: true, emailSent: true });
