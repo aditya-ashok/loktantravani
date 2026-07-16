@@ -5,6 +5,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
+import { queryByField, createDoc, setDoc } from "@/lib/firestore-rest";
 
 export async function POST(req: NextRequest) {
   try {
@@ -13,28 +14,24 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Valid email required" }, { status: 400 });
     }
 
-    // Save to Firestore
+    // Save via Firestore REST — the web SDK's streaming transport is
+    // unreliable in serverless, which silently dropped subscribers.
     let saved = false;
     try {
-      const { isFirebaseConfigured } = await import("@/lib/firebase");
-      if (isFirebaseConfigured) {
-        const { db } = await import("@/lib/firebase");
-        const { collection, addDoc, Timestamp, query, where, getDocs } = await import("firebase/firestore");
-
-        // Check if already subscribed
-        const existing = await getDocs(query(collection(db, "subscribers"), where("email", "==", email)));
-        if (!existing.empty) {
-          return NextResponse.json({ success: true, message: "Already subscribed!" });
-        }
-
-        await addDoc(collection(db, "subscribers"), {
-          email,
-          name: name || "",
-          subscribedAt: Timestamp.now(),
-          active: true,
-        });
-        saved = true;
+      const clean = String(email).toLowerCase().trim();
+      const existing = await queryByField("subscribers", "email", clean, 1);
+      if (existing.length > 0) {
+        // Re-subscribing reactivates a previously unsubscribed address
+        await setDoc(`subscribers/${existing[0].id}`, { active: true });
+        return NextResponse.json({ success: true, saved: true, message: "Already subscribed!" });
       }
+      await createDoc("subscribers", {
+        email: clean,
+        name: name || "",
+        subscribedAt: new Date(),
+        active: true,
+      });
+      saved = true;
     } catch (e) {
       console.warn("Firestore save failed:", e);
     }
@@ -50,7 +47,7 @@ export async function POST(req: NextRequest) {
             Authorization: `Bearer ${resendKey}`,
           },
           body: JSON.stringify({
-            from: "LoktantraVani <noreply@loktantravani.com>",
+            from: (process.env.RESEND_FROM_NEWSLETTER || "LoktantraVani AI <ai@loktantravani.in>").trim(),
             to: email,
             subject: "Welcome to LoktantraVani — India's 1st AI Newspaper",
             html: `
