@@ -54,6 +54,23 @@ import { SEED_POSTS } from "@/lib/seed-data";
 import { AUTHORS } from "@/lib/authors";
 import type { Post, PostCategory } from "@/lib/types";
 
+/** Compress an image in-browser before upload: phone photos run 5-12MB and
+ * the platform request cap is 4.5MB — the old 4MB guard made Upload look
+ * broken. Downscale to ≤1600px JPEG so any picture uploads. */
+async function compressImage(file: File): Promise<Blob> {
+  if (file.size < 900 * 1024) return file; // small enough already
+  const bitmap = await createImageBitmap(file).catch(() => null);
+  if (!bitmap) return file; // unsupported format — let the server answer
+  const MAX = 1600;
+  const scale = Math.min(1, MAX / Math.max(bitmap.width, bitmap.height));
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.round(bitmap.width * scale);
+  canvas.height = Math.round(bitmap.height * scale);
+  canvas.getContext("2d")!.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+  const blob = await new Promise<Blob | null>(r => canvas.toBlob(r, "image/jpeg", 0.85));
+  return blob && blob.size < file.size ? blob : file;
+}
+
 const sidebarItems = [
   { id: "poster-studio", label: "Poster Studio", icon: Sparkles },
   { id: "podcast-studio", label: "Podcast Studio", icon: Video },
@@ -730,11 +747,11 @@ function PostsList() {
                   onChange={async (e) => {
                     const file = e.target.files?.[0];
                     if (!file) return;
-                    if (file.size > 4 * 1024 * 1024) { alert("File too large. Max 4MB."); return; }
                     setUploadingImage(true);
                     try {
+                      const compressed = await compressImage(file);
                       const formData = new FormData();
-                      formData.append("file", file);
+                      formData.append("file", compressed, "upload.jpg");
                       const res = await fetch("/api/admin/upload-image", { method: "POST", body: formData });
                       if (!res.ok) { const t = await res.text(); throw new Error(`HTTP ${res.status}: ${t.slice(0, 200)}`); }
                       const data = await res.json();
@@ -942,8 +959,9 @@ function PostsList() {
                         const file = input.files?.[0];
                         if (!file) return;
                         try {
+                          const compressed = await compressImage(file);
                           const formData = new FormData();
-                          formData.append("file", file);
+                          formData.append("file", compressed, "upload.jpg");
                           const res = await fetch("/api/admin/upload-image", { method: "POST", body: formData });
                           const data = await res.json();
                           if (data.imageUrl) {
@@ -1694,11 +1712,11 @@ function ApprovalQueue() {
                             input.onchange = async () => {
                               const file = input.files?.[0];
                               if (!file) return;
-                              if (file.size > 4 * 1024 * 1024) { alert("Max 4MB"); return; }
                               setRegenImageId(post.id);
                               try {
+                                const compressed = await compressImage(file);
                                 const formData = new FormData();
-                                formData.append("file", file);
+                                formData.append("file", compressed, "upload.jpg");
                                 const res = await fetch("/api/admin/upload-image", { method: "POST", body: formData });
                                 if (!res.ok) throw new Error(`HTTP ${res.status}`);
                                 const data = await res.json();
@@ -2055,11 +2073,11 @@ function NewPostPanel() {
     input.onchange = async () => {
       const file = input.files?.[0];
       if (!file) return;
-      if (file.size > 4 * 1024 * 1024) { alert("File too large. Max 4MB."); return; }
       setRegeneratingImage(index);
       try {
+        const compressed = await compressImage(file);
         const formData = new FormData();
-        formData.append("file", file);
+        formData.append("file", compressed, "upload.jpg");
         const res = await fetch("/api/admin/upload-image", { method: "POST", body: formData });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
