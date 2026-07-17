@@ -359,15 +359,6 @@ function UserSubmissionsPanel() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id: post.id }),
       });
-      // Notify contributor
-      const p = post as Post & { submittedByEmail?: string; submittedByName?: string };
-      if (p.submittedByEmail) {
-        fetch("/api/write/notify", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ type: "approved", email: p.submittedByEmail, name: p.submittedByName, title: post.title, slug: post.slug }),
-        }).catch(() => {});
-      }
       fetchSubmissions();
     } catch { /* */ }
     setActionLoading(null);
@@ -2057,6 +2048,30 @@ function NewPostPanel() {
     setGenerating(false);
   };
 
+  const handleUploadGenImage = (index: number) => {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = "image/*";
+    input.onchange = async () => {
+      const file = input.files?.[0];
+      if (!file) return;
+      if (file.size > 4 * 1024 * 1024) { alert("File too large. Max 4MB."); return; }
+      setRegeneratingImage(index);
+      try {
+        const formData = new FormData();
+        formData.append("file", file);
+        const res = await fetch("/api/admin/upload-image", { method: "POST", body: formData });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        if (!data.imageUrl) throw new Error(data.error || "no url returned");
+        if (index === 0 && result) setResult({ ...result, imageUrl: data.imageUrl, hasImage: true });
+        else setExtraImages(prev => { const next = [...prev]; next[index - 1] = data.imageUrl; return next; });
+      } catch (err) { alert("Upload error: " + String(err)); }
+      setRegeneratingImage(null);
+    };
+    input.click();
+  };
+
   const handleRegenerateImage = async (index: number) => {
     setRegeneratingImage(index);
     try {
@@ -2616,7 +2631,7 @@ function NewPostPanel() {
           {/* Article preview card */}
           <div className="bg-white border-2 border-black overflow-hidden">
             {/* Image(s) with regenerate */}
-            {(result.hasImage || result.imageUrl) && (
+            {(
               <div className="grid grid-cols-1 md:grid-cols-2 gap-0">
                 {/* Primary image */}
                 <div className="relative group bg-black/5 aspect-video flex items-center justify-center overflow-hidden">
@@ -2625,17 +2640,26 @@ function NewPostPanel() {
                   ) : (
                     <div className="text-center p-8">
                       <ImageIcon className="w-12 h-12 text-black/20 mx-auto mb-2" />
-                      <p className="text-[9px] font-inter opacity-40">AI Image Generated</p>
+                      <p className="text-[9px] font-inter opacity-40">No cover yet — generate with AI or upload your own</p>
                     </div>
                   )}
-                  <button
-                    onClick={() => handleRegenerateImage(0)}
-                    disabled={regeneratingImage === 0}
-                    className="absolute bottom-3 right-3 px-3 py-1.5 bg-black/80 text-white text-[8px] font-inter font-black uppercase tracking-widest opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity flex items-center gap-1.5"
-                  >
-                    {regeneratingImage === 0 ? <Loader2 className="w-3 h-3 animate-spin" /> : <RefreshCw className="w-3 h-3" />}
-                    🎨 Regenerate Image
-                  </button>
+                  <div className="absolute bottom-3 right-3 flex gap-1.5 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
+                    <button
+                      onClick={() => handleUploadGenImage(0)}
+                      disabled={regeneratingImage === 0}
+                      className="px-3 py-1.5 bg-red-600/90 text-white text-[8px] font-inter font-black uppercase tracking-widest flex items-center gap-1.5"
+                    >
+                      <Upload className="w-3 h-3" /> Upload
+                    </button>
+                    <button
+                      onClick={() => handleRegenerateImage(0)}
+                      disabled={regeneratingImage === 0}
+                      className="px-3 py-1.5 bg-black/80 text-white text-[8px] font-inter font-black uppercase tracking-widest flex items-center gap-1.5"
+                    >
+                      {regeneratingImage === 0 ? <Loader2 className="w-3 h-3 animate-spin" /> : <RefreshCw className="w-3 h-3" />}
+                      🎨 {result.imageUrl ? "Regenerate" : "Generate"}
+                    </button>
+                  </div>
                   <span className="absolute top-2 left-2 px-2 py-0.5 bg-black text-white text-[8px] font-inter font-black uppercase">Image 1</span>
                 </div>
 
@@ -2650,14 +2674,23 @@ function NewPostPanel() {
                         <p className="text-[9px] font-inter opacity-40">{generating ? "Generating..." : "Click to generate"}</p>
                       </div>
                     )}
-                    <button
-                      onClick={() => handleRegenerateImage(1)}
-                      disabled={regeneratingImage === 1}
-                      className="absolute bottom-3 right-3 px-3 py-1.5 bg-black/80 text-white text-[8px] font-inter font-black uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1.5"
-                    >
-                      {regeneratingImage === 1 ? <Loader2 className="w-3 h-3 animate-spin" /> : <RefreshCw className="w-3 h-3" />}
-                      {extraImages[0] ? "Regenerate" : "Generate"}
-                    </button>
+                    <div className="absolute bottom-3 right-3 flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button
+                        onClick={() => handleUploadGenImage(1)}
+                        disabled={regeneratingImage === 1}
+                        className="px-3 py-1.5 bg-red-600/90 text-white text-[8px] font-inter font-black uppercase tracking-widest flex items-center gap-1.5"
+                      >
+                        <Upload className="w-3 h-3" /> Upload
+                      </button>
+                      <button
+                        onClick={() => handleRegenerateImage(1)}
+                        disabled={regeneratingImage === 1}
+                        className="px-3 py-1.5 bg-black/80 text-white text-[8px] font-inter font-black uppercase tracking-widest flex items-center gap-1.5"
+                      >
+                        {regeneratingImage === 1 ? <Loader2 className="w-3 h-3 animate-spin" /> : <RefreshCw className="w-3 h-3" />}
+                        {extraImages[0] ? "Regenerate" : "Generate"}
+                      </button>
+                    </div>
                     <span className="absolute top-2 left-2 px-2 py-0.5 bg-black text-white text-[8px] font-inter font-black uppercase">Image 2</span>
                   </div>
                 )}
