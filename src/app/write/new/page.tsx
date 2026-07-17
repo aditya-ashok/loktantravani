@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -36,6 +36,37 @@ export default function WriteNewPage() {
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState("");
+  const [draftRestored, setDraftRestored] = useState(false);
+
+  // Draft autosave — a failed submit or closed tab never loses writing
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("lv_draft");
+      if (raw) {
+        const d = JSON.parse(raw);
+        if (d.title || d.content) {
+          setTitle(d.title || "");
+          setSummary(d.summary || "");
+          setContent(d.content || "");
+          setCategory(d.category || "Opinion");
+          setTags(d.tags || "");
+          setImageUrl(d.imageUrl || "");
+          setDraftRestored(true);
+        }
+      }
+    } catch { /* */ }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    if (submitted) return;
+    const t = setTimeout(() => {
+      try {
+        if (title || content) localStorage.setItem("lv_draft", JSON.stringify({ title, summary, content, category, tags, imageUrl }));
+      } catch { /* */ }
+    }, 800);
+    return () => clearTimeout(t);
+  }, [title, summary, content, category, tags, imageUrl, submitted]);
 
   const wordCount = content.replace(/<[^>]*>/g, "").trim().split(/\s+/).filter(Boolean).length;
 
@@ -60,12 +91,20 @@ export default function WriteNewPage() {
       setError("Title and content (min 100 words) required.");
       return;
     }
+    if (!userId) {
+      setError("Your session has expired — sign in again from the ✍️ menu, your draft is saved on this device.");
+      return;
+    }
     setSubmitting(true);
     setError("");
+    // Never hang forever on "Submitting…" — 25s is far beyond a healthy call
+    const abort = new AbortController();
+    const timer = setTimeout(() => abort.abort(), 25000);
     try {
       const res = await fetch("/api/write/submit", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        signal: abort.signal,
         body: JSON.stringify({
           uid: userId,
           title,
@@ -76,8 +115,10 @@ export default function WriteNewPage() {
           imageUrl,
         }),
       });
-      const data = await res.json();
+      let data: { success?: boolean; postId?: string; needsImage?: boolean; error?: string } = {};
+      try { data = await res.json(); } catch { /* non-JSON error page */ }
       if (data.success) {
+        try { localStorage.removeItem("lv_draft"); } catch { /* */ }
         setSubmitted(true);
         // Generate the AI cover in the background — keepalive lets it
         // complete even if the writer navigates away immediately.
@@ -87,14 +128,24 @@ export default function WriteNewPage() {
             headers: { "Content-Type": "application/json" },
             keepalive: true,
             body: JSON.stringify({
-              prompt: `News photograph for the headline: "${title}". ${summary.slice(0, 140)}. Photojournalistic, realistic, no text or logos, no faces of real politicians.`,
+              prompt: `Editorial caricature for the headline: "${title}". ${summary.slice(0, 140)}. Bold newspaper cartoon, expressive exaggerated figures, vibrant colours, thick ink outlines, no text, labels, photographs, or photorealism.`,
               postId: data.postId,
             }),
           }).catch(() => {});
         }
-      } else setError(data.error || "Submission failed");
-    } catch { setError("Submission failed"); }
-    setSubmitting(false);
+      } else if (res.status === 404 || res.status === 403) {
+        setError(data.error || "Your contributor profile wasn't found — open ✍️ Write With Us and register once, then submit again. Your draft is saved on this device.");
+      } else {
+        setError((data.error || `Submission failed (HTTP ${res.status})`) + " — your draft is safe on this device, try again.");
+      }
+    } catch (e: unknown) {
+      setError((e as Error)?.name === "AbortError"
+        ? "The server is taking unusually long. Your draft is saved on this device — refresh the page (Cmd/Ctrl+Shift+R) and try again."
+        : "Network error — check your connection and try again. Your draft is saved on this device.");
+    } finally {
+      clearTimeout(timer);
+      setSubmitting(false);
+    }
   };
 
   // Redirect if not logged in or not contributor
@@ -158,7 +209,7 @@ export default function WriteNewPage() {
           <div className="flex items-center justify-between mb-8">
             <div>
               <h1 className="text-2xl md:text-4xl font-newsreader font-black dark:text-white">Write Your Article</h1>
-              <p className="text-xs font-inter opacity-40 mt-1 dark:text-white/40">By {userName} • {wordCount} words</p>
+              <p className="text-xs font-inter opacity-40 mt-1 dark:text-white/40">By {userName} • {wordCount} words{draftRestored ? " • draft restored ✓" : ""}</p>
             </div>
             <span className="text-[9px] font-inter font-bold uppercase tracking-widest px-3 py-1 bg-primary/10 text-primary">Contributor</span>
           </div>
