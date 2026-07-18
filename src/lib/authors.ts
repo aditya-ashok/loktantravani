@@ -30,6 +30,20 @@ export interface AuthorProfile {
 
 export const AUTHORS: AuthorProfile[] = [
   {
+    name: "LoktantraVani",
+    nameHi: "लोकतंत्रवाणी",
+    email: "ai@loktantravani.in",
+    role: "author",
+    designation: "AI News Bureau",
+    designationHi: "एआई समाचार ब्यूरो",
+    bio: "LoktantraVani is the newsroom's AI news bureau — India's first AI-native news desk. It reads hundreds of sources around the clock, checks claims against public records, and files reported copy under the supervision of the editorial board.",
+    bioHi: "लोकतंत्रवाणी का एआई समाचार ब्यूरो — भारत का पहला एआई-नेटिव न्यूज़ डेस्क। चौबीसों घंटे शोध, तथ्य-जाँच और रिपोर्टिंग, संपादकीय बोर्ड की निगरानी में।",
+    location: "New Delhi, India",
+    social: {
+      website: "https://loktantravani.in",
+    },
+  },
+  {
     name: "Aditya Ashok",
     nameHi: "आदित्य अशोक",
     email: "aditya.ashok@gmail.com",
@@ -128,21 +142,15 @@ export const AUTHORS: AuthorProfile[] = [
     },
   },
   {
-    name: "Bhavya Rajshree",
-    nameHi: "भव्या राजश्री",
-    email: "bhavya.rajshree@gmail.com",
+    name: "Bhavya Razshree",
+    nameHi: "भव्या रज़श्री",
+    email: "bhavyarazershree@gmail.com",
     role: "author",
-    designation: "Correspondent — Cities & Lifestyle",
-    designationHi: "संवाददाता — शहर एवं जीवनशैली",
-    bio: "Tracks urban India — from metro corridors to weekend chai stops. Storytelling at the intersection of policy and people.",
-    bioHi: "शहरी भारत की रिपोर्टिंग — मेट्रो गलियारों से सप्ताहांत चाय की दुकानों तक। नीति और जनता के संगम पर कहानियाँ।",
-    photo: "bhavya-rajshree.jpg",
+    designation: "Co-Founder, LawSarathi | Advocate, Delhi Courts",
+    designationHi: "सह-संस्थापक, लॉसारथी | अधिवक्ता, दिल्ली न्यायालय",
+    bio: "Practices criminal, labour and corporate law at Delhi courts.",
+    bioHi: "दिल्ली न्यायालयों में आपराधिक, श्रम और कॉर्पोरेट कानून का अभ्यास करती हैं।",
     location: "New Delhi, India",
-    social: {
-      twitter: "https://twitter.com/bhavyarajshree",
-      linkedin: "https://www.linkedin.com/in/bhavyarajshree",
-      instagram: "https://instagram.com/bhavyarajshree",
-    },
   },
   {
     name: "LoktantraVani AI",
@@ -191,6 +199,7 @@ export const AUTHOR_NAMES = AUTHORS.filter(a => a.role === "author" || a.designa
 
 /** Get Hindi name for an author, returns original if not found */
 export function getAuthorHiName(name: string): string {
+  if (name === "LoktantraVani") return "लोकतंत्रवाणी";
   if (name === "LoktantraVani AI") return "लोकतंत्रवाणी AI";
   const author = AUTHORS.find(a => a.name === name);
   return author?.nameHi || name;
@@ -198,6 +207,7 @@ export function getAuthorHiName(name: string): string {
 
 /** Get full Hindi author info */
 export function getAuthorHi(name: string): { nameHi: string; designationHi: string; bioHi: string } {
+  if (name === "LoktantraVani") return { nameHi: "लोकतंत्रवाणी", designationHi: "एआई समाचार ब्यूरो", bioHi: "लोकतंत्रवाणी का एआई समाचार ब्यूरो — भारत का पहला एआई-नेटिव न्यूज़ डेस्क। चौबीसों घंटे शोध, तथ्य-जाँच और रिपोर्टिंग, संपादकीय बोर्ड की निगरानी में।" };
   if (name === "LoktantraVani AI") return { nameHi: "लोकतंत्रवाणी AI", designationHi: "AI समाचार ब्यूरो", bioHi: "लोकतंत्रवाणी AI, Claude और Gemini द्वारा संचालित—गहन शोध और तथ्य-जाँच पत्रकारिता।" };
   const author = AUTHORS.find(a => a.name === name);
   return {
