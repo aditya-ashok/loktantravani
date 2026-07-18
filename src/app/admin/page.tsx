@@ -9,6 +9,7 @@ import { useAuth } from "@/lib/auth-context";
 import { useLanguage } from "@/lib/language-context";
 import { useTheme } from "next-themes";
 import PostEditor from "@/components/admin/PostEditor";
+import { pickAndUploadImage } from "@/lib/upload-image-client";
 import AuthorProfilePanel from "@/components/admin/AuthorProfile";
 import {
   Layout,
@@ -53,23 +54,6 @@ import { motion } from "framer-motion";
 import { SEED_POSTS } from "@/lib/seed-data";
 import { AUTHORS } from "@/lib/authors";
 import type { Post, PostCategory } from "@/lib/types";
-
-/** Compress an image in-browser before upload: phone photos run 5-12MB and
- * the platform request cap is 4.5MB — the old 4MB guard made Upload look
- * broken. Downscale to ≤1600px JPEG so any picture uploads. */
-async function compressImage(file: File): Promise<Blob> {
-  if (file.size < 900 * 1024) return file; // small enough already
-  const bitmap = await createImageBitmap(file).catch(() => null);
-  if (!bitmap) return file; // unsupported format — let the server answer
-  const MAX = 1600;
-  const scale = Math.min(1, MAX / Math.max(bitmap.width, bitmap.height));
-  const canvas = document.createElement("canvas");
-  canvas.width = Math.round(bitmap.width * scale);
-  canvas.height = Math.round(bitmap.height * scale);
-  canvas.getContext("2d")!.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
-  const blob = await new Promise<Blob | null>(r => canvas.toBlob(r, "image/jpeg", 0.85));
-  return blob && blob.size < file.size ? blob : file;
-}
 
 const sidebarItems = [
   { id: "poster-studio", label: "Poster Studio", icon: Sparkles },
@@ -741,28 +725,11 @@ function PostsList() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => {
-                    // Self-contained picker — no ref to go stale, works from any render
-                    const input = document.createElement("input");
-                    input.type = "file";
-                    input.accept = "image/*";
-                    input.onchange = async () => {
-                      const file = input.files?.[0];
-                      if (!file) return;
-                      setUploadingImage(true);
-                      try {
-                        const compressed = await compressImage(file);
-                        const formData = new FormData();
-                        formData.append("file", compressed, "upload.jpg");
-                        const res = await fetch("/api/admin/upload-image", { method: "POST", body: formData });
-                        if (!res.ok) { const t = await res.text(); throw new Error(`HTTP ${res.status}: ${t.slice(0, 200)}`); }
-                        const data = await res.json();
-                        if (data.imageUrl) setEditForm(p => ({ ...p, imageUrl: data.imageUrl }));
-                        else alert("Upload failed: " + (data.error || "Unknown error"));
-                      } catch (err) { alert("Upload error: " + String(err)); }
-                      setUploadingImage(false);
-                    };
-                    input.click();
+                  onClick={async () => {
+                    setUploadingImage(true);
+                    const url = await pickAndUploadImage();
+                    if (url) setEditForm(p => ({ ...p, imageUrl: url }));
+                    setUploadingImage(false);
                   }}
                   disabled={uploadingImage}
                   className="px-3 py-2 bg-red-600 text-white text-[8px] font-inter font-black uppercase tracking-widest hover:bg-red-700 disabled:opacity-50 whitespace-nowrap flex items-center gap-1"
@@ -952,24 +919,8 @@ function PostsList() {
                     type="button"
                     onMouseDown={async (e) => {
                       e.preventDefault();
-                      const input = document.createElement("input");
-                      input.type = "file";
-                      input.accept = "image/*";
-                      input.onchange = async () => {
-                        const file = input.files?.[0];
-                        if (!file) return;
-                        try {
-                          const compressed = await compressImage(file);
-                          const formData = new FormData();
-                          formData.append("file", compressed, "upload.jpg");
-                          const res = await fetch("/api/admin/upload-image", { method: "POST", body: formData });
-                          const data = await res.json();
-                          if (data.imageUrl) {
-                            document.execCommand("insertHTML", false, `<img src="${data.imageUrl}" alt="" style="max-width:100%;margin:16px 0;" />`);
-                          } else alert("Upload failed");
-                        } catch { alert("Upload error"); }
-                      };
-                      input.click();
+                      const url = await pickAndUploadImage();
+                      if (url) document.execCommand("insertHTML", false, `<img src="${url}" alt="" style="max-width:100%;margin:16px 0;" />`);
                     }}
                     className="px-2 py-1 text-xs hover:bg-black hover:text-white border border-transparent hover:border-black"
                     title="Insert Image"
@@ -1705,31 +1656,16 @@ function ApprovalQueue() {
                       )}
                       <div className="absolute bottom-1 right-1 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                         <button
-                          onClick={() => {
-                            const input = document.createElement("input");
-                            input.type = "file";
-                            input.accept = "image/*";
-                            input.onchange = async () => {
-                              const file = input.files?.[0];
-                              if (!file) return;
-                              setRegenImageId(post.id);
-                              try {
-                                const compressed = await compressImage(file);
-                                const formData = new FormData();
-                                formData.append("file", compressed, "upload.jpg");
-                                const res = await fetch("/api/admin/upload-image", { method: "POST", body: formData });
-                                if (!res.ok) throw new Error(`HTTP ${res.status}`);
-                                const data = await res.json();
-                                if (data.imageUrl) {
-                                  setEditingPost({ ...editingPost, imageUrl: data.imageUrl });
-                                  const { setDoc } = await import("@/lib/firestore-rest");
-                                  await setDoc(`posts/${post.id}`, { imageUrl: data.imageUrl });
-                                  setDrafts(prev => prev.map(p => p.id === post.id ? { ...p, imageUrl: data.imageUrl } : p));
-                                } else alert("Upload failed");
-                              } catch (err) { alert("Upload error: " + String(err)); }
-                              setRegenImageId(null);
-                            };
-                            input.click();
+                          onClick={async () => {
+                            setRegenImageId(post.id);
+                            const url = await pickAndUploadImage();
+                            if (url) {
+                              setEditingPost({ ...editingPost, imageUrl: url });
+                              const { setDoc } = await import("@/lib/firestore-rest");
+                              await setDoc(`posts/${post.id}`, { imageUrl: url });
+                              setDrafts(prev => prev.map(p => p.id === post.id ? { ...p, imageUrl: url } : p));
+                            }
+                            setRegenImageId(null);
                           }}
                           disabled={regenImageId === post.id}
                           className="px-2 py-1 bg-blue-600/90 text-white text-[7px] font-inter font-black uppercase flex items-center gap-1"
@@ -2066,28 +2002,14 @@ function NewPostPanel() {
     setGenerating(false);
   };
 
-  const handleUploadGenImage = (index: number) => {
-    const input = document.createElement("input");
-    input.type = "file";
-    input.accept = "image/*";
-    input.onchange = async () => {
-      const file = input.files?.[0];
-      if (!file) return;
-      setRegeneratingImage(index);
-      try {
-        const compressed = await compressImage(file);
-        const formData = new FormData();
-        formData.append("file", compressed, "upload.jpg");
-        const res = await fetch("/api/admin/upload-image", { method: "POST", body: formData });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data = await res.json();
-        if (!data.imageUrl) throw new Error(data.error || "no url returned");
-        if (index === 0 && result) setResult({ ...result, imageUrl: data.imageUrl, hasImage: true });
-        else setExtraImages(prev => { const next = [...prev]; next[index - 1] = data.imageUrl; return next; });
-      } catch (err) { alert("Upload error: " + String(err)); }
-      setRegeneratingImage(null);
-    };
-    input.click();
+  const handleUploadGenImage = async (index: number) => {
+    setRegeneratingImage(index);
+    const url = await pickAndUploadImage();
+    if (url) {
+      if (index === 0 && result) setResult({ ...result, imageUrl: url, hasImage: true });
+      else setExtraImages(prev => { const next = [...prev]; next[index - 1] = url; return next; });
+    }
+    setRegeneratingImage(null);
   };
 
   const handleRegenerateImage = async (index: number) => {

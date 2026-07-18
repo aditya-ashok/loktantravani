@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useCallback } from "react";
+import { pickAndUploadImage } from "@/lib/upload-image-client";
 import {
   Plus,
   Image as ImageIcon,
@@ -477,11 +478,23 @@ export default function PostEditor() {
             <label className="text-[10px] font-inter font-black uppercase tracking-widest opacity-60 flex items-center gap-2">
               <ImageIcon className="w-3 h-3" /> Image URL
             </label>
-            <input
-              className="w-full border-2 border-black font-inter font-bold text-xs p-3 outline-none"
-              value={formData.imageUrl}
-              onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
-            />
+            <div className="flex gap-2">
+              <input
+                className="flex-1 border-2 border-black font-inter font-bold text-xs p-3 outline-none"
+                value={formData.imageUrl}
+                onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
+              />
+              <button
+                type="button"
+                onClick={async () => {
+                  const url = await pickAndUploadImage();
+                  if (url) setFormData((f) => ({ ...f, imageUrl: url }));
+                }}
+                className="px-4 border-2 border-black bg-black text-white text-[9px] font-inter font-black uppercase tracking-widest hover:bg-primary whitespace-nowrap"
+              >
+                ⬆ Upload
+              </button>
+            </div>
             {formData.imageUrl && (
               <div className="aspect-video bg-muted border border-black/10 overflow-hidden mt-2">
                 <img src={formData.imageUrl} alt="Preview" className="w-full h-full object-cover" />
