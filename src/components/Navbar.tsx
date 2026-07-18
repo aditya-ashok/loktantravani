@@ -272,12 +272,6 @@ export default function Navbar() {
               <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-primary group-hover:w-full transition-all" />
             </Link>
           </div>
-          <Link
-            href="/opposition-tracker"
-            className="text-[9px] font-inter font-bold uppercase tracking-widest text-[var(--nyt-black)] dark:text-white/90 border-l border-[var(--nyt-border)] pl-3 py-1.5 whitespace-nowrap hover:text-primary transition-colors"
-          >
-            {t("Fact Check", "फैक्ट चेक")}
-          </Link>
         </div>
       </div>
 
@@ -347,9 +341,6 @@ export default function Navbar() {
               {/* Special sections */}
               <div className="px-5 py-3 border-t border-[var(--nyt-border)]">
                 <p className="text-[9px] font-inter font-bold uppercase tracking-[0.2em] text-[var(--nyt-gray)] mb-2">{t("Special", "विशेष")}</p>
-                <Link href="/opposition-tracker" onClick={() => setMobileOpen(false)} className="flex items-center gap-2 text-[13px] font-inter font-bold uppercase tracking-wider py-3 border-b border-[var(--nyt-border)]/50 text-red-500">
-                  🎯 {t("Fact Check", "फैक्ट चेक")}
-                </Link>
                 <Link href="/modi-scorecard" onClick={() => setMobileOpen(false)} className="flex items-center gap-2 text-[13px] font-inter font-bold uppercase tracking-wider py-3 border-b border-[var(--nyt-border)]/50 text-[#FF9933]">
                   📊 {t("Govt Report Card", "सरकार रिपोर्ट कार्ड")}
                 </Link>
