@@ -29,15 +29,13 @@ export async function GET() {
               ],
             },
           },
-          orderBy: [{ field: { fieldPath: "createdAt" }, direction: "DESCENDING" }],
           limit: 10,
         },
       }),
       cache: "no-store",
     });
 
-    if (!res.ok) return NextResponse.json({ breaking: [] });
-    const results = await res.json();
+    const results = res.ok ? await res.json() : [];
 
     const TWO_HOURS = 2 * 60 * 60 * 1000;
     const now = Date.now();
@@ -62,7 +60,9 @@ export async function GET() {
           isExpired,
         };
       })
-      .filter((b: { isExpired: boolean }) => !b.isExpired);
+      .filter((b: { isExpired: boolean }) => !b.isExpired)
+      .sort((a: { breakingAt: string }, b: { breakingAt: string }) =>
+        new Date(b.breakingAt || 0).getTime() - new Date(a.breakingAt || 0).getTime());
 
     // Ticker should never go dark: with nothing breaking in-window, run the
     // latest headlines instead (labelled LIVE on the client via `fallback`)
