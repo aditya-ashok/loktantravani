@@ -28,7 +28,7 @@ async function checkGemini(): Promise<ProviderStatus> {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         contents: [{ parts: [{ text: "Reply with the single word: OK" }] }],
-        generationConfig: { temperature: 0, maxOutputTokens: 10 },
+        generationConfig: { temperature: 0, maxOutputTokens: 1200 },
       }),
     });
     const data = await res.json();
@@ -58,7 +58,7 @@ async function checkGeminiSearch(): Promise<ProviderStatus> {
       body: JSON.stringify({
         contents: [{ parts: [{ text: "What is today's date? Reply in one short sentence." }] }],
         tools: [{ google_search: {} }],
-        generationConfig: { temperature: 0, maxOutputTokens: 100 },
+        generationConfig: { temperature: 0, maxOutputTokens: 1500 },
       }),
     });
     const data = await res.json();
