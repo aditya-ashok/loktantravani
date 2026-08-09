@@ -50,3 +50,9 @@ export function timeAgo(date: Date | { toDate?: () => Date }): string {
   if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
   return `${Math.floor(seconds / 86400)}d ago`;
 }
+
+/** Public-facing view count: editorial baseline of 95 + real views.
+ * Admin/author analytics show the real number — do not use this there. */
+export function displayViews(n?: number | null): number {
+  return (n || 0) + 95;
+}

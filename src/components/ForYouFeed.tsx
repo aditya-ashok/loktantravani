@@ -6,7 +6,7 @@ import Image from "next/image";
 import { Sparkles, Loader2, Check, Heart } from "lucide-react";
 import { useLanguage } from "@/lib/language-context";
 import { useAuth } from "@/lib/auth-context";
-import { cn } from "@/lib/utils";
+import { cn, displayViews } from "@/lib/utils";
 import type { Post, PostCategory } from "@/lib/types";
 
 const ALL_CATEGORIES: { id: PostCategory; label: string; labelHi: string; emoji: string }[] = [
@@ -327,11 +327,9 @@ export default function ForYouFeed() {
                   <p className="text-[10px] font-inter font-bold text-gray-400 uppercase tracking-tighter">
                     {post.author} · {post.readingTimeMin || 3} MIN
                   </p>
-                  {(post.viewCount || 0) > 10 && (
-                    <span className="ml-auto text-[9px] font-inter font-bold text-primary/60">
-                      🔥 {post.viewCount} views
-                    </span>
-                  )}
+                  <span className="ml-auto text-[9px] font-inter font-bold text-primary/60">
+                    🔥 {displayViews(post.viewCount)} views
+                  </span>
                 </div>
               </div>
             </Link>

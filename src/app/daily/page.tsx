@@ -1,5 +1,7 @@
 "use client";
 
+import { displayViews } from "@/lib/utils";
+
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
@@ -378,7 +380,7 @@ export default function DailyEditionPage() {
                       {lang === "hi" && post.titleHi ? post.titleHi : post.title}
                     </p>
                     <span className="text-[9px] font-inter font-bold opacity-30 uppercase dark:text-white/30">
-                      {post.viewCount.toLocaleString()} {t("reads", "पाठक")}
+                      {displayViews(post.viewCount).toLocaleString()} {t("reads", "पाठक")}
                     </span>
                   </Link>
                 ))}

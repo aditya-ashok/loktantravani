@@ -6,6 +6,7 @@ import { toPng } from "html-to-image";
 import { Download, X, Loader2, Copy, Check, MessageCircle, Share2 } from "lucide-react";
 import { useLanguage } from "@/lib/language-context";
 import { useAuth } from "@/lib/auth-context";
+import InstaCarouselModal from "@/components/InstaCarouselModal";
 import { cn } from "@/lib/utils";
 import { AUTHORS } from "@/lib/authors";
 
@@ -38,6 +39,7 @@ export default function EpaperShareModal({ isOpen, onClose, post }: EpaperShareM
   const [isGenerating, setIsGenerating] = useState(false);
   const [copied, setCopied] = useState(false);
   const [theme, setTheme] = useState<CardTheme>("default");
+  const [showCarousel, setShowCarousel] = useState(false);
 
   if (!isOpen) return null;
 
@@ -425,6 +427,12 @@ export default function EpaperShareModal({ isOpen, onClose, post }: EpaperShareM
             </button>
 
             <button
+              onClick={() => setShowCarousel(true)}
+              className="w-full py-3.5 bg-gradient-to-r from-[#f09433] via-[#dc2743] to-[#bc1888] text-white text-[11px] font-inter font-black uppercase tracking-widest hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
+            >
+              ✨ Insta Carousel (Gen-Z)
+            </button>
+            <button
               onClick={handleCopy}
               className="w-full py-3 bg-[#121212] text-white font-inter font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-2 hover:opacity-80 transition-opacity"
             >
@@ -455,6 +463,11 @@ export default function EpaperShareModal({ isOpen, onClose, post }: EpaperShareM
           </div>
         </div>
       </div>
+      <InstaCarouselModal
+        isOpen={showCarousel}
+        onClose={() => setShowCarousel(false)}
+        post={{ title: post.title, category: post.category, imageUrl: post.imageUrl, slug: (post.url || "").split("/").filter(Boolean).pop() }}
+      />
     </div>
   );
 }

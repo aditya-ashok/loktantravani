@@ -18,7 +18,7 @@ import AdBanner from "@/components/AdBanner";
 import GoogleAd, { InArticleAd } from "@/components/GoogleAd";
 import EpaperShareModal from "@/components/EpaperShareModal";
 import { useLanguage } from "@/lib/language-context";
-import { formatDate } from "@/lib/utils";
+import { formatDate, displayViews } from "@/lib/utils";
 import type { Post } from "@/lib/types";
 import { AUTHORS, getAuthorHi } from "@/lib/authors";
 import { useAuth } from "@/lib/auth-context";
@@ -137,7 +137,7 @@ export default function ArticleContent({ post }: { post: Post }) {
               <Clock className="w-3.5 h-3.5" /> <span>{post.readingTimeMin} min read</span>
             </div>
             <div className="flex items-center gap-2 text-[10px] font-inter font-bold opacity-40 uppercase">
-              <Eye className="w-3.5 h-3.5" /> <span>{post.viewCount.toLocaleString()} views</span>
+              <Eye className="w-3.5 h-3.5" /> <span>{displayViews(post.viewCount).toLocaleString()} views</span>
             </div>
             <span className="text-[10px] font-inter font-bold opacity-40 uppercase">{formatDate(post.createdAt as Date, lang)}</span>
           </div>
