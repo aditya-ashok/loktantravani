@@ -43,7 +43,7 @@ async function callGemini(system: string, user: string): Promise<string | null> 
   const key = GEMINI_KEY();
   if (!key) return null;
   try {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`;
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${key}`;
     const res = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },

@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
   const voiceName = lang === "hi" ? "Puck" : "Kore"; // Indian-friendly voices
 
   try {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${apiKey}`;
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest-preview-tts:generateContent?key=${apiKey}`;
 
     const response = await fetch(url, {
       method: "POST",
@@ -64,7 +64,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Fallback: Try regular Gemini with audio modality
-    const fallbackUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+    const fallbackUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${apiKey}`;
     const fallbackRes = await fetch(fallbackUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },

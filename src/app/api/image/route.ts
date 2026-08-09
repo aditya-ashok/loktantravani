@@ -48,18 +48,19 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-generate-001:predict?key=${key}`;
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-image:generateContent?key=${key}`;
     const res = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        instances: [{ prompt: prompt + " Bold newspaper editorial illustration style. No text overlay." }],
-        parameters: { sampleCount: 1, aspectRatio: "16:9" },
+        contents: [{ parts: [{ text: prompt + " Bold newspaper editorial illustration style. No text overlay." }] }],
+        generationConfig: { responseModalities: ["IMAGE", "TEXT"] },
       }),
     });
 
     const data = await res.json();
-    const preds = data.predictions as Array<{ bytesBase64Encoded: string }> | undefined;
+    const parts = (data.candidates?.[0]?.content?.parts || []) as Array<{ inlineData?: { data: string } }>;
+    const preds = parts.filter(p => p.inlineData?.data).map(p => ({ bytesBase64Encoded: p.inlineData!.data }));
 
     if (preds?.[0]?.bytesBase64Encoded) {
       const buffer = Buffer.from(preds[0].bytesBase64Encoded, "base64");

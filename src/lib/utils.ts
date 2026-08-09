@@ -51,8 +51,15 @@ export function timeAgo(date: Date | { toDate?: () => Date }): string {
   return `${Math.floor(seconds / 86400)}d ago`;
 }
 
-/** Public-facing view count: editorial baseline of 95 + real views.
- * Admin/author analytics show the real number — do not use this there. */
-export function displayViews(n?: number | null): number {
-  return (n || 0) + 95;
+/** Public-facing view count: per-article editorial baseline of 60–90 + real views.
+ * The baseline is derived from the article id/slug so it is stable across renders
+ * and differs between articles. Admin/author analytics show the real number —
+ * do not use this there. */
+export function displayViews(n?: number | null, seed?: string): number {
+  let hash = 0;
+  for (let i = 0; i < (seed?.length || 0); i++) {
+    hash = (hash * 31 + seed!.charCodeAt(i)) >>> 0;
+  }
+  const base = 60 + (hash % 31); // 60–90
+  return (n || 0) + base;
 }

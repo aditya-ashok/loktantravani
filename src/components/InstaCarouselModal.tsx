@@ -74,6 +74,7 @@ export default function InstaCarouselModal({ isOpen, onClose, post }: Props) {
   const [themeId, setThemeId] = useState<ThemeId>("genz");
   const [downloading, setDownloading] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [captured, setCaptured] = useState<{ url: string; name: string }[] | null>(null);
   const slideRef = useRef<HTMLDivElement>(null);
   const t = THEMES[themeId];
 
@@ -117,33 +118,73 @@ export default function InstaCarouselModal({ isOpen, onClose, post }: Props) {
 
   const totalSlides = data ? data.points.length + 2 : 0;
 
-  const downloadSlide = async (idx: number): Promise<void> => {
+  const isMobile = () => typeof navigator !== "undefined" && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+
+  const captureSlide = async (idx: number): Promise<{ url: string; name: string }> => {
     setSlide(idx);
     await new Promise(r => setTimeout(r, 450));
     const node = slideRef.current;
-    if (!node) return;
-    const dataUrl = await toPng(node, {
+    if (!node) throw new Error("Slide not rendered");
+    const url = await toPng(node, {
       cacheBust: true,
       pixelRatio: 2,
       width: SIZE,
       height: SIZE,
       backgroundColor: t.darkBg,
     });
+    return { url, name: `${(post.slug || "loktantravani").slice(0, 50)}-slide-${idx + 1}.png` };
+  };
+
+  const downloadSlide = async (idx: number): Promise<void> => {
+    const shot = await captureSlide(idx);
+    // Mobile: anchor downloads are blocked once the render eats the tap's
+    // user-gesture window — show a save sheet where a fresh tap shares/saves
+    if (isMobile()) {
+      setCaptured([shot]);
+      return;
+    }
     const a = document.createElement("a");
-    a.download = `${(post.slug || "loktantravani").slice(0, 50)}-slide-${idx + 1}.png`;
-    a.href = dataUrl;
+    a.download = shot.name;
+    a.href = shot.url;
     a.click();
   };
 
   const downloadAll = async () => {
     setDownloading(true);
     try {
+      if (isMobile()) {
+        const shots: { url: string; name: string }[] = [];
+        for (let i = 0; i < totalSlides; i++) shots.push(await captureSlide(i));
+        setCaptured(shots);
+        return;
+      }
       for (let i = 0; i < totalSlides; i++) {
         await downloadSlide(i);
         await new Promise(r => setTimeout(r, 350));
       }
     } finally {
       setDownloading(false);
+    }
+  };
+
+  // Fresh-tap share from the mobile save sheet — one share sheet with all slides
+  const shareCaptured = async () => {
+    if (!captured?.length) return;
+    try {
+      const files = await Promise.all(
+        captured.map(async (c) => new File([await (await fetch(c.url)).blob()], c.name, { type: "image/png" }))
+      );
+      if (navigator.canShare?.({ files })) {
+        await navigator.share({ files, title: post.title });
+        return;
+      }
+    } catch { /* cancelled or unsupported — fall through */ }
+    for (const c of captured) {
+      const a = document.createElement("a");
+      a.download = c.name;
+      a.href = c.url;
+      a.click();
+      await new Promise(r => setTimeout(r, 300));
     }
   };
 
@@ -359,6 +400,33 @@ export default function InstaCarouselModal({ isOpen, onClose, post }: Props) {
           )}
         </div>
       </div>
+
+      {/* Mobile save sheet — fresh tap = valid user gesture for share/save */}
+      {captured && (
+        <div
+          className="fixed inset-0 z-[130] flex flex-col items-center justify-center bg-black/90 p-5 gap-4"
+          onClick={(e) => { if (e.target === e.currentTarget) setCaptured(null); }}
+        >
+          <p className="text-white text-[10px] font-inter font-black uppercase tracking-widest">
+            {captured.length > 1 ? `${captured.length} slides ready` : "Slide ready"}
+          </p>
+          <div className="w-full max-w-sm max-h-[55vh] overflow-y-auto flex flex-col gap-3">
+            {captured.map((c) => (
+              /* eslint-disable-next-line @next/next/no-img-element */
+              <img key={c.name} src={c.url} alt={c.name} className="w-full shadow-2xl" />
+            ))}
+          </div>
+          <p className="text-white/60 text-[10px] font-inter text-center">Tap Save / Share below, or long-press an image → Save to Photos</p>
+          <div className="flex gap-2 w-full max-w-xs">
+            <button onClick={shareCaptured} className="flex-1 py-3 bg-[#FF9933] text-black text-[10px] font-inter font-black uppercase tracking-widest flex items-center justify-center gap-2 rounded-sm">
+              <Download className="w-3.5 h-3.5" /> Save / Share {captured.length > 1 ? "all" : ""}
+            </button>
+            <button onClick={() => setCaptured(null)} className="px-4 py-3 border border-white/30 text-white text-[10px] font-inter font-black uppercase tracking-widest rounded-sm">
+              Close
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

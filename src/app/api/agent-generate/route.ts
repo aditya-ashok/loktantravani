@@ -26,7 +26,7 @@ const STORAGE_BUCKET = (process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || "lokt
 async function geminiSearch(prompt: string): Promise<string> {
   const key = GEMINI_KEY();
   if (!key) throw new Error("GEMINI_API_KEY not set");
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`;
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${key}`;
   const res = await fetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -137,7 +137,7 @@ async function writeWithGemini(systemPrompt: string, userPrompt: string, maxToke
   const key = GEMINI_KEY();
   if (!key) return "";
   try {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`;
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${key}`;
     const res = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -160,17 +160,18 @@ async function generateAndUploadImage(prompt: string, postId: string): Promise<v
   const key = GEMINI_KEY();
   if (!key) return;
   try {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-generate-001:predict?key=${key}`;
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-image:generateContent?key=${key}`;
     const res = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        instances: [{ prompt: prompt + " Bold editorial caricature, satirical cartoon style, exaggerated features, vibrant colors. No text." }],
-        parameters: { sampleCount: 1, aspectRatio: "16:9" },
+        contents: [{ parts: [{ text: prompt + " Bold editorial caricature, satirical cartoon style, exaggerated features, vibrant colors. No text." }] }],
+        generationConfig: { responseModalities: ["IMAGE", "TEXT"] },
       }),
     });
     const data = await res.json();
-    const preds = data.predictions as Array<{ bytesBase64Encoded: string }> | undefined;
+    const parts = (data.candidates?.[0]?.content?.parts || []) as Array<{ inlineData?: { data: string } }>;
+    const preds = parts.filter(p => p.inlineData?.data).map(p => ({ bytesBase64Encoded: p.inlineData!.data }));
     if (!preds?.[0]?.bytesBase64Encoded) return;
 
     const buffer = Buffer.from(preds[0].bytesBase64Encoded, "base64");
@@ -450,8 +451,8 @@ Return ONLY valid JSON:
 
               const imgKey = GEMINI_KEY();
               if (imgKey) {
-                // Use gemini-2.5-flash-image (generateContent API, not predict)
-                const imgUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent?key=${imgKey}`;
+                // Use gemini-3.1-flash-image (generateContent API, not predict)
+                const imgUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-image:generateContent?key=${imgKey}`;
                 const imgRes = await fetch(imgUrl, {
                   method: "POST",
                   headers: { "Content-Type": "application/json" },

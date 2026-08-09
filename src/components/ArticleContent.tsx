@@ -137,7 +137,7 @@ export default function ArticleContent({ post }: { post: Post }) {
               <Clock className="w-3.5 h-3.5" /> <span>{post.readingTimeMin} min read</span>
             </div>
             <div className="flex items-center gap-2 text-[10px] font-inter font-bold opacity-40 uppercase">
-              <Eye className="w-3.5 h-3.5" /> <span>{displayViews(post.viewCount).toLocaleString()} views</span>
+              <Eye className="w-3.5 h-3.5" /> <span>{displayViews(post.viewCount, post.id).toLocaleString()} views</span>
             </div>
             <span className="text-[10px] font-inter font-bold opacity-40 uppercase">{formatDate(post.createdAt as Date, lang)}</span>
           </div>

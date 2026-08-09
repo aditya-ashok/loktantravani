@@ -75,7 +75,7 @@ export async function POST(req: NextRequest) {
     const prompt = buildPrompt(body);
 
     // Use Imagen 4.0 (predict API)
-    const imagenUrl = `https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-generate-001:predict?key=${key}`;
+    const imagenUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-image:generateContent?key=${key}`;
     const res = await fetch(imagenUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -99,20 +99,18 @@ export async function POST(req: NextRequest) {
     }
 
     const data = await res.json();
-    const predictions = data.predictions as Array<{
-      mimeType?: string;
-      bytesBase64Encoded?: string;
-    }> | undefined;
+    const parts = (data.candidates?.[0]?.content?.parts || []) as Array<{ inlineData?: { data: string; mimeType?: string } }>;
+    const imgPart = parts.find(pt => pt.inlineData?.data);
 
-    if (!predictions?.[0]?.bytesBase64Encoded) {
+    if (!imgPart?.inlineData?.data) {
       return NextResponse.json(
         { error: "No image generated — try a different prompt" },
         { status: 500 },
       );
     }
 
-    const imageBase64 = predictions[0].bytesBase64Encoded;
-    const mimeType = predictions[0].mimeType || "image/png";
+    const imageBase64 = imgPart.inlineData.data;
+    const mimeType = imgPart.inlineData.mimeType || "image/png";
 
     const dataUrl = `data:${mimeType};base64,${imageBase64}`;
 
@@ -164,7 +162,7 @@ export async function GET() {
       `Return at least 2 and at most 8 events. Be factually accurate.`,
     ].join("\n");
 
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`;
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${key}`;
     const res = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },

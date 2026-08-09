@@ -26,13 +26,13 @@ export async function POST(req: NextRequest) {
     // Generate caricature with Gemini Imagen
     const fullPrompt = `${prompt}. Style: Bold editorial caricature illustration, vibrant colors, exaggerated features, satirical newspaper cartoon style, professional quality, no text.`;
 
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-generate-001:predict?key=${key}`;
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-image:generateContent?key=${key}`;
     const res = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        instances: [{ prompt: fullPrompt }],
-        parameters: { sampleCount: 1, aspectRatio: "16:9" },
+        contents: [{ parts: [{ text: fullPrompt }] }],
+        generationConfig: { responseModalities: ["IMAGE", "TEXT"] },
       }),
     });
 
@@ -43,7 +43,8 @@ export async function POST(req: NextRequest) {
     }
 
     const data = await res.json();
-    const preds = data.predictions as Array<{ bytesBase64Encoded: string }> | undefined;
+    const parts = (data.candidates?.[0]?.content?.parts || []) as Array<{ inlineData?: { data: string } }>;
+    const preds = parts.filter(p => p.inlineData?.data).map(p => ({ bytesBase64Encoded: p.inlineData!.data }));
 
     if (!preds?.[0]?.bytesBase64Encoded) {
       return NextResponse.json({ error: "No image generated — try a different prompt" }, { status: 500 });

@@ -37,9 +37,14 @@ export default function EpaperShareModal({ isOpen, onClose, post }: EpaperShareM
   const { userRole } = useAuth();
   const cardRef = useRef<HTMLDivElement>(null);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [copied, setCopied] = useState(false);
+  const [copied, setCopied] = useState<string | null>(null);
   const [theme, setTheme] = useState<CardTheme>("default");
   const [showCarousel, setShowCarousel] = useState(false);
+  // Mobile save sheet — navigator.share/anchor downloads need a fresh tap on
+  // iOS (the gesture window expires during the slow PNG render), so we show
+  // the result and let the user tap Share / long-press to save.
+  const [resultImage, setResultImage] = useState<string | null>(null);
+  const [resultFile, setResultFile] = useState<File | null>(null);
 
   if (!isOpen) return null;
 
@@ -49,6 +54,12 @@ export default function EpaperShareModal({ isOpen, onClose, post }: EpaperShareM
     ? `#SaffronDispatch #NaMo #NewIndia #LoktantraVani`
     : `#LoktantraVani #${post.category.replace(/\s+/g, "")} #IndiaNews`;
   const shareText = `${post.title}\n\n${post.summary?.slice(0, 100) || ""}...\n\nRead: ${post.url}\n\n${hashtags}`;
+  // Ready-to-paste content per platform — each includes the article link
+  const platformContent: Record<string, string> = {
+    x: `${post.title}\n\n${post.url}\n\n${hashtags}`,
+    linkedin: `${post.title}\n\n${post.summary || ""}\n\nRead the full story: ${post.url}\n\n${hashtags}`,
+    instagram: `${post.title} 🗞️\n\n${post.summary || ""}\n\nFull story → ${post.url}\n(link in bio)\n\n${hashtags} #India #NewsDrop #InstaNews`,
+  };
   const encodedText = encodeURIComponent(shareText);
   const encodedUrl = encodeURIComponent(post.url);
   const encodedTitle = encodeURIComponent(post.title);
@@ -58,7 +69,7 @@ export default function EpaperShareModal({ isOpen, onClose, post }: EpaperShareM
   const handleDownload = async () => {
     if (!cardRef.current) return;
     setIsGenerating(true);
-    const isMobile = window.innerWidth < 768;
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
     const ratio = isMobile ? 3 : 4;
     try {
       // Convert ALL images to data URLs to avoid CORS canvas tainting
@@ -137,17 +148,16 @@ export default function EpaperShareModal({ isOpen, onClose, post }: EpaperShareM
       // Restore original image sources
       for (const { img, src } of origSrcs) img.src = src;
 
-      // Mobile: use share API if available, otherwise download
-      if (isMobile && navigator.share && navigator.canShare) {
-        try {
-          const res = await fetch(dataUrl);
-          const blob = await res.blob();
-          const file = new File([blob], `${post.title.slice(0, 60).replace(/[^a-zA-Z0-9\s]/g, "").trim().replace(/\s+/g, "-")}.png`, { type: "image/png" });
-          if (navigator.canShare({ files: [file] })) {
-            await navigator.share({ files: [file], title: post.title });
-            return;
-          }
-        } catch { /* fallback to download */ }
+      // Mobile: the user-gesture window expired during the slow render, so
+      // navigator.share / anchor clicks are silently blocked. Show the image
+      // in a save sheet — a fresh tap there can share/save reliably.
+      if (isMobile) {
+        const res = await fetch(dataUrl);
+        const blob = await res.blob();
+        const file = new File([blob], `${post.title.slice(0, 60).replace(/[^a-zA-Z0-9\s]/g, "").trim().replace(/\s+/g, "-")}.png`, { type: "image/png" });
+        setResultFile(file);
+        setResultImage(dataUrl);
+        return;
       }
 
       const link = document.createElement("a");
@@ -182,20 +192,34 @@ export default function EpaperShareModal({ isOpen, onClose, post }: EpaperShareM
     else if (platform === "linkedin") window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodedUrl}`, "_blank");
   };
 
-  const handleCopy = async () => {
+  const copyText = async (key: string, text: string) => {
     try {
-      await navigator.clipboard.writeText(shareText);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      await navigator.clipboard.writeText(text);
     } catch {
       const ta = document.createElement("textarea");
-      ta.value = shareText;
+      ta.value = text;
       document.body.appendChild(ta);
       ta.select();
       document.execCommand("copy");
       document.body.removeChild(ta);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+    }
+    setCopied(key);
+    setTimeout(() => setCopied(null), 2000);
+  };
+
+  // Fresh-tap share/save from the mobile result sheet
+  const shareResult = async () => {
+    if (resultFile && navigator.canShare?.({ files: [resultFile] })) {
+      try {
+        await navigator.share({ files: [resultFile], title: post.title });
+        return;
+      } catch { /* user cancelled or unsupported — fall through to download */ }
+    }
+    if (resultImage) {
+      const link = document.createElement("a");
+      link.download = resultFile?.name || "loktantravani-share.png";
+      link.href = resultImage;
+      link.click();
     }
   };
 
@@ -432,13 +456,32 @@ export default function EpaperShareModal({ isOpen, onClose, post }: EpaperShareM
             >
               ✨ Insta Carousel (Gen-Z)
             </button>
-            <button
-              onClick={handleCopy}
-              className="w-full py-3 bg-[#121212] text-white font-inter font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-2 hover:opacity-80 transition-opacity"
-            >
-              {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-              {copied ? "Copied!" : "Copy Link"}
-            </button>
+            {/* Article link — visible + one-tap copy */}
+            <div className="border border-black/10 dark:border-white/15 rounded-sm p-2 flex items-center gap-2">
+              <span className="flex-1 min-w-0 truncate text-[9px] font-inter font-bold opacity-60 dark:text-white/60">{post.url}</span>
+              <button onClick={() => copyText("link", post.url)} className="flex-shrink-0 p-1.5 bg-[#121212] text-white hover:opacity-80 transition-opacity rounded-sm" title="Copy link">
+                {copied === "link" ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+              </button>
+            </div>
+
+            {/* Ready-to-paste post content per platform */}
+            <div className="border-t border-black/10 pt-3 mt-1">
+              <p className="text-[9px] font-inter font-black uppercase tracking-[0.15em] opacity-40 mb-2">Copy content for</p>
+              <div className="flex flex-col gap-1.5">
+                <button onClick={() => copyText("instagram", platformContent.instagram)} className="w-full py-2.5 bg-gradient-to-r from-[#f09433] via-[#dc2743] to-[#bc1888] text-white text-[9px] font-inter font-black uppercase tracking-widest flex items-center justify-center gap-1.5 hover:opacity-90 transition-opacity rounded-sm">
+                  {copied === "instagram" ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                  {copied === "instagram" ? "Caption copied!" : "Instagram caption"}
+                </button>
+                <button onClick={() => copyText("x", platformContent.x)} className="w-full py-2.5 bg-black text-white text-[9px] font-inter font-black uppercase tracking-widest flex items-center justify-center gap-1.5 hover:opacity-80 transition-opacity rounded-sm">
+                  {copied === "x" ? <Check className="w-3.5 h-3.5" /> : <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>}
+                  {copied === "x" ? "Post copied!" : "X post"}
+                </button>
+                <button onClick={() => copyText("linkedin", platformContent.linkedin)} className="w-full py-2.5 bg-[#0A66C2] text-white text-[9px] font-inter font-black uppercase tracking-widest flex items-center justify-center gap-1.5 hover:opacity-90 transition-opacity rounded-sm">
+                  {copied === "linkedin" ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                  {copied === "linkedin" ? "Post copied!" : "LinkedIn post"}
+                </button>
+              </div>
+            </div>
 
             <div className="border-t border-black/10 pt-3 mt-1">
               <p className="text-[9px] font-inter font-black uppercase tracking-[0.15em] opacity-40 mb-2">Share to</p>
@@ -463,6 +506,25 @@ export default function EpaperShareModal({ isOpen, onClose, post }: EpaperShareM
           </div>
         </div>
       </div>
+      {/* Mobile save sheet — fresh tap = valid user gesture for share/save */}
+      {resultImage && (
+        <div
+          className="fixed inset-0 z-[130] flex flex-col items-center justify-center bg-black/90 p-5 gap-4"
+          onClick={(e) => { if (e.target === e.currentTarget) { setResultImage(null); setResultFile(null); } }}
+        >
+          <p className="text-white text-[10px] font-inter font-black uppercase tracking-widest">Your image is ready</p>
+          <img src={resultImage} alt="Share card" className="max-w-full max-h-[60vh] object-contain shadow-2xl" />
+          <p className="text-white/60 text-[10px] font-inter text-center">Tap the button below, or long-press the image → Save to Photos</p>
+          <div className="flex gap-2 w-full max-w-xs">
+            <button onClick={shareResult} className="flex-1 py-3 bg-[#FF9933] text-black text-[10px] font-inter font-black uppercase tracking-widest flex items-center justify-center gap-2 rounded-sm">
+              <Download className="w-3.5 h-3.5" /> Save / Share
+            </button>
+            <button onClick={() => { setResultImage(null); setResultFile(null); }} className="px-4 py-3 border border-white/30 text-white text-[10px] font-inter font-black uppercase tracking-widest rounded-sm">
+              Close
+            </button>
+          </div>
+        </div>
+      )}
       <InstaCarouselModal
         isOpen={showCarousel}
         onClose={() => setShowCarousel(false)}

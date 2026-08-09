@@ -137,7 +137,7 @@ async function geminiTTS(text: string): Promise<Buffer | null> {
   const key = (process.env.GEMINI_API_KEY || "").trim();
   if (!key) return null;
   try {
-    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${key}`, {
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest-preview-tts:generateContent?key=${key}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({

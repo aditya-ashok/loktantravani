@@ -22,7 +22,7 @@ async function checkGemini(): Promise<ProviderStatus> {
   if (!key) return { configured: false, ok: false, error: "GEMINI_API_KEY env var not set" };
 
   try {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`;
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${key}`;
     const res = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -51,7 +51,7 @@ async function checkGeminiSearch(): Promise<ProviderStatus> {
   if (!key) return { configured: false, ok: false, error: "GEMINI_API_KEY env var not set" };
 
   try {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`;
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${key}`;
     const res = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -137,15 +137,28 @@ async function checkClaude(): Promise<ProviderStatus> {
   }
 }
 
+/** List models this key can actually use — ground truth when Google retires IDs */
+async function listGeminiModels(): Promise<string[]> {
+  const key = (process.env.GEMINI_API_KEY || "").trim();
+  if (!key) return [];
+  try {
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${key}&pageSize=100`);
+    if (!res.ok) return [`list failed: ${res.status}`];
+    const data = await res.json();
+    return (data.models || []).map((m: { name: string }) => m.name.replace("models/", ""));
+  } catch (e) { return [`list error: ${String(e).slice(0, 80)}`]; }
+}
+
 export async function GET(req: NextRequest) {
   const auth = await verifyAuth(req);
   if (!auth.authorized) return unauthorized(auth.error);
 
-  const [gemini, geminiSearch, claude, groq] = await Promise.all([
+  const [gemini, geminiSearch, claude, groq, geminiModels] = await Promise.all([
     checkGemini(),
     checkGeminiSearch(),
     checkClaude(),
     checkGroq(),
+    listGeminiModels(),
   ]);
 
   const allOk = gemini.ok && geminiSearch.ok && claude.ok && groq.ok;
@@ -166,6 +179,7 @@ export async function GET(req: NextRequest) {
       "gemini (writing)": gemini,
       "gemini search (live topic discovery)": geminiSearch,
     },
+    geminiModels,
     timestamp: new Date().toISOString(),
   });
 }

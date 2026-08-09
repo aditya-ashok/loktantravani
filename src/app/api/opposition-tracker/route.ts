@@ -25,7 +25,7 @@ const FACT_CHECK_SYSTEM_PROMPT = `You are a senior political analyst for Loktant
 async function geminiSearch(prompt: string): Promise<string> {
   const key = GEMINI_KEY();
   if (!key) throw new Error("GEMINI_API_KEY not set");
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`;
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${key}`;
   const res = await fetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -70,7 +70,7 @@ async function writeArticle(systemPrompt: string, userPrompt: string, maxTokens 
   // Fallback: Use Gemini for writing
   const key = GEMINI_KEY();
   if (!key) throw new Error("No AI API key available");
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`;
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${key}`;
   const res = await fetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },

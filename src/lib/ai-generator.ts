@@ -133,22 +133,21 @@ ${jsonSchema}`;
   const hasUrls = /https?:\/\//.test(topic);
   const generationConfig = {
     temperature: 0.5,
-    // Gemini 2.5 spends output budget on internal thinking — a small cap
-    // truncates the JSON mid-string. Disable thinking and give headroom.
+    // Thinking models spend output budget on internal reasoning — give
+    // generous headroom so the JSON never truncates mid-string.
     maxOutputTokens: 16384,
-    thinkingConfig: { thinkingBudget: 0 },
   };
 
   let data: Record<string, unknown>;
   try {
-    data = await callGemini("gemini-2.5-flash", {
+    data = await callGemini("gemini-flash-latest", {
       contents: [{ parts: [{ text: prompt }] }],
       ...(hasUrls ? { tools: [{ url_context: {} }, { google_search: {} }] } : {}),
       generationConfig,
     });
   } catch {
     // Tools can be rejected (unsupported URL, tool quota) — retry bare
-    data = await callGemini("gemini-2.5-flash", {
+    data = await callGemini("gemini-flash-latest", {
       contents: [{ parts: [{ text: prompt }] }],
       generationConfig,
     });
@@ -159,7 +158,7 @@ ${jsonSchema}`;
 
   // One retry on parse failure — regenerate rather than fail the request
   if (!parsed) {
-    data = await callGemini("gemini-2.5-flash", {
+    data = await callGemini("gemini-flash-latest", {
       contents: [{ parts: [{ text: prompt + "\n\nREMINDER: Output must be a single valid JSON object. Escape all newlines inside strings as \\n." }] }],
       generationConfig,
     });
@@ -213,9 +212,9 @@ Return ONLY valid JSON:
   "imagePrompt": "detailed description for AI image generation: describe the scene, characters, expressions, props. Style: bold colorful 3D cartoon editorial illustration, Indian newspaper cartoon style, exaggerated features, satirical. Square format. NO TEXT in the image."
 }`;
 
-  const data = await callGemini("gemini-2.5-flash", {
+  const data = await callGemini("gemini-flash-latest", {
     contents: [{ parts: [{ text: prompt }] }],
-    generationConfig: { temperature: 0.7, maxOutputTokens: 4096, thinkingConfig: { thinkingBudget: 0 } },
+    generationConfig: { temperature: 0.7, maxOutputTokens: 4096 },
   });
 
   const text = extractGeminiText(data);
@@ -236,8 +235,8 @@ export async function generateImage(prompt: string): Promise<string | null> {
   // Try Imagen 4.0 first
   try {
     const data = await callGemini("imagen-4.0-generate-001", {
-      instances: [{ prompt: prompt + " Bold 3D cartoon newspaper editorial style. Square. No text." }],
-      parameters: { sampleCount: 1, aspectRatio: "1:1" },
+      contents: [{ parts: [{ text: prompt + " Bold 3D cartoon newspaper editorial style. Square. No text." }] }],
+      generationConfig: { responseModalities: ["IMAGE", "TEXT"] },
     }, "predict");
 
     const predictions = data.predictions as Array<{ bytesBase64Encoded: string }> | undefined;
@@ -250,7 +249,7 @@ export async function generateImage(prompt: string): Promise<string | null> {
 
   // Fallback: Gemini Flash with image output
   try {
-    const data = await callGemini("gemini-2.5-flash", {
+    const data = await callGemini("gemini-flash-latest", {
       contents: [{ parts: [{ text: `Generate an image: ${prompt}. Bold 3D cartoon newspaper editorial illustration style. No text in image.` }] }],
       generationConfig: { responseModalities: ["IMAGE", "TEXT"] },
     });

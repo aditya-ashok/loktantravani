@@ -328,7 +328,7 @@ export default function ForYouFeed() {
                     {post.author} · {post.readingTimeMin || 3} MIN
                   </p>
                   <span className="ml-auto text-[9px] font-inter font-bold text-primary/60">
-                    🔥 {displayViews(post.viewCount)} views
+                    🔥 {displayViews(post.viewCount, post.id)} views
                   </span>
                 </div>
               </div>

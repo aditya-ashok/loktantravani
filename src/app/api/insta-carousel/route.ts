@@ -34,7 +34,7 @@ async function generateCoverArt(prompt: string, postId: string): Promise<string>
   const key = GEMINI_KEY();
   if (!key) return "";
   try {
-    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-generate-001:predict?key=${key}`, {
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-image:generateContent?key=${key}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -44,7 +44,8 @@ async function generateCoverArt(prompt: string, postId: string): Promise<string>
     });
     if (!res.ok) return "";
     const data = await res.json();
-    const b64 = data.predictions?.[0]?.bytesBase64Encoded;
+    const parts = (data.candidates?.[0]?.content?.parts || []) as Array<{ inlineData?: { data: string } }>;
+    const b64 = parts.find(pt => pt.inlineData?.data)?.inlineData?.data;
     if (!b64) return "";
     const buffer = Buffer.from(b64, "base64");
     const filename = `carousels/${postId}-${Date.now().toString(36)}.png`;

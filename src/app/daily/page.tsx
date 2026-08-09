@@ -380,7 +380,7 @@ export default function DailyEditionPage() {
                       {lang === "hi" && post.titleHi ? post.titleHi : post.title}
                     </p>
                     <span className="text-[9px] font-inter font-bold opacity-30 uppercase dark:text-white/30">
-                      {displayViews(post.viewCount).toLocaleString()} {t("reads", "पाठक")}
+                      {displayViews(post.viewCount, post.id).toLocaleString()} {t("reads", "पाठक")}
                     </span>
                   </Link>
                 ))}
