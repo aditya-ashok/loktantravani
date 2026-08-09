@@ -21,6 +21,7 @@ const ANTHROPIC_KEY = () => (process.env.ANTHROPIC_API_KEY || "").trim();
 const GROQ_KEY = () => (process.env.GROQ_API_KEY || "").trim();
 const GROQ_MODEL = (process.env.GROQ_MODEL || "llama-3.3-70b-versatile").trim();
 const STORAGE_BUCKET = (process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || "loktantravani-2d159.firebasestorage.app").trim();
+const BASE_FS = `https://firestore.googleapis.com/v1/projects/${process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || "loktantravani-2d159"}/databases/(default)/documents`;
 
 // ── Gemini: Google Search grounding for real-time facts ──
 async function geminiSearch(prompt: string): Promise<string> {
@@ -208,6 +209,40 @@ function parseJSON(text: string): Record<string, unknown> | null {
   return null;
 }
 
+// ── Caricature Bank: canonical faces for consistent likenesses ──
+type BankFace = { name: string; imageUrl: string };
+async function fetchCaricatureBank(): Promise<BankFace[]> {
+  try {
+    const res = await fetch(`${BASE_FS}/caricatures?pageSize=100`, { cache: "no-store" });
+    if (!res.ok) return [];
+    const data = await res.json();
+    return (data.documents || [])
+      .map((d: { fields?: Record<string, { stringValue?: string }> }) => ({
+        name: d.fields?.name?.stringValue || "",
+        imageUrl: d.fields?.imageUrl?.stringValue || "",
+      }))
+      .filter((f: BankFace) => f.name && f.imageUrl);
+  } catch { return []; }
+}
+
+/** Reference images (base64 parts) for bank figures mentioned in the text — max 2 */
+async function bankRefsFor(text: string, bank: BankFace[]): Promise<{ parts: Array<Record<string, unknown>>; names: string[] }> {
+  const lower = text.toLowerCase();
+  const hits = bank.filter(f => lower.includes(f.name.toLowerCase())).slice(0, 2);
+  const parts: Array<Record<string, unknown>> = [];
+  const names: string[] = [];
+  for (const hit of hits) {
+    try {
+      const r = await fetch(hit.imageUrl);
+      if (!r.ok) continue;
+      const buf = Buffer.from(await r.arrayBuffer());
+      parts.push({ inlineData: { mimeType: "image/png", data: buf.toString("base64") } });
+      names.push(hit.name);
+    } catch { /* skip */ }
+  }
+  return { parts, names };
+}
+
 // Section-specific search queries — pro-India, right-of-centre sources + PIB
 const SECTION_SEARCH: Record<string, string> = {
   India: "India breaking news today latest pib.gov.in BJP Modi government achievement swarajyamag.com opindia.com",
@@ -250,6 +285,7 @@ export async function POST(req: NextRequest) {
       const totalArticles = sections.length * perSection;
       let completed = 0;
       let errors = 0;
+      const caricatureBank = await fetchCaricatureBank();
 
       send({ type: "start", totalArticles, sections });
 
@@ -453,11 +489,17 @@ Return ONLY valid JSON:
               if (imgKey) {
                 // Use gemini-3.1-flash-image (generateContent API, not predict)
                 const imgUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-image:generateContent?key=${imgKey}`;
+                // Caricature Bank: if the story mentions a banked figure, pass
+                // their canonical portrait so the likeness stays consistent
+                const refs = await bankRefsFor(`${articleHeadline} ${rawImgPrompt}`, caricatureBank);
+                const refInstruction = refs.names.length
+                  ? ` IMPORTANT: the attached reference image${refs.names.length > 1 ? "s show" : " shows"} the canonical caricature of ${refs.names.join(" and ")} — draw ${refs.names.length > 1 ? "these people" : "this person"} with the SAME face, features and style as the reference.`
+                  : "";
                 const imgRes = await fetch(imgUrl, {
                   method: "POST",
                   headers: { "Content-Type": "application/json" },
                   body: JSON.stringify({
-                    contents: [{ parts: [{ text: `Generate a photo of: ${enrichedPrompt}` }] }],
+                    contents: [{ parts: [...refs.parts, { text: `Generate a photo of: ${enrichedPrompt}${refInstruction}` }] }],
                     generationConfig: { responseModalities: ["IMAGE", "TEXT"] },
                   }),
                 });

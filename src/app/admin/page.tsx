@@ -53,6 +53,7 @@ import {
 import { motion } from "framer-motion";
 import { SEED_POSTS } from "@/lib/seed-data";
 import { AUTHORS } from "@/lib/authors";
+import CaricatureBankPanel from "@/components/admin/CaricatureBankPanel";
 import type { Post, PostCategory } from "@/lib/types";
 
 const sidebarItems = [
@@ -60,6 +61,7 @@ const sidebarItems = [
   { id: "podcast-studio", label: "Podcast Studio", icon: Video },
   { id: "bjp-toolkit", label: "BJP Toolkit", icon: ShieldCheck },
   { id: "news-agent", label: "News Agent", icon: Bot },
+  { id: "caricature-bank", label: "Caricature Bank", icon: ImageIcon },
   { id: "dashboard", label: "Dashboard", icon: Layout },
   { id: "approval", label: "Approval Queue", icon: ShieldCheck },
   { id: "posts", label: "All Posts", icon: FileText },
@@ -7631,6 +7633,7 @@ export default function AdminPage() {
           {activeTab === "polls" && <PollsPanel />}
           {activeTab === "push-notifs" && <PushNotificationsPanel />}
           <div style={{ display: activeTab === "news-agent" ? "block" : "none" }}><DeepSearchAgentPanel /></div>
+          <div style={{ display: activeTab === "caricature-bank" ? "block" : "none" }}><CaricatureBankPanel /></div>
           {activeTab === "poster-studio" && <PosterStudio />}
           {activeTab === "podcast-studio" && <PodcastStudio />}
           {activeTab === "bjp-toolkit" && <BjpToolkitPanel />}
