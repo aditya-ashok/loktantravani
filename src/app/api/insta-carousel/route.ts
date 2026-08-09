@@ -38,8 +38,8 @@ async function generateCoverArt(prompt: string, postId: string): Promise<string>
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        instances: [{ prompt: `${prompt}. Bold Gen-Z editorial illustration for an Instagram news carousel: vibrant electric colors, thick outlines, flat modern cartoon style with subtle grain, dramatic composition, Indian context. Square format. NO text, NO words, NO letters in the image.` }],
-        parameters: { sampleCount: 1, aspectRatio: "1:1" },
+        contents: [{ parts: [{ text: `Generate a square image: ${prompt}. Bold Gen-Z editorial illustration for an Instagram news carousel: vibrant electric colors, thick outlines, flat modern cartoon style with subtle grain, dramatic composition, Indian context. NO text, NO words, NO letters in the image.` }] }],
+        generationConfig: { responseModalities: ["IMAGE", "TEXT"] },
       }),
     });
     if (!res.ok) return "";
