@@ -15,12 +15,13 @@ interface BreakingItem {
 
 export default function BreakingNews() {
   const [items, setItems] = useState<BreakingItem[]>([]);
+  const [isFallback, setIsFallback] = useState(false);
   const { lang } = useLanguage();
 
   useEffect(() => {
     fetch("/api/admin/breaking")
       .then((r) => r.json())
-      .then((d) => setItems(d.breaking || []))
+      .then((d) => { setItems(d.breaking || []); setIsFallback(!!d.fallback); })
       .catch(() => {});
   }, []);
 
@@ -32,7 +33,7 @@ export default function BreakingNews() {
         {/* Badge */}
         <div className="bg-white text-red-700 px-3 py-1.5 flex items-center gap-1.5 flex-shrink-0 z-10">
           <span className="w-2 h-2 bg-red-600 rounded-full animate-pulse" />
-          <span className="text-[10px] font-inter font-black uppercase tracking-widest">Breaking</span>
+          <span className="text-[10px] font-inter font-black uppercase tracking-widest">{isFallback ? "Live" : "Breaking"}</span>
         </div>
 
         {/* Scrolling ticker */}

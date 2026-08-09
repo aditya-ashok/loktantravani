@@ -64,6 +64,56 @@ export async function GET() {
       })
       .filter((b: { isExpired: boolean }) => !b.isExpired);
 
+    // Ticker should never go dark: with nothing breaking in-window, run the
+    // latest headlines instead (labelled LIVE on the client via `fallback`)
+    if (breaking.length === 0) {
+      const fb = await fetch(`${BASE}:runQuery`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          structuredQuery: {
+            from: [{ collectionId: "posts" }],
+            where: {
+              compositeFilter: {
+                op: "AND",
+                filters: [
+                  { fieldFilter: { field: { fieldPath: "status" }, op: "EQUAL", value: { stringValue: "published" } } },
+                  { fieldFilter: { field: { fieldPath: "createdAt" }, op: "GREATER_THAN_OR_EQUAL", value: { timestampValue: new Date(Date.now() - 48 * 3600 * 1000).toISOString() } } },
+                ],
+              },
+            },
+            orderBy: [{ field: { fieldPath: "createdAt" }, direction: "DESCENDING" }],
+            limit: 8,
+          },
+        }),
+        cache: "no-store",
+      });
+      if (fb.ok) {
+        const rows = await fb.json();
+        const latest = (rows || [])
+          .filter((r: Record<string, unknown>) => r.document)
+          .map((r: { document: { name: string; fields: Record<string, Record<string, string>> } }) => {
+            const f = r.document.fields;
+            return {
+              id: r.document.name.split("/").pop() || "",
+              title: f.title?.stringValue || "",
+              titleHi: f.titleHi?.stringValue || "",
+              category: f.category?.stringValue || "",
+              slug: f.slug?.stringValue || "",
+              imageUrl: f.imageUrl?.stringValue || "",
+              breakingAt: f.createdAt?.timestampValue || f.createdAt?.stringValue || "",
+              isExpired: false,
+            };
+          })
+          .filter((b: { title: string; slug: string }) => b.title && b.slug)
+          .slice(0, 6);
+        return NextResponse.json(
+          { breaking: latest, fallback: true },
+          { headers: { "Cache-Control": "public, s-maxage=60, stale-while-revalidate=120" } }
+        );
+      }
+    }
+
     return NextResponse.json(
       { breaking },
       { headers: { "Cache-Control": "public, s-maxage=30, stale-while-revalidate=60" } }
