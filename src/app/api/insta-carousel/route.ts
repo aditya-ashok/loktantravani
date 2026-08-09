@@ -16,6 +16,8 @@ const BASE = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databas
 const GROQ_KEY = () => (process.env.GROQ_API_KEY || "").trim();
 const GROQ_MODEL = (process.env.GROQ_MODEL || "llama-3.3-70b-versatile").trim();
 const ANTHROPIC_KEY = () => (process.env.ANTHROPIC_API_KEY || "").trim();
+const GEMINI_KEY = () => (process.env.GEMINI_API_KEY || "").trim();
+const STORAGE_BUCKET = (process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || "loktantravani-2d159.firebasestorage.app").trim();
 
 export type CarouselData = {
   hook: string;
@@ -24,7 +26,38 @@ export type CarouselData = {
   cta: string;
   caption: string;
   hashtags: string[];
+  coverImage?: string;
 };
+
+/** Gemini renders the cover art (square), uploaded to Storage. Best-effort. */
+async function generateCoverArt(prompt: string, postId: string): Promise<string> {
+  const key = GEMINI_KEY();
+  if (!key) return "";
+  try {
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-generate-001:predict?key=${key}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        instances: [{ prompt: `${prompt}. Bold Gen-Z editorial illustration for an Instagram news carousel: vibrant electric colors, thick outlines, flat modern cartoon style with subtle grain, dramatic composition, Indian context. Square format. NO text, NO words, NO letters in the image.` }],
+        parameters: { sampleCount: 1, aspectRatio: "1:1" },
+      }),
+    });
+    if (!res.ok) return "";
+    const data = await res.json();
+    const b64 = data.predictions?.[0]?.bytesBase64Encoded;
+    if (!b64) return "";
+    const buffer = Buffer.from(b64, "base64");
+    const filename = `carousels/${postId}-${Date.now().toString(36)}.png`;
+    const up = await fetch(`https://firebasestorage.googleapis.com/v0/b/${STORAGE_BUCKET}/o/${encodeURIComponent(filename)}?uploadType=media`, {
+      method: "POST",
+      headers: { "Content-Type": "image/png" },
+      body: new Uint8Array(buffer),
+    });
+    if (!up.ok) return "";
+    const upData = await up.json();
+    return `https://firebasestorage.googleapis.com/v0/b/${STORAGE_BUCKET}/o/${encodeURIComponent(upData.name)}?alt=media&token=${upData.downloadTokens || ""}`;
+  } catch { return ""; }
+}
 
 function parseJSON(text: string): Record<string, unknown> | null {
   const clean = text.replace(/```json\s*/g, "").replace(/```\s*/g, "").trim();
@@ -137,6 +170,7 @@ Write the carousel package. Return ONLY JSON:
     { "emoji": "one relevant emoji", "title": "punchy 3-5 word slide title", "text": "the point in max 25 words, Gen-Z casual but factual" }
   ],
   "cta": "last-slide line inviting follow/save, max 12 words",
+  "imagePrompt": "vivid, specific scene for the cover illustration of THIS story — subjects, setting, mood, symbolic props. No text in image.",
   "caption": "Instagram caption: 2-3 casual sentences + line break + question to drive comments, max 80 words",
   "hashtags": ["8-10 relevant hashtags without #, mix of big and niche, include LoktantraVani"]
 }
@@ -148,7 +182,15 @@ Rules: exactly 4 or 5 points. Every number/name from the article must stay accur
     return NextResponse.json({ error: "AI carousel generation failed — try again" }, { status: 502 });
   }
 
+  // Groq wrote the scene; Gemini paints it (best-effort — slides fall back
+  // to the article photo when image generation is unavailable)
+  const coverImage = await generateCoverArt(
+    String(parsed.imagePrompt || `${title} — dramatic news illustration`),
+    id
+  );
+
   const carousel: CarouselData = {
+    coverImage,
     hook: String(parsed.hook),
     hookSub: String(parsed.hookSub || ""),
     points: (parsed.points as CarouselData["points"]).slice(0, 5).map(p => ({
