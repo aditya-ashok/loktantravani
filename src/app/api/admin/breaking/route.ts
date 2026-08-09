@@ -45,7 +45,7 @@ export async function GET() {
       .map((r: { document: { name: string; fields: Record<string, Record<string, string>> } }) => {
         const f = r.document.fields;
         const id = r.document.name.split("/").pop() || "";
-        const breakingAt = f.breakingAt?.stringValue || f.createdAt?.stringValue || "";
+        const breakingAt = f.breakingAt?.stringValue || f.breakingAt?.timestampValue || f.createdAt?.timestampValue || f.createdAt?.stringValue || "";
         const breakingTime = breakingAt ? new Date(breakingAt).getTime() : 0;
         const isExpired = breakingTime > 0 && (now - breakingTime) > TWO_HOURS;
 

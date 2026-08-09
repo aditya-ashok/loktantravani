@@ -29,7 +29,7 @@ interface Props {
 
 const SIZE = 540; // rendered at 540, captured at 2x → 1080
 
-type ThemeId = "genz" | "desi";
+type ThemeId = "genz" | "desi" | "clean";
 
 const THEMES: Record<ThemeId, {
   label: string;
@@ -52,6 +52,17 @@ const THEMES: Record<ThemeId, {
     lightBg: "#efe9ff",
     lightFg: "#1b1033",
     glow: "rgba(255,45,149,0.45)",
+  },
+  clean: {
+    label: "✦ Clean",
+    coverBg: "linear-gradient(160deg, #fbfaf6 0%, #eef1f6 100%)",
+    accent: "#0b1f4b",
+    accent2: "#16e0b4",
+    chipText: "#ffffff",
+    darkBg: "#0b1f4b",
+    lightBg: "#fbfaf6",
+    lightFg: "#0b1f4b",
+    glow: "rgba(22,224,180,0.35)",
   },
   desi: {
     label: "🇮🇳 Desi",
@@ -228,6 +239,7 @@ export default function InstaCarouselModal({ isOpen, onClose, post }: Props) {
 
     // ── Cover ──
     if (idx === 0) {
+      const lightCover = themeId === "clean";
       return (
         <div style={{ width: SIZE, height: SIZE, position: "relative", overflow: "hidden", background: t.coverBg, fontFamily: "'Space Grotesk', sans-serif" }}>
           {art && (
@@ -240,22 +252,24 @@ export default function InstaCarouselModal({ isOpen, onClose, post }: Props) {
               filter: data.coverImage ? "none" : "saturate(0.4) contrast(1.1)",
             }} />
           )}
-          <div style={{ position: "absolute", inset: 0, background: `linear-gradient(8deg, ${themeId === "genz" ? "rgba(13,0,26,0.94)" : "rgba(20,10,0,0.94)"} 16%, transparent 62%)` }} />
+          <div style={{ position: "absolute", inset: 0, background: lightCover
+            ? "linear-gradient(8deg, rgba(251,250,246,0.97) 20%, rgba(251,250,246,0.25) 62%)"
+            : `linear-gradient(8deg, ${themeId === "genz" ? "rgba(13,0,26,0.94)" : "rgba(20,10,0,0.94)"} 16%, transparent 62%)` }} />
           <div style={{ position: "absolute", top: -80, right: -80, width: 260, height: 260, borderRadius: "50%", background: `radial-gradient(circle, ${t.glow}, transparent 70%)` }} />
           {themeId === "genz" && (
             <div style={{ position: "absolute", top: 60, left: -50, width: 170, height: 170, borderRadius: "50%", border: `2px dashed ${t.accent2}`, opacity: 0.4 }} />
           )}
           <div style={grain} />
-          {handleBar(false)}
+          {handleBar(lightCover)}
           <div style={{ position: "absolute", left: 34, right: 34, bottom: 92, zIndex: 2 }}>
             <span style={{ display: "inline-block", fontFamily: "'Space Grotesk'", fontWeight: 700, fontSize: 12, letterSpacing: 3, color: t.chipText, background: t.accent, padding: "6px 14px", borderRadius: 999, marginBottom: 18, textTransform: "uppercase" }}>
               {post.category} · news drop
             </span>
-            <h2 style={{ fontFamily: "'Anton', sans-serif", fontSize: 52, lineHeight: 1.04, color: "#fff", textTransform: "uppercase", letterSpacing: 0.5, margin: 0, textShadow: "0 3px 24px rgba(0,0,0,0.5)" }}>
-              {data.hook}
+            <h2 style={{ fontFamily: "'Anton', sans-serif", fontSize: 52, lineHeight: 1.04, color: lightCover ? t.lightFg : "#fff", textTransform: "uppercase", letterSpacing: 0.5, margin: 0, textShadow: lightCover ? "none" : "0 3px 24px rgba(0,0,0,0.5)" }}>
+              {lightCover ? <span style={{ backgroundImage: `linear-gradient(transparent 62%, ${t.accent2} 62%)` }}>{data.hook}</span> : data.hook}
             </h2>
             {data.hookSub && (
-              <p style={{ fontFamily: "'Space Grotesk'", fontWeight: 500, fontSize: 17, color: "rgba(255,255,255,0.88)", marginTop: 14 }}>
+              <p style={{ fontFamily: "'Space Grotesk'", fontWeight: 500, fontSize: 17, color: lightCover ? "rgba(11,31,75,0.75)" : "rgba(255,255,255,0.88)", marginTop: 14 }}>
                 {data.hookSub}
               </p>
             )}
