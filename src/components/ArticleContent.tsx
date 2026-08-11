@@ -129,6 +129,8 @@ export default function ArticleContent({ post }: { post: Post }) {
   const displayBio = useHindi
     ? (profileBioHi || post.authorBio || authorHi.bioHi || "")
     : (post.authorBio || authorProfile?.bio || "");
+  // Co-author (two-author articles) — AuthorCard auto-resolves designation/bio/avatar from AUTHORS.
+  const coAuthorName = (post.coAuthor || "").trim();
   const articleHeadings = extractArticleHeadings(post.content);
 
   // Increment view count on article load (once per session per article)
@@ -182,7 +184,7 @@ export default function ArticleContent({ post }: { post: Post }) {
               <div className="w-10 h-10 sm:w-12 sm:h-12 bg-primary text-white flex items-center justify-center font-newsreader font-bold text-lg sm:text-xl shrink-0">{displayAuthor[0]}</div>
               <div>
                 <p className="font-inter font-black text-sm dark:text-white group-hover:text-primary transition-colors" itemProp="name">
-                  By <span className="underline-offset-2 group-hover:underline">{displayAuthor}</span>
+                  By <span className="underline-offset-2 group-hover:underline">{displayAuthor}</span>{coAuthorName && <> &amp; <span className="underline-offset-2 group-hover:underline">{coAuthorName}</span></>}
                 </p>
                 <p className="text-[10px] font-inter font-bold opacity-40 uppercase tracking-widest" itemProp="jobTitle">{post.section} &bull; {post.category}</p>
                 <meta itemProp="url" content={`https://loktantravani.in/author/${encodeURIComponent(post.author)}`} />
@@ -248,6 +250,7 @@ export default function ArticleContent({ post }: { post: Post }) {
             <AdBanner placement="between-articles" />
             <InArticleAd />
             <AuthorCard authorName={displayAuthor} authorPhoto={post.authorPhoto} authorDesignation={displayDesignation} authorBio={displayBio} />
+            {coAuthorName && <AuthorCard authorName={coAuthorName} />}
             <div className="mt-8 pt-8 border-t border-black/10 dark:border-white/10">
               <Reactions postId={post.id} reactions={post.reactions} />
             </div>

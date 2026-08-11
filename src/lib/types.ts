@@ -50,6 +50,7 @@ export interface Post {
   authorPhoto?: string;
   authorDesignation?: string;
   authorBio?: string;
+  coAuthor?: string;
   isBreaking?: boolean;
   submittedBy?: string;
   submittedByEmail?: string;
