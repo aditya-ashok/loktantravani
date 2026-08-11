@@ -4,7 +4,7 @@ import { useParams } from "next/navigation";
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
-import { ArrowLeft, Globe, Zap, History, ShieldAlert, Sparkles, Cpu, Vote, Swords, Building2, TrendingUp, Megaphone, MapPin, Newspaper } from "lucide-react";
+import { ArrowLeft, Globe, Zap, History, ShieldAlert, Sparkles, Cpu, Vote, Swords, Building2, TrendingUp, Megaphone, MapPin, Newspaper, Users } from "lucide-react";
 import BlogCard from "@/components/BlogCard";
 import NewsletterSignup from "@/components/NewsletterSignup";
 import Navbar from "@/components/Navbar";
@@ -28,7 +28,7 @@ const CATEGORY_META: Record<string, { icon: typeof Globe; descEn: string; descHi
   Culture: { icon: Sparkles, descEn: "Art, heritage, cinema, and the cultural fabric of India.", descHi: "कला, विरासत, सिनेमा और भारत का सांस्कृतिक ताना-बाना।", nameHi: "संस्कृति" },
   Viral: { icon: Zap, descEn: "Trending stories the internet can't stop talking about.", descHi: "ट्रेंडिंग कहानियां जिनकी चर्चा थमने का नाम नहीं लेती।", nameHi: "वायरल" },
   "Ancient India": { icon: History, descEn: "Civilizational wisdom for contemporary challenges.", descHi: "समकालीन चुनौतियों के लिए सभ्यतागत ज्ञान।", nameHi: "प्राचीन भारत" },
-  "Lok Post": { icon: Sparkles, descEn: "Satirical commentary on Bharat's paradoxes.", descHi: "भारत के विरोधाभासों पर व्यंग्यात्मक टिप्पणी।", nameHi: "कार्टून मंडला" },
+  "Lok Post": { icon: Users, descEn: "Profiles of the people, personalities, and leaders shaping Bharat.", descHi: "भारत को आकार देने वाले लोगों, व्यक्तित्वों और नेताओं की प्रोफ़ाइल।", nameHi: "व्यक्तित्व एवं नेतृत्व" },
   Markets: { icon: TrendingUp, descEn: "Sensex, Nifty, and the world of finance.", descHi: "सेंसेक्स, निफ्टी और वित्त की दुनिया।", nameHi: "बाजार" },
 };
 

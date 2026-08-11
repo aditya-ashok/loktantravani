@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { ArrowLeft, Clock, Eye, Sparkles, Newspaper, Edit3, Save, X, Loader2 } from "lucide-react";
+import { ArrowLeft, Clock, Eye, Sparkles, Newspaper, Edit3, Save, X, Loader2, Instagram } from "lucide-react";
 import { motion } from "framer-motion";
 import ArticleAIBar from "@/components/ArticleAIBar";
 import ReadingProgress from "@/components/ReadingProgress";
@@ -17,6 +17,7 @@ import LiveReaderCount from "@/components/LiveReaderCount";
 import AdBanner from "@/components/AdBanner";
 import GoogleAd, { InArticleAd } from "@/components/GoogleAd";
 import EpaperShareModal from "@/components/EpaperShareModal";
+import InstaShareModal from "@/components/InstaShareModal";
 import { useLanguage } from "@/lib/language-context";
 import { formatDate, displayViews } from "@/lib/utils";
 import type { Post } from "@/lib/types";
@@ -35,7 +36,9 @@ function AuthorCard({ authorName, authorPhoto, authorDesignation, authorBio }: {
         <img src={photo} alt={authorName} referrerPolicy="no-referrer" className="w-16 h-16 rounded-full object-cover shrink-0" />
         <div className="flex-1">
           <p className="text-[9px] font-inter font-black uppercase tracking-widest text-primary mb-1">About the Author</p>
-          <h4 className="text-lg font-newsreader font-black dark:text-white">{authorName}</h4>
+          <Link href={`/author/${encodeURIComponent(authorName)}`} className="text-lg font-newsreader font-black dark:text-white hover:text-primary hover:underline underline-offset-4">
+            {authorName}
+          </Link>
           <p className="text-[10px] font-inter font-bold uppercase tracking-widest opacity-50 mb-2 dark:text-white/50">{designation}</p>
           <p className="text-sm font-inter leading-relaxed text-[var(--nyt-gray)] dark:text-white/60">{bio}</p>
         </div>
@@ -46,11 +49,32 @@ function AuthorCard({ authorName, authorPhoto, authorDesignation, authorBio }: {
 
 const cn2 = (...cls: (string | false | undefined)[]) => cls.filter(Boolean).join(" ");
 
+function extractArticleHeadings(content: string): string[] {
+  const matches = content.match(/<h2\b[^>]*>[\s\S]*?<\/h2>/gi) || [];
+
+  return matches.flatMap((match) => {
+    const inner = match.replace(/^<h2\b[^>]*>|<\/h2>$/gi, "");
+    // A heading containing a paragraph/list is malformed imported rich text,
+    // not a useful table-of-contents label. Do not surface its raw markup.
+    if (/<(?:p|div|ul|ol|blockquote|h[1-6])\b/i.test(inner)) return [];
+
+    const label = inner
+      .replace(/<[^>]+>/g, " ")
+      .replace(/&nbsp;/gi, " ")
+      .replace(/&amp;/gi, "&")
+      .replace(/\s+/g, " ")
+      .trim();
+
+    return label && label.length <= 180 ? [label] : [];
+  });
+}
+
 export default function ArticleContent({ post }: { post: Post }) {
   const { lang, t } = useLanguage();
   const { userRole } = useAuth();
   const isAdmin = userRole === "admin";
   const [shareCardOpen, setShareCardOpen] = useState(false);
+  const [instaOpen, setInstaOpen] = useState(false);
   // Admin live edit — the article page becomes the editor
   const [liveEdit, setLiveEdit] = useState(false);
   const [liveSaving, setLiveSaving] = useState(false);
@@ -105,6 +129,7 @@ export default function ArticleContent({ post }: { post: Post }) {
   const displayBio = useHindi
     ? (profileBioHi || post.authorBio || authorHi.bioHi || "")
     : (post.authorBio || authorProfile?.bio || "");
+  const articleHeadings = extractArticleHeadings(post.content);
 
   // Increment view count on article load (once per session per article)
   useEffect(() => {
@@ -168,6 +193,9 @@ export default function ArticleContent({ post }: { post: Post }) {
                <button onClick={() => setShareCardOpen(true)} className="flex items-center gap-1.5 px-2 sm:px-3 py-1.5 border-2 border-black dark:border-white text-[9px] sm:text-[10px] font-inter font-black uppercase tracking-widest hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-all bg-white dark:bg-black shadow-[2px_2px_0px_0px_#000] dark:shadow-[2px_2px_0px_0px_#fff]">
                  <Newspaper className="w-3 h-3 sm:w-3.5 sm:h-3.5" /> Share Card
                </button>
+               <button onClick={() => setInstaOpen(true)} className="flex items-center gap-1.5 px-2 sm:px-3 py-1.5 text-white text-[9px] sm:text-[10px] font-inter font-black uppercase tracking-widest transition-all shadow-[2px_2px_0px_0px_#000] hover:opacity-90" style={{ background: "linear-gradient(90deg,#FF9933,#FF5E9C)" }}>
+                 <Instagram className="w-3 h-3 sm:w-3.5 sm:h-3.5" /> Insta
+               </button>
                {isAdmin && !liveEdit && (
                  <>
                    <button
@@ -227,12 +255,12 @@ export default function ArticleContent({ post }: { post: Post }) {
           </div>
           <aside className="col-span-12 lg:col-span-4 space-y-8">
              <div className="sticky top-[240px]">
-               {post.content.match(/<h2>(.*?)<\/h2>/g)?.length ? (
+               {articleHeadings.length ? (
                  <div className="border-4 border-black dark:border-white/20 p-6 mb-8">
                    <h4 className="text-sm font-inter font-black uppercase tracking-widest mb-4">In This Article</h4>
                    <div className="space-y-3 text-sm font-newsreader">
-                     {post.content.match(/<h2>(.*?)<\/h2>/g)?.map((match, idx) => (
-                       <p key={idx} className="border-l-2 border-black/10 pl-3 hover:border-primary cursor-pointer transition-colors">{match.replace(/<\/?h2>/g, "")}</p>
+                     {articleHeadings.map((heading, idx) => (
+                       <p key={idx} className="border-l-2 border-black/10 pl-3 hover:border-primary cursor-pointer transition-colors">{heading}</p>
                      ))}
                    </div>
                  </div>
@@ -260,6 +288,20 @@ export default function ArticleContent({ post }: { post: Post }) {
           date: formatDate(post.createdAt as Date, lang),
           readingTimeMin: post.readingTimeMin,
           content: post.content,
+        }}
+      />
+      <InstaShareModal
+        isOpen={instaOpen}
+        onClose={() => setInstaOpen(false)}
+        post={{
+          title,
+          summary,
+          category: post.category,
+          author: displayAuthor,
+          imageUrl: post.imageUrl,
+          url,
+          date: formatDate(post.createdAt as Date, lang),
+          language: lang,
         }}
       />
     </>

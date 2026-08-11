@@ -21,7 +21,7 @@ const CATEGORIES: { label: string; labelHi: string; value: PostCategory | "All" 
   { label: "Hot Takes",        labelHi: "हॉट टेक्स",       value: "Opinion" },
   { label: "City Vibes",       labelHi: "सिटी वाइब्स",     value: "Cities" },
   { label: "West Asia ⚡",     labelHi: "पश्चिम एशिया ⚡", value: "West Asia" },
-  { label: "Lok Post",         labelHi: "इंक ड्रॉप",       value: "Lok Post" },
+  { label: "Lok Post",         labelHi: "लोक पोस्ट",       value: "Lok Post" },
 ];
 
 // Today's date — matches AGENTS.md

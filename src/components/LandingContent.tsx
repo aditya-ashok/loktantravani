@@ -6,6 +6,7 @@ import Image from "next/image";
 import { ArrowRight } from "lucide-react";
 import BlogCard from "@/components/BlogCard";
 import AdBanner from "@/components/AdBanner";
+import SummaryCarousel from "@/components/SummaryCarousel";
 import { useLanguage } from "@/lib/language-context";
 import { getAuthorHiName } from "@/lib/authors";
 import { timeAgo } from "@/lib/utils";
@@ -53,6 +54,8 @@ export default function LandingContent({ allPosts }: { allPosts: Post[] }) {
 
   return (
     <>
+      {/* Featured-stories carousel — auto-rotating summaries of the top posts */}
+      <SummaryCarousel posts={allPosts.slice(0, 6)} />
       {/* ── HT-style news well: lead | secondary stack | latest rail ── */}
       <div className="max-w-screen-xl mx-auto px-4 md:px-8 py-6">
         <div className="grid grid-cols-1 lg:grid-cols-[5fr_4fr_3fr] gap-6 lg:gap-0 pb-8 border-b-2 border-black dark:border-white/40">
@@ -239,14 +242,14 @@ export default function LandingContent({ allPosts }: { allPosts: Post[] }) {
           </div>
         )}
 
-        {/* Lok Post — Cartoons & Satire */}
+        {/* Lok Post — People & Leaders */}
         {cartoonPosts.length > 0 && (
           <div className="py-12">
             <div className="nyt-section-header mb-6 flex items-baseline justify-between">
               <div className="flex items-center gap-2">
-                <span className="text-2xl">🎨</span>
+                <span className="text-2xl">🎙️</span>
                 <h2 className="text-base font-inter font-black uppercase tracking-wider text-[var(--nyt-black)] dark:text-white">
-                  {t("Lok Post — Cartoons & Satire", "लोक पोस्ट — कार्टून एवं व्यंग्य")}
+                  {t("Lok Post — People & Leaders", "लोक पोस्ट — व्यक्तित्व एवं नेतृत्व")}
                 </h2>
               </div>
               <Link href="/lok-post" className="text-[9px] font-inter font-bold uppercase tracking-widest text-primary hover:underline flex items-center gap-1">
@@ -265,7 +268,7 @@ export default function LandingContent({ allPosts }: { allPosts: Post[] }) {
                     <div className="p-3 bg-white dark:bg-[#1a1a1a]">
                       <span className="text-[8px] font-inter font-black uppercase tracking-widest text-primary">Lok Post</span>
                       <h3 className="text-sm font-newsreader font-bold mt-1 leading-snug text-[var(--nyt-black)] dark:text-white group-hover:text-primary transition-colors">
-                        {post.title}
+                        {lang === "hi" && post.titleHi ? post.titleHi : post.title}
                       </h3>
                     </div>
                   </div>
