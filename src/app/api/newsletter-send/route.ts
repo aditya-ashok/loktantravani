@@ -14,6 +14,7 @@ import { unsubToken } from "@/lib/unsub";
 import { verifyAuth, unauthorized } from "@/lib/api-auth";
 
 export const maxDuration = 300;
+export const dynamic = "force-dynamic";
 
 const PROJECT_ID = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || "loktantravani-2d159";
 const BASE = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents`;
@@ -97,49 +98,73 @@ async function fetchTopStories(): Promise<{ title: string; summary: string; cate
     .slice(0, 6);
 }
 
-function buildEmailHTML(dateFormatted: string, plan: any, stories: { title: string; summary: string; category: string; slug: string }[]): string {
-  const orange = "#FF9933";
-  const storyRow = (s: { title: string; summary: string; category: string; slug: string }) => `
-    <tr><td style="padding:14px 0;border-bottom:1px solid #e8e4dc;">
-      <div style="font-size:10px;color:${orange};text-transform:uppercase;letter-spacing:2px;font-weight:bold;margin-bottom:3px;">${s.category}</div>
-      <a href="${SITE}/blog/${s.slug}" style="font-family:Georgia,serif;font-size:17px;font-weight:bold;color:#121212;text-decoration:none;line-height:1.3;">${s.title}</a>
-      <div style="font-size:13px;color:#555;line-height:1.5;margin-top:4px;">${(s.summary || "").slice(0, 160)}</div>
-    </td></tr>`;
+function buildEmailHTML(dateFormatted: string, plan: any, stories: { title: string; summary: string; category: string; slug: string; imageUrl: string }[]): string {
+  const SAFF = "#FF6A2C";
+  const DARK = "#0C0C11";
+  const clip = (s: string, n: number) => (s || "").slice(0, n);
+  const [hero, ...rest] = stories;
+
+  const heroBlock = hero ? `
+    <a href="${SITE}/blog/${hero.slug}" style="text-decoration:none;color:inherit;">
+      <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:separate;background:${DARK};border-radius:18px;overflow:hidden;margin-bottom:18px;">
+        ${hero.imageUrl ? `<tr><td style="padding:0;line-height:0;"><img src="${hero.imageUrl}" width="560" alt="" style="display:block;width:100%;max-width:560px;height:auto;border-radius:18px 18px 0 0;" /></td></tr>` : ""}
+        <tr><td style="padding:20px 22px;">
+          <span style="display:inline-block;background:${SAFF};color:#ffffff;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:1px;padding:5px 12px;border-radius:999px;">🔥 ${hero.category}</span>
+          <div style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:23px;font-weight:800;color:#ffffff;line-height:1.25;margin-top:12px;">${hero.title}</div>
+          <div style="font-size:14px;color:#c9c9d2;line-height:1.55;margin-top:8px;">${clip(hero.summary, 150)}…</div>
+          <div style="margin-top:14px;font-size:13px;font-weight:800;color:${SAFF};letter-spacing:1px;">READ THE STORY →</div>
+        </td></tr>
+      </table>
+    </a>` : "";
+
+  const storyCard = (s: { title: string; summary: string; category: string; slug: string; imageUrl: string }) => `
+    <a href="${SITE}/blog/${s.slug}" style="text-decoration:none;color:inherit;">
+      <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:separate;background:#ffffff;border:1px solid #eceae4;border-radius:14px;overflow:hidden;margin-bottom:12px;">
+        <tr>
+          ${s.imageUrl ? `<td width="92" valign="top" style="padding:0;line-height:0;"><img src="${s.imageUrl}" width="92" height="92" alt="" style="display:block;width:92px;height:92px;object-fit:cover;" /></td>` : ""}
+          <td valign="top" style="padding:11px 14px;">
+            <span style="font-size:10px;font-weight:800;color:${SAFF};text-transform:uppercase;letter-spacing:1px;">${s.category}</span>
+            <div style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:15px;font-weight:800;color:#121212;line-height:1.3;margin-top:3px;">${s.title}</div>
+            <div style="font-size:12px;color:#70707a;line-height:1.45;margin-top:4px;">${clip(s.summary, 88)}…</div>
+          </td>
+        </tr>
+      </table>
+    </a>`;
 
   return `
-  <div style="background:#f5f2ec;padding:24px 12px;">
-  <div style="max-width:620px;margin:0 auto;background:#ffffff;border:1px solid #e0dcd2;">
-    <div style="text-align:center;padding:26px 24px 18px;border-bottom:3px double #121212;">
-      <div style="font-family:Georgia,serif;font-size:32px;font-weight:900;color:#121212;">Loktantra<span style="color:${orange};">Vani</span></div>
-      <div style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:3px;margin-top:4px;">Vani Morning Brief · ${dateFormatted}</div>
-    </div>
-    <div style="padding:24px;">
-      ${plan?.bannerHeadline ? `
-        <div style="text-align:center;padding-bottom:16px;border-bottom:1px solid #e8e4dc;margin-bottom:16px;">
-          <div style="font-family:Georgia,serif;font-size:24px;font-weight:900;line-height:1.15;color:#121212;">${plan.bannerHeadline}</div>
-          ${plan.deck ? `<div style="font-size:13px;font-style:italic;color:#666;margin-top:6px;">${plan.deck}</div>` : ""}
-        </div>` : ""}
+  <div style="background:#f4f2ee;padding:20px 10px;font-family:'Helvetica Neue',Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;margin:0 auto;">
+    <tr><td style="background:${DARK};border-radius:20px 20px 0 0;padding:24px 24px 20px;text-align:center;">
+      <div style="font-size:30px;font-weight:900;color:#ffffff;letter-spacing:-1px;">Loktantra<span style="color:${SAFF};">Vani</span></div>
+      <div style="font-size:12px;color:${SAFF};font-weight:800;letter-spacing:1px;margin-top:6px;">📲 YOUR DAILY DOWNLOAD</div>
+      <div style="font-size:10px;color:#8a8a94;text-transform:uppercase;letter-spacing:2px;margin-top:6px;">${dateFormatted}</div>
+    </td></tr>
+    <tr><td style="background:#ffffff;padding:22px 20px 6px;">
+      ${plan?.bannerHeadline ? `<div style="font-size:12px;font-weight:800;color:#c41e1e;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:10px;">⚡ Today's Big One</div>` : ""}
+      ${heroBlock}
       ${Array.isArray(plan?.atAGlance) && plan.atAGlance.length ? `
-        <div style="background:#fbf9f4;border:2px solid #121212;padding:14px 16px;margin-bottom:18px;">
-          <div style="font-size:10px;font-weight:bold;text-transform:uppercase;letter-spacing:2.5px;color:#c41e1e;margin-bottom:8px;">Today at a Glance</div>
-          ${plan.atAGlance.map((g: string) => `<div style="font-size:13px;line-height:1.6;color:#333;">▸ ${g}</div>`).join("")}
-        </div>` : ""}
-      <table style="width:100%;border-collapse:collapse;">${stories.map(storyRow).join("")}</table>
+        <table width="100%" cellpadding="0" cellspacing="0" style="background:${SAFF};border-radius:16px;margin-bottom:18px;"><tr><td style="padding:16px 18px;">
+          <div style="font-size:12px;font-weight:900;color:#ffffff;text-transform:uppercase;letter-spacing:2px;margin-bottom:8px;">⚡ TL;DR — Today in 5</div>
+          ${plan.atAGlance.slice(0, 6).map((g: string) => `<div style="font-size:13px;line-height:1.6;color:#ffffff;font-weight:600;">→ ${g}</div>`).join("")}
+        </td></tr></table>` : ""}
+      ${rest.length ? `<div style="font-size:12px;font-weight:800;color:#121212;text-transform:uppercase;letter-spacing:1.5px;margin:4px 0 12px;">📰 More Stories 👇</div>` : ""}
+      ${rest.map(storyCard).join("")}
       ${plan?.editorial?.body ? `
-        <div style="border-top:3px double #121212;border-bottom:3px double #121212;padding:16px;margin-top:18px;background:#fdfcf9;">
-          <div style="font-size:9px;font-weight:bold;text-transform:uppercase;letter-spacing:3px;color:#c41e1e;margin-bottom:4px;">✒ The LoktantraVani View</div>
-          <div style="font-family:Georgia,serif;font-size:16px;font-weight:bold;margin-bottom:6px;">${plan.editorial.title || "Editorial"}</div>
-          <div style="font-size:13px;line-height:1.6;color:#333;">${String(plan.editorial.body).split(/\n+/).map((p: string) => `<p style="margin:0 0 8px;">${p}</p>`).join("")}</div>
-        </div>` : ""}
+        <table width="100%" cellpadding="0" cellspacing="0" style="background:${DARK};border-radius:16px;margin-top:6px;"><tr><td style="padding:18px 20px;">
+          <div style="font-size:11px;font-weight:900;color:${SAFF};text-transform:uppercase;letter-spacing:2px;margin-bottom:6px;">🎤 The Hot Take</div>
+          <div style="font-size:16px;font-weight:800;color:#ffffff;margin-bottom:6px;">${plan.editorial.title || "Editorial"}</div>
+          <div style="font-size:13px;line-height:1.6;color:#c9c9d2;">${String(plan.editorial.body).split(/\n+/).slice(0, 2).map((p: string) => `<p style="margin:0 0 8px;">${p}</p>`).join("")}</div>
+        </td></tr></table>` : ""}
       <div style="text-align:center;margin:24px 0 8px;">
-        <a href="${SITE}/epaper" style="background:#121212;color:#ffffff;padding:13px 28px;text-decoration:none;font-size:12px;text-transform:uppercase;letter-spacing:2px;font-family:sans-serif;">Read Today's E-Paper →</a>
+        <a href="${SITE}" style="display:inline-block;background:${SAFF};color:#ffffff;padding:15px 34px;text-decoration:none;font-size:14px;font-weight:800;text-transform:uppercase;letter-spacing:1px;border-radius:999px;">Read More on LoktantraVani →</a>
       </div>
-    </div>
-    <div style="padding:16px 24px;border-top:1px solid #e0dcd2;text-align:center;">
-      <div style="font-size:11px;color:#888;">LoktantraVani — लोकतंत्रवाणी · India's 1st AI Newspaper</div>
-      <div style="font-size:10px;color:#aaa;margin-top:4px;">You receive this because you subscribed at loktantravani.in · <a href="{{UNSUB_URL}}" style="color:#aaa;">Unsubscribe</a></div>
-    </div>
-  </div>
+      <div style="text-align:center;font-size:11px;color:#a0a0a8;margin-bottom:6px;">100+ fresh stories daily · AI-written, human-checked</div>
+    </td></tr>
+    <tr><td style="background:#f4f2ee;border-radius:0 0 20px 20px;padding:18px 24px;text-align:center;">
+      <div style="font-size:12px;color:#888;font-weight:700;">LoktantraVani · लोकतंत्रवाणी · India's 1st AI Newspaper</div>
+      <div style="font-size:10px;color:#b4b4b4;margin-top:10px;">You get this because you subscribed at loktantravani.in<br/><a href="{{UNSUB_URL}}" style="color:#999;">Unsubscribe</a></div>
+    </td></tr>
+  </table>
   </div>`;
 }
 
