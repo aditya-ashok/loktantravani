@@ -5,6 +5,7 @@
  */
 
 import type { PostCategory } from "./types";
+import { callGroq, GROQ_DEFAULT_MODEL, GROQ_WEB_MODEL } from "./groq";
 
 // ── Gemini API helper — calls Gemini directly (works server-side) ──
 async function callGemini(model: string, body: Record<string, unknown>, action = "generateContent") {
@@ -13,7 +14,7 @@ async function callGemini(model: string, body: Record<string, unknown>, action =
 
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:${action}?key=${apiKey}`;
 
-  // Retry up to 3 times with exponential backoff for 429 errors
+  // Retry transient 429/503; surface Gemini's real message so failures are actionable.
   for (let attempt = 0; attempt < 3; attempt++) {
     const res = await fetch(url, {
       method: "POST",
@@ -23,14 +24,25 @@ async function callGemini(model: string, body: Record<string, unknown>, action =
 
     if (res.ok) return res.json();
 
-    if (res.status === 429 && attempt < 2) {
-      // Rate limited — wait and retry
-      const waitMs = (attempt + 1) * 3000; // 3s, 6s
+    // Read the error body so we can tell a transient rate-limit from a hard failure.
+    const errText = await res.text().catch(() => "");
+    let msg = "";
+    try { msg = (JSON.parse(errText)?.error?.message as string) || ""; } catch { /* non-JSON body */ }
+
+    // Billing / credit depletion is NOT transient — retrying always fails, so fail fast with a clear message.
+    if (/credit|billing|depleted|exceeded your current quota/i.test(msg)) {
+      throw new Error(`Gemini billing: ${msg || "prepayment credits depleted — top up at aistudio.google.com"}`);
+    }
+
+    // Genuine transient rate-limit or model overload — back off (honour Retry-After) and retry.
+    if ((res.status === 429 || res.status === 503) && attempt < 2) {
+      const retryAfter = Number(res.headers.get("retry-after")) || 0;
+      const waitMs = retryAfter > 0 ? retryAfter * 1000 : (attempt + 1) * 4000; // 4s, 8s
       await new Promise(r => setTimeout(r, waitMs));
       continue;
     }
 
-    throw new Error(`Gemini API error: ${res.status}`);
+    throw new Error(`Gemini API error ${res.status}: ${msg || errText.slice(0, 200)}`);
   }
   throw new Error("Gemini API: max retries exceeded");
 }
@@ -131,39 +143,54 @@ ${jsonSchema}`;
   // (url_context) and search for surrounding coverage — otherwise the model
   // only sees the URL string itself and invents the contents.
   const hasUrls = /https?:\/\//.test(topic);
-  const generationConfig = {
-    temperature: 0.5,
-    // Thinking models spend output budget on internal reasoning — give
-    // generous headroom so the JSON never truncates mid-string.
-    maxOutputTokens: 16384,
-  };
 
-  let data: Record<string, unknown>;
+  // Groq is the primary text backend. Devanagari tokenises heavily, so scale the
+  // output budget to the requested length; URL topics use the web-search model.
+  const maxTokens = Math.min(32000, Math.max(4096, Math.round(wordCount * 6)));
+  const groqModel = hasUrls ? GROQ_WEB_MODEL : GROQ_DEFAULT_MODEL;
+  const sysMsg = { role: "system" as const, content: "You are a senior journalist for LoktantraVani. Output ONLY a single valid JSON object — no markdown fences, no commentary." };
+
+  // Gemini fallback config (used only if Groq is unavailable AND Gemini has credits).
+  const generationConfig = { temperature: 0.5, maxOutputTokens: 16384 };
+
+  let text = "";
   try {
-    data = await callGemini("gemini-flash-latest", {
-      contents: [{ parts: [{ text: prompt }] }],
-      ...(hasUrls ? { tools: [{ url_context: {} }, { google_search: {} }] } : {}),
-      generationConfig,
+    text = await callGroq([sysMsg, { role: "user", content: prompt }], {
+      model: groqModel, jsonMode: true, temperature: 0.5, maxTokens,
     });
-  } catch {
-    // Tools can be rejected (unsupported URL, tool quota) — retry bare
-    data = await callGemini("gemini-flash-latest", {
-      contents: [{ parts: [{ text: prompt }] }],
-      generationConfig,
-    });
+  } catch (groqErr) {
+    // Groq down — fall back to Gemini (url_context/search when the topic has links).
+    try {
+      let data: Record<string, unknown>;
+      try {
+        data = await callGemini("gemini-flash-latest", {
+          contents: [{ parts: [{ text: prompt }] }],
+          ...(hasUrls ? { tools: [{ url_context: {} }, { google_search: {} }] } : {}),
+          generationConfig,
+        });
+      } catch {
+        data = await callGemini("gemini-flash-latest", {
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig,
+        });
+      }
+      text = extractGeminiText(data);
+    } catch {
+      throw groqErr; // surface the Groq failure — it is the primary backend
+    }
   }
 
-  let text = extractGeminiText(data);
   let parsed = parseJSON(text);
 
-  // One retry on parse failure — regenerate rather than fail the request
+  // One retry on parse failure — regenerate with a stricter reminder.
   if (!parsed) {
-    data = await callGemini("gemini-flash-latest", {
-      contents: [{ parts: [{ text: prompt + "\n\nREMINDER: Output must be a single valid JSON object. Escape all newlines inside strings as \\n." }] }],
-      generationConfig,
-    });
-    text = extractGeminiText(data);
-    parsed = parseJSON(text);
+    try {
+      text = await callGroq(
+        [sysMsg, { role: "user", content: prompt + "\n\nREMINDER: Output must be a single valid JSON object. Escape all newlines inside strings as \\n." }],
+        { model: GROQ_DEFAULT_MODEL, jsonMode: true, temperature: 0.5, maxTokens }
+      );
+      parsed = parseJSON(text);
+    } catch { /* keep parsed null → throw below */ }
   }
 
   if (!parsed) throw new Error("Failed to parse AI response");
@@ -212,12 +239,13 @@ Return ONLY valid JSON:
   "imagePrompt": "detailed description for AI image generation: describe the scene, characters, expressions, props. Style: bold colorful 3D cartoon editorial illustration, Indian newspaper cartoon style, exaggerated features, satirical. Square format. NO TEXT in the image."
 }`;
 
-  const data = await callGemini("gemini-flash-latest", {
-    contents: [{ parts: [{ text: prompt }] }],
-    generationConfig: { temperature: 0.7, maxOutputTokens: 4096 },
-  });
-
-  const text = extractGeminiText(data);
+  const text = await callGroq(
+    [
+      { role: "system", content: "You are a legendary Indian newspaper cartoonist. Output ONLY a single valid JSON object." },
+      { role: "user", content: prompt },
+    ],
+    { model: GROQ_DEFAULT_MODEL, jsonMode: true, temperature: 0.7, maxTokens: 2048 }
+  );
   const parsed = parseJSON(text);
 
   if (!parsed) throw new Error("Failed to parse cartoon concept");

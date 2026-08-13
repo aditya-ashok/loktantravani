@@ -10,6 +10,8 @@ import {
   generateCartoonConcept, 
   generateImage 
 } from "@/lib/ai-generator";
+import { queryByField } from "@/lib/firestore-rest";
+import { callGroq } from "@/lib/groq";
 
 const STOCK_IMAGES: Record<string, string[]> = {
   Politics: [
@@ -174,6 +176,13 @@ export async function POST(req: NextRequest) {
 
       // Upload data URL to Firebase Storage for permanent URL
       const { storageUrl, displayUrl } = await resolveImageUrl(articleImageUrl, fallbackUrl);
+      const authorName = author || "LoktantraVani AI";
+      const authorMatches = authorName === "LoktantraVani AI"
+        ? []
+        : await queryByField("users", "name", authorName, 5);
+      const authorProfile = authorMatches.find(profile => typeof profile.email === "string" && profile.email.includes("@"));
+      const authorEmail = (authorProfile?.email as string) || "";
+      const authorRole = authorProfile ? "author" : "agent";
 
       const { createDoc, generateSlug } = await import("@/lib/firestore-rest");
       let savedId: string | null = null;
@@ -187,8 +196,9 @@ export async function POST(req: NextRequest) {
           summaryHi: "",
           category: category || "India",
           section: "Main Feed",
-          author: author || "LoktantraVani AI",
-          authorRole: "agent",
+          author: authorName,
+          authorEmail,
+          authorRole,
           language: language || "en",
           imageUrl: storageUrl,
           status: "draft",
@@ -223,41 +233,22 @@ export async function POST(req: NextRequest) {
       if (messages.length > 7) {
         return NextResponse.json({ error: "Conversation is too long. Start a new question." }, { status: 400 });
       }
-      const apiKey = process.env.GEMINI_API_KEY;
-      if (!apiKey) {
-        return NextResponse.json({ result: "Sorry, AI service is not configured." });
-      }
-      // Convert messages to Gemini format (must start with user turn)
-      const systemMsg = messages.find((m: { role: string; content?: string }) => m.role === "system");
-      const chatMsgs = messages.filter((m: { role: string }) => m.role !== "system");
-      // Gemini requires first message to be "user" — skip leading assistant messages
-      const firstUserIdx = chatMsgs.findIndex((m: { role: string }) => m.role === "user");
-      const validMsgs = firstUserIdx >= 0 ? chatMsgs.slice(firstUserIdx) : chatMsgs;
-      const contents = validMsgs.map((m: { role: string; content?: string }) => ({
-        role: m.role === "assistant" ? "model" : "user",
-        parts: [{ text: String(m.content || "").slice(0, 1800) }],
-      }));
-      if (!contents.length || contents.some((m: { parts: { text: string }[] }) => !m.parts[0].text.trim())) {
+      // Build Groq (OpenAI-style) messages: keep the system turn, cap each turn's length.
+      const chatMessages = messages
+        .filter((m: { role: string; content?: string }) => m.role && String(m.content || "").trim())
+        .map((m: { role: string; content?: string }) => ({
+          role: (m.role === "assistant" ? "assistant" : m.role === "system" ? "system" : "user") as "system" | "user" | "assistant",
+          content: String(m.content || "").slice(0, m.role === "system" ? 3600 : 1800),
+        }));
+      if (!chatMessages.some((m: { role: string }) => m.role === "user")) {
         return NextResponse.json({ error: "A message is empty" }, { status: 400 });
       }
-      const res = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${apiKey}`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            systemInstruction: systemMsg ? { parts: [{ text: String(systemMsg.content || "").slice(0, 3600) }] } : undefined,
-            contents,
-            generationConfig: { temperature: 0.5, maxOutputTokens: 2000 },
-          }),
-        }
-      );
-      const data = await res.json();
-      if (!res.ok) {
-        return NextResponse.json({ error: data?.error?.message || "AI service is unavailable" }, { status: res.status });
+      try {
+        const reply = await callGroq(chatMessages, { temperature: 0.5, maxTokens: 2000 });
+        return NextResponse.json({ result: reply || "Sorry, I couldn't generate a response." });
+      } catch (e) {
+        return NextResponse.json({ error: String(e).replace(/^Error:\s*/, "") || "AI service is unavailable" }, { status: 503 });
       }
-      const reply = data?.candidates?.[0]?.content?.parts?.[0]?.text || "Sorry, I couldn't generate a response.";
-      return NextResponse.json({ result: reply });
     }
 
     return NextResponse.json({ error: "Invalid request type" }, { status: 400 });
