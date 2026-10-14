@@ -6,6 +6,7 @@ import VaniBot from "@/components/VaniBot";
 import OnboardingModal from "@/components/OnboardingModal";
 import LandingContent from "@/components/LandingContent";
 import AIDailyBrief from "@/components/AIDailyBrief";
+import EventPromoBanner from "@/components/events/EventPromoBanner";
 import { getPosts } from "@/lib/data-service";
 
 export const revalidate = 120; // ISR: regenerate every 2 minutes, on-demand via /api/revalidate
@@ -26,6 +27,7 @@ export default async function LandingPage() {
       <OnboardingModal />
       {/* pt matches navbar height: mobile ~80px, desktop ~148px */}
       <main className="min-h-screen pt-[80px] md:pt-[108px] bg-white dark:bg-[#0d0d0d]">
+        <EventPromoBanner />
         <AIDailyBrief posts={allPosts.slice(0, 5)} />
         {allPosts.length === 0 ? (
           <div className="max-w-screen-xl mx-auto px-4 md:px-8 py-24 text-center">

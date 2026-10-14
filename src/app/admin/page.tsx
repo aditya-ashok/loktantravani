@@ -11,7 +11,9 @@ import { useTheme } from "next-themes";
 import PostEditor from "@/components/admin/PostEditor";
 import { pickAndUploadImage } from "@/lib/upload-image-client";
 import AuthorProfilePanel from "@/components/admin/AuthorProfile";
+import EventRegistrationsPanel from "@/components/admin/EventRegistrationsPanel";
 import {
+  Ticket,
   Layout,
   FileText,
   Sparkles,
@@ -74,6 +76,7 @@ const sidebarItems = [
   { id: "user-submissions", label: "User Submissions", icon: UserPlus },
   { id: "daily", label: "Daily Edition", icon: Newspaper },
   { id: "subscribers", label: "Subscribers", icon: Mail },
+  { id: "event-registrations", label: "Event Registrations", icon: Ticket },
   { id: "polls", label: "Polls", icon: BarChart3 },
   { id: "push-notifs", label: "Push Notifications", icon: Bell },
   { id: "comments", label: "Comments", icon: MessageSquare },
@@ -7630,6 +7633,7 @@ export default function AdminPage() {
           {activeTab === "my-profile" && <AuthorProfilePanel />}
           {activeTab === "comments" && <CommentsModeration />}
           {activeTab === "subscribers" && <SubscribersPanel />}
+          {activeTab === "event-registrations" && <EventRegistrationsPanel />}
           {activeTab === "polls" && <PollsPanel />}
           {activeTab === "push-notifs" && <PushNotificationsPanel />}
           <div style={{ display: activeTab === "news-agent" ? "block" : "none" }}><DeepSearchAgentPanel /></div>

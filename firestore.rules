@@ -68,6 +68,16 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    // ─── Event registrations (written by /api/events/register) ──────────────
+
+    match /event_registrations/{docId} {
+      allow create, update: if request.resource.data.keys().hasAll(['event', 'name', 'email', 'consent'])
+                    && request.resource.data.email is string
+                    && request.resource.data.email.matches('.*@.*\\..*')
+                    && request.resource.data.consent == true;
+      allow read, delete: if isAdmin();
+    }
+
     // ─── Subscribers ─────────────────────────────────────────────────────────
 
     match /subscribers/{docId} {
