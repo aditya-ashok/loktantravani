@@ -12,8 +12,8 @@ type Result = {
 };
 
 const input =
-  "w-full bg-white/5 border border-white/15 rounded p-3 text-sm focus:outline-none focus:border-[#3B6BFF] placeholder:text-white/35";
-const label = "block text-xs font-bold uppercase tracking-widest text-white/60 mb-1.5";
+  "w-full bg-white border border-slate-300 rounded p-3 text-sm text-slate-900 focus:outline-none focus:border-[#3B6BFF] focus:ring-2 focus:ring-[#3B6BFF]/15 placeholder:text-slate-400";
+const label = "block text-xs font-bold uppercase tracking-widest text-slate-600 mb-1.5";
 
 export default function EventRegistration({ slug }: { slug: string }) {
   const { lang, t } = useLanguage();
@@ -86,45 +86,44 @@ export default function EventRegistration({ slug }: { slug: string }) {
     <div className="grid lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] gap-8 items-start">
       {/* Event card */}
       <aside className="space-y-4 lg:sticky lg:top-24">
-        <div className="relative aspect-[4/5] w-full overflow-hidden rounded-lg border border-white/10">
+        <div className="relative aspect-[4/5] w-full overflow-hidden rounded-lg border border-slate-200 shadow-sm">
           <Image src={event.poster} alt={`${tr(event.title)} — ${event.guest}`} fill sizes="(max-width: 1024px) 100vw, 420px" className="object-cover" priority />
         </div>
-        <div className="rounded-lg border border-[#3B6BFF]/30 bg-[#3B6BFF]/10 p-4 space-y-2 text-sm">
+        <div className="rounded-lg border border-[#3B6BFF]/25 bg-[#3B6BFF]/5 p-4 space-y-2 text-sm">
           <p className="inline-block text-[10px] font-black uppercase tracking-widest bg-[#FFD600] text-black px-2 py-0.5 rounded-sm">{tr(event.show)}</p>
           <h2 className="text-xl font-black">{tr(event.title)}</h2>
-          <p><span className="font-bold">{event.guest}</span> · <span className="text-white/70">{tr(event.guestRole)}</span></p>
+          <p><span className="font-bold">{event.guest}</span> · <span className="text-slate-600">{tr(event.guestRole)}</span></p>
           {event.panelists.length > 0 && (
-            <div className="flex items-start gap-2 text-white/80">
-              <Users className="w-4 h-4 text-[#FFD600] shrink-0 mt-0.5" />
+            <div className="flex items-start gap-2 text-slate-700">
+              <Users className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
               <div>
-                <p className="text-white/50">{t("Panelists", "पैनलिस्ट")}</p>
+                <p className="text-slate-500">{t("Panelists", "पैनलिस्ट")}</p>
                 <ul className="space-y-1 mt-0.5">
                   {event.panelists.map((p) => (
                     <li key={p.name}>
-                      <span className="font-bold text-white">{p.name}</span>
-                      <span className="block text-xs text-white/60">{tr(p.bio)}</span>
+                      <span className="font-bold text-slate-900">{p.name}</span>
+                      <span className="block text-xs text-slate-600">{tr(p.bio)}</span>
                     </li>
                   ))}
                 </ul>
               </div>
             </div>
           )}
-          <p className="flex items-center gap-2 text-white/80"><CalendarClock className="w-4 h-4 text-[#FFD600]" /> {when}</p>
-          {event.venue && <p className="flex items-center gap-2 text-white/80"><MapPin className="w-4 h-4 text-[#FFD600]" /> {tr(event.venue)}</p>}
-          <p className="text-white/60 leading-relaxed pt-1">{tr(event.description)}</p>
+          <p className="flex items-center gap-2 text-slate-700"><CalendarClock className="w-4 h-4 text-amber-600" /> {when}</p>
+          {event.venue && <p className="flex items-center gap-2 text-slate-700"><MapPin className="w-4 h-4 text-amber-600" /> {tr(event.venue)}</p>}
         </div>
       </aside>
 
       {/* Form / confirmation */}
       {result ? (
-        <div className="rounded-lg border border-green-500/30 bg-green-500/5 p-6 space-y-5">
+        <div className="rounded-lg border border-green-600/30 bg-green-50 p-6 space-y-5">
           <div className="flex items-start gap-3">
-            <CheckCircle2 className="w-8 h-8 text-green-400 shrink-0" />
+            <CheckCircle2 className="w-8 h-8 text-green-600 shrink-0" />
             <div>
               <h3 className="text-2xl font-black">
                 {result.updated ? t("Registration updated", "पंजीकरण अपडेट हुआ") : t("You're registered!", "आपका पंजीकरण हो गया!")}
               </h3>
-              <p className="text-white/70 text-sm mt-1">
+              <p className="text-slate-600 text-sm mt-1">
                 {event.date
                   ? t("We've emailed you the details.", "हमने आपको विवरण ईमेल कर दिया है।")
                   : t("The date will be announced soon — we'll email you as soon as it is.", "तिथि जल्द घोषित होगी — घोषणा होते ही हम आपको ईमेल करेंगे।")}
@@ -133,16 +132,16 @@ export default function EventRegistration({ slug }: { slug: string }) {
           </div>
 
           {result.question && (
-            <div className="rounded border border-white/10 bg-white/5 p-4 space-y-2">
-              <p className="text-xs font-bold uppercase tracking-widest text-[#FFD600] flex items-center gap-2">
+            <div className="rounded border border-slate-200 bg-white p-4 space-y-2">
+              <p className="text-xs font-bold uppercase tracking-widest text-amber-600 flex items-center gap-2">
                 <Bot className="w-4 h-4" /> {t("Your question, as our AI filed it", "आपका प्रश्न, जैसा हमारे AI ने दर्ज किया")}
               </p>
               <p className="text-sm">{result.question.refined}</p>
               {result.question.theme && (
-                <p className="text-xs text-white/50">{t("Theme:", "विषय:")} {result.question.theme}</p>
+                <p className="text-xs text-slate-500">{t("Theme:", "विषय:")} {result.question.theme}</p>
               )}
               {result.question.flagged && (
-                <p className="text-xs text-yellow-400 flex items-center gap-1">
+                <p className="text-xs text-amber-700 flex items-center gap-1">
                   <AlertTriangle className="w-3 h-3" /> {t("This question may not be selected as it doesn't meet our community guidelines.", "यह प्रश्न सामुदायिक दिशानिर्देशों के अनुरूप न होने से शायद चुना न जाए।")}
                 </p>
               )}
@@ -152,7 +151,7 @@ export default function EventRegistration({ slug }: { slug: string }) {
           <button onClick={share} className="w-full flex items-center justify-center gap-2 bg-[#25D366] text-black font-black uppercase tracking-widest py-3 rounded">
             <Share2 className="w-4 h-4" /> {t("Invite friends on WhatsApp", "WhatsApp पर दोस्तों को बुलाएं")}
           </button>
-          <button onClick={() => setResult(null)} className="text-xs text-white/50 hover:text-white">
+          <button onClick={() => setResult(null)} className="text-xs text-slate-500 hover:text-slate-900">
             {t("Edit my registration", "मेरा पंजीकरण बदलें")}
           </button>
         </div>
@@ -160,7 +159,7 @@ export default function EventRegistration({ slug }: { slug: string }) {
         <form onSubmit={submit} className="space-y-5" noValidate>
           <div>
             <h3 className="text-2xl font-black">{t("Register for the show", "शो के लिए पंजीकरण करें")}</h3>
-            <p className="text-white/50 text-sm mt-1">{t("Free entry. Fields marked * are required.", "प्रवेश निःशुल्क। * वाले फ़ील्ड आवश्यक हैं।")}</p>
+            <p className="text-slate-500 text-sm mt-1">{t("Free entry. Fields marked * are required.", "प्रवेश निःशुल्क। * वाले फ़ील्ड आवश्यक हैं।")}</p>
           </div>
 
           {/* Honeypot (hidden from people, filled by bots) */}
@@ -186,7 +185,7 @@ export default function EventRegistration({ slug }: { slug: string }) {
             </div>
             <div>
               <label htmlFor="reg-prof" className={label}>{t("You are a…", "आप हैं…")}</label>
-              <select id="reg-prof" value={form.profession} onChange={(e) => set("profession", e.target.value)} className={`${input} bg-[#13131a]`}>
+              <select id="reg-prof" value={form.profession} onChange={(e) => set("profession", e.target.value)} className={input}>
                 {PROFESSIONS.map((p) => <option key={p.en} value={p.en}>{tr(p)}</option>)}
               </select>
             </div>
@@ -201,7 +200,7 @@ export default function EventRegistration({ slug }: { slug: string }) {
             <div className="flex gap-2">
               {([["in-person", t("In person", "व्यक्तिगत रूप से")], ["online", t("Online / live stream", "ऑनलाइन / लाइव")]] as const).map(([value, text]) => (
                 <button type="button" key={value} onClick={() => set("mode", value)} aria-pressed={form.mode === value}
-                  className={`flex-1 p-3 rounded border text-sm font-bold ${form.mode === value ? "border-[#3B6BFF] bg-[#3B6BFF]/15 text-white" : "border-white/15 text-white/60"}`}>
+                  className={`flex-1 p-3 rounded border text-sm font-bold ${form.mode === value ? "border-[#3B6BFF] bg-[#3B6BFF]/10 text-[#1E3FD8]" : "border-slate-300 bg-white text-slate-600 hover:border-slate-400"}`}>
                   {text}
                 </button>
               ))}
@@ -209,8 +208,8 @@ export default function EventRegistration({ slug }: { slug: string }) {
           </fieldset>
 
           {/* AI-assisted question */}
-          <div className="rounded-lg border border-[#FFD600]/30 bg-[#FFD600]/5 p-4 space-y-3">
-            <label htmlFor="reg-question" className={`${label} !text-[#FFD600] flex items-center gap-2`}>
+          <div className="rounded-lg border border-amber-300 bg-amber-50 p-4 space-y-3">
+            <label htmlFor="reg-question" className={`${label} !text-amber-700 flex items-center gap-2`}>
               <Sparkles className="w-4 h-4" /> {t(`Your question for ${event.guest}`, `${event.guest} से आपका प्रश्न`)}
             </label>
             <textarea id="reg-question" rows={3} maxLength={600} value={form.question} onChange={(e) => set("question", e.target.value)}
@@ -230,22 +229,22 @@ export default function EventRegistration({ slug }: { slug: string }) {
                 {suggestions.map((q, i) => (
                   <li key={i}>
                     <button type="button" onClick={() => set("question", q)}
-                      className={`w-full text-left text-sm p-3 rounded border transition-colors ${form.question === q ? "border-[#FFD600] bg-[#FFD600]/10" : "border-white/10 hover:border-white/30"}`}>
+                      className={`w-full text-left text-sm p-3 rounded border transition-colors ${form.question === q ? "border-amber-500 bg-amber-100" : "border-amber-200 bg-white hover:border-amber-400"}`}>
                       {q}
                     </button>
                   </li>
                 ))}
-                <li className="text-[11px] text-white/40">{t("Tap a suggestion to use it — you can edit it after.", "सुझाव पर टैप करें — बाद में बदल सकते हैं।")}</li>
+                <li className="text-[11px] text-slate-500">{t("Tap a suggestion to use it — you can edit it after.", "सुझाव पर टैप करें — बाद में बदल सकते हैं।")}</li>
               </ul>
             )}
           </div>
 
-          <label className="flex items-start gap-3 text-sm text-white/70 cursor-pointer">
+          <label className="flex items-start gap-3 text-sm text-slate-600 cursor-pointer">
             <input type="checkbox" checked={form.consent} onChange={(e) => set("consent", e.target.checked)} className="mt-1 accent-[#3B6BFF]" />
             <span>{t("I agree to be contacted by LoktantraVani by email/WhatsApp about this event. *", "मैं इस कार्यक्रम के बारे में LoktantraVani द्वारा ईमेल/WhatsApp पर संपर्क किए जाने के लिए सहमत हूं। *")}</span>
           </label>
 
-          {error && <p className="text-red-400 text-sm" role="alert">{error}</p>}
+          {error && <p className="text-red-600 text-sm" role="alert">{error}</p>}
 
           <button type="submit" disabled={submitting || !form.name.trim() || !form.email.trim() || !form.city.trim() || !form.consent}
             className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-[#3B6BFF] to-[#1E3FD8] disabled:opacity-40 text-white font-black uppercase tracking-widest py-3.5 rounded">

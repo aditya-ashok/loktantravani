@@ -19,7 +19,7 @@ export default function EventLanding({ event }: { event: LvEvent }) {
   return (
     <>
       <Navbar />
-      <main className="min-h-screen pt-[80px] md:pt-[108px] bg-[#0a0a0f] text-white">
+      <main className="min-h-screen pt-[80px] md:pt-[108px] bg-[#F7F8FC] text-slate-900">
         <div className="h-1 bg-gradient-to-r from-[#3B6BFF] via-[#FFD600] to-[#3B6BFF]" />
         <div className="max-w-6xl mx-auto px-4 md:px-8 py-10">
           <EventRegistration slug={event.slug} />
