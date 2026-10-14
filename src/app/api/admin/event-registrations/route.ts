@@ -5,33 +5,47 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { queryByField } from "@/lib/firestore-rest";
-import { verifyAuth, unauthorized } from "@/lib/api-auth";
+import { verifyAdmin } from "@/lib/admin-auth";
+import { decryptPii } from "@/lib/pii-crypto";
 import { callGroq } from "@/lib/groq";
 import { getEvent } from "@/lib/events";
 
 export const maxDuration = 60;
 
+const PII_FIELDS = ["name", "email", "phone", "organisation", "question", "questionRefined"];
+
+async function loadRegistrations(slug: string) {
+  const rows = await queryByField("event_registrations", "event", slug, 2000);
+  return rows.map((r) => {
+    const out: Record<string, unknown> = { ...r };
+    for (const f of PII_FIELDS) out[f] = decryptPii(r[f]);
+    return out;
+  });
+}
+
+function denied() {
+  return NextResponse.json({ error: "Admin sign-in required." }, { status: 401 });
+}
+
 export async function GET(req: NextRequest) {
-  const auth = await verifyAuth(req);
-  if (!auth.authorized || auth.role !== "admin") return unauthorized(auth.error);
+  if (!(await verifyAdmin(req))) return denied();
 
   const slug = req.nextUrl.searchParams.get("event") || "";
   if (!getEvent(slug)) return NextResponse.json({ error: "Unknown event." }, { status: 400 });
 
-  const rows = await queryByField("event_registrations", "event", slug, 2000);
+  const rows = await loadRegistrations(slug);
   rows.sort((a, b) => String(b.registeredAt || "").localeCompare(String(a.registeredAt || "")));
   return NextResponse.json({ registrations: rows }, { headers: { "Cache-Control": "no-store" } });
 }
 
 export async function POST(req: NextRequest) {
-  const auth = await verifyAuth(req);
-  if (!auth.authorized || auth.role !== "admin") return unauthorized(auth.error);
+  if (!(await verifyAdmin(req))) return denied();
 
   const body = await req.json().catch(() => ({} as Record<string, unknown>));
   const event = getEvent(typeof body.event === "string" ? body.event : "");
   if (!event) return NextResponse.json({ error: "Unknown event." }, { status: 400 });
 
-  const rows = await queryByField("event_registrations", "event", event.slug, 2000);
+  const rows = await loadRegistrations(event.slug);
   const questions = rows
     .filter((r) => r.question && !r.questionFlagged)
     .map((r) => `- [${r.questionTheme || "Other"}] ${r.questionRefined || r.question} (${r.name}, ${r.city}, ${r.profession})`)

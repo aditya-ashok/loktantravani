@@ -3,7 +3,22 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { Loader2, RefreshCw, Download, Sparkles, Ticket, Flag, ExternalLink } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { auth } from "@/lib/firebase";
 import { EVENTS } from "@/lib/events";
+
+const ADMIN_KEY_STORAGE = "lv-admin-key";
+
+/** Registration data is personal: the API needs a real admin token, not just the admin page. */
+async function adminFetch(url: string, init: RequestInit = {}) {
+  const headers = new Headers(init.headers);
+  const token = await auth.currentUser?.getIdToken().catch(() => null);
+  if (token) headers.set("Authorization", `Bearer ${token}`);
+  try {
+    const key = sessionStorage.getItem(ADMIN_KEY_STORAGE);
+    if (key) headers.set("x-admin-key", key);
+  } catch { /* storage unavailable */ }
+  return fetch(url, { ...init, headers });
+}
 
 type Registration = {
   id: string;
@@ -35,13 +50,16 @@ export default function EventRegistrationsPanel() {
   const [brief, setBrief] = useState<Brief | null>(null);
   const [briefing, setBriefing] = useState(false);
   const [error, setError] = useState("");
+  const [needsAuth, setNeedsAuth] = useState(false);
+  const [keyInput, setKeyInput] = useState("");
 
   const load = useCallback(async () => {
     setLoading(true);
     setError("");
     try {
-      const res = await fetch(`/api/admin/event-registrations?event=${encodeURIComponent(slug)}&_t=${Date.now()}`);
+      const res = await adminFetch(`/api/admin/event-registrations?event=${encodeURIComponent(slug)}&_t=${Date.now()}`);
       const data = await res.json();
+      setNeedsAuth(res.status === 401);
       if (!res.ok) throw new Error(data.error);
       setRows(data.registrations || []);
     } catch (e) {
@@ -58,7 +76,7 @@ export default function EventRegistrationsPanel() {
     setBriefing(true);
     setError("");
     try {
-      const res = await fetch("/api/admin/event-registrations", {
+      const res = await adminFetch("/api/admin/event-registrations", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ event: slug }),
@@ -118,6 +136,27 @@ export default function EventRegistrationsPanel() {
       </div>
 
       {error && <p className="text-sm text-red-600 font-inter">{error}</p>}
+
+      {needsAuth && (
+        <div className="bg-white border-2 border-black p-4 space-y-2">
+          <p className="text-sm font-inter">
+            Registration details are private. Sign in with an approved admin account (set via <code>ADMIN_EMAILS</code>), or enter the admin API key for this browser session.
+          </p>
+          <form
+            className="flex gap-2"
+            onSubmit={(e) => {
+              e.preventDefault();
+              try { sessionStorage.setItem(ADMIN_KEY_STORAGE, keyInput.trim()); } catch { /* storage unavailable */ }
+              setKeyInput("");
+              load();
+            }}
+          >
+            <input type="password" value={keyInput} onChange={(e) => setKeyInput(e.target.value)} placeholder="ADMIN_API_KEY" autoComplete="off"
+              className="flex-1 border-2 border-black px-3 py-2 text-sm font-inter" />
+            <button type="submit" disabled={!keyInput.trim()} className="px-3 py-2 bg-black text-white text-xs font-inter font-black uppercase tracking-widest disabled:opacity-50">Unlock</button>
+          </form>
+        </div>
+      )}
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[

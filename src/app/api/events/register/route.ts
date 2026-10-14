@@ -5,13 +5,14 @@
  * with a theme and screened for abuse, so the team can shortlist audience
  * questions. Registration still succeeds if the AI is unavailable.
  * One registration per email per event (re-submitting updates it).
+ * Personal fields are encrypted at rest (see lib/pii-crypto).
  */
 
-import crypto from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { getDoc, setDoc } from "@/lib/firestore-rest";
 import { callGroq } from "@/lib/groq";
 import { getEvent, PROFESSIONS, type LvEvent } from "@/lib/events";
+import { assertPiiKey, encryptPii, piiHash } from "@/lib/pii-crypto";
 
 export const maxDuration = 30;
 
@@ -130,7 +131,14 @@ export async function POST(request: NextRequest) {
   if (!city) return NextResponse.json({ error: "Please enter your city." }, { status: 400 });
   if (body.consent !== true) return NextResponse.json({ error: "Please agree to be contacted about the event." }, { status: 400 });
 
-  const id = crypto.createHash("sha256").update(`${event.slug}:${email}`).digest("hex").slice(0, 32);
+  try {
+    assertPiiKey();
+  } catch (error) {
+    console.error("[events/register]", error);
+    return NextResponse.json({ error: "Registrations are temporarily unavailable." }, { status: 503 });
+  }
+
+  const id = piiHash(`${event.slug}:${email}`);
   const path = `event_registrations/${id}`;
 
   const [existing, review] = await Promise.all([
@@ -141,16 +149,16 @@ export async function POST(request: NextRequest) {
   try {
     await setDoc(path, {
       event: event.slug,
-      name,
-      email,
-      phone,
+      name: encryptPii(name),
+      email: encryptPii(email),
+      phone: encryptPii(phone),
       city,
       profession,
-      organisation,
+      organisation: encryptPii(organisation),
       mode,
       language: hindi ? "hi" : "en",
-      question,
-      questionRefined: review?.refined || question,
+      question: encryptPii(question),
+      questionRefined: encryptPii(review?.refined || question),
       questionTheme: question ? review?.theme || "Other" : "",
       questionFlagged: review?.flagged || false,
       aiReviewed: !!review,
