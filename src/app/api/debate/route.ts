@@ -10,7 +10,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { callGroq, GROQ_WEB_MODEL, type GroqMessage } from "@/lib/groq";
+import { callGroq, type GroqMessage } from "@/lib/groq";
 
 export const maxDuration = 60;
 
@@ -127,9 +127,10 @@ Rules: Directly rebut the reader's latest point first, then add at most one new 
         const system = `You are a live fact-checker for a debate on "${topic}". ${NEUTRALITY} Search the web as needed. Extract up to 4 checkable factual claims (numbers, dates, events, laws) from the statement — ignore opinions. Reply ONLY with JSON, in ${language}: {"claims":[{"claim":"...","rating":"accurate"|"misleading"|"false"|"unverified","note":"one-sentence neutral context","source":"publication or body name, if known"}]}. Use "unverified" whenever you are not confident.`;
         const raw = await callGroq(
           [{ role: "system", content: system }, { role: "user", content: `${speaker} said: "${statement}"` }],
-          { model: GROQ_WEB_MODEL, temperature: 0.1, maxTokens: 1200 },
+          { webSearch: true, temperature: 0.1, maxTokens: 1500 },
         );
-        return NextResponse.json({ result: parseJson(raw) });
+        // Strip the search tool's inline citation markers, e.g. "【1†L24-L27】".
+        return NextResponse.json({ result: parseJson(raw.replace(/【[^】]*】/g, "")) });
       }
 
       case "summary": {

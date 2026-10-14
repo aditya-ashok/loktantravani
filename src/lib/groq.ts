@@ -9,9 +9,10 @@
  * still runs on Gemini (see generateImage in ai-generator.ts).
  *
  * Models (see https://console.groq.com/docs/models):
- *   - llama-3.3-70b-versatile : default — strong quality, good Hindi/Devanagari
- *   - groq/compound           : agentic, has built-in WEB SEARCH (for URL topics)
- *   - llama-3.1-8b-instant    : fast/cheap fallback
+ *   - openai/gpt-oss-120b : default (override with GROQ_MODEL). Reasoning model —
+ *     run at low reasoning effort so thinking doesn't eat the max_tokens budget.
+ *   - GROQ_WEB_MODEL      : the same model with the built-in browser_search tool.
+ * The Llama models and groq/compound were retired from our account (Oct 2026).
  */
 
 export type GroqMessage = { role: "system" | "user" | "assistant"; content: string };
@@ -19,25 +20,33 @@ export type GroqMessage = { role: "system" | "user" | "assistant"; content: stri
 export interface GroqOpts {
   model?: string;
   jsonMode?: boolean;
+  /** Let the model search the web. Groq can't combine this with JSON mode, so
+   *  jsonMode is ignored and the prompt itself must ask for JSON. */
+  webSearch?: boolean;
   temperature?: number;
   maxTokens?: number;
 }
 
-export const GROQ_DEFAULT_MODEL = "llama-3.3-70b-versatile";
-export const GROQ_WEB_MODEL = "groq/compound"; // has built-in web search / URL fetch
+export const GROQ_DEFAULT_MODEL = (process.env.GROQ_MODEL || "openai/gpt-oss-120b").trim();
+/** Pseudo model id: the default model plus web search (see callGroq). */
+export const GROQ_WEB_MODEL = "web-search";
 
 /** Call Groq chat completions and return the assistant message text. */
 export async function callGroq(messages: GroqMessage[], opts: GroqOpts = {}): Promise<string> {
   const apiKey = (process.env.GROQ_API_KEY || "").trim();
   if (!apiKey) throw new Error("GROQ_API_KEY not configured");
 
+  const webSearch = opts.webSearch || opts.model === GROQ_WEB_MODEL;
+  const model = !opts.model || opts.model === GROQ_WEB_MODEL ? GROQ_DEFAULT_MODEL : opts.model;
   const body: Record<string, unknown> = {
-    model: opts.model || GROQ_DEFAULT_MODEL,
+    model,
     messages,
     temperature: opts.temperature ?? 0.5,
     max_tokens: opts.maxTokens ?? 8192,
   };
-  if (opts.jsonMode) body.response_format = { type: "json_object" };
+  if (model.startsWith("openai/gpt-oss")) body.reasoning_effort = "low";
+  if (webSearch) body.tools = [{ type: "browser_search" }];
+  else if (opts.jsonMode) body.response_format = { type: "json_object" };
 
   // Retry transient 429/503; surface Groq's real message so failures are actionable.
   for (let attempt = 0; attempt < 3; attempt++) {
