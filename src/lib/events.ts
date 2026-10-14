@@ -11,7 +11,6 @@ export type LvEvent = {
   title: { en: string; hi: string };
   guest: string;
   guestRole: { en: string; hi: string };
-  guestNote: { en: string; hi: string };
   /** Hosts / panelists in conversation with the guest. */
   panelists: { name: string; bio: { en: string; hi: string } }[];
   description: { en: string; hi: string };
@@ -31,10 +30,6 @@ export const EVENTS: LvEvent[] = [
     title: { en: "Chit-Chat on AI and Public Policy", hi: "AI और सार्वजनिक नीति पर गपशप" },
     guest: "Anil K Antony",
     guestRole: { en: "BJP National Secretary", hi: "भाजपा राष्ट्रीय सचिव" },
-    guestNote: {
-      en: "Son of Former CM of Kerala and Ex-Defence Minister of India",
-      hi: "केरल के पूर्व मुख्यमंत्री व पूर्व रक्षा मंत्री के पुत्र",
-    },
     panelists: [
       {
         name: "Bhavya Razshree",
