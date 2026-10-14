@@ -86,6 +86,7 @@ async function sendConfirmation(event: LvEvent, to: string, name: string, hindi:
           <p style="font-size:13px;color:#666;margin:0 0 28px;">${hindi ? "भारत का पहला AI समाचार दैनिक" : "India's first AI news daily"}</p>
           <p style="font-size:16px;line-height:1.6;">${hindi ? "नमस्ते" : "Hi"} ${escapeHtml(name)},</p>
           <p style="font-size:16px;line-height:1.6;">${hindi ? "आप पंजीकृत हैं:" : "You're registered for"} <strong>${escapeHtml(title)}</strong> ${hindi ? "— अतिथि" : "with"} <strong>${escapeHtml(event.guest)}</strong>, ${escapeHtml(hindi ? event.guestRole.hi : event.guestRole.en)}.</p>
+          ${event.panelists.length ? `<p style="font-size:16px;line-height:1.6;"><strong>${hindi ? "पैनलिस्ट:" : "Panelists:"}</strong> ${escapeHtml(event.panelists.join(", "))}</p>` : ""}
           <p style="font-size:16px;line-height:1.6;"><strong>${hindi ? "कब:" : "When:"}</strong> ${escapeHtml(when)}</p>
           <p style="font-size:13px;color:#666;margin-top:28px;">${hindi ? "आपको यह ईमेल इसलिए मिला क्योंकि आपने loktantravani.in पर पंजीकरण किया।" : "You received this because you registered on loktantravani.in."}</p>
         </div>`,

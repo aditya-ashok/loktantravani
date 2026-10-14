@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import Image from "next/image";
-import { CalendarClock, MapPin, Sparkles, Loader2, CheckCircle2, Share2, Bot, AlertTriangle } from "lucide-react";
+import { CalendarClock, MapPin, Sparkles, Loader2, CheckCircle2, Share2, Bot, AlertTriangle, Users } from "lucide-react";
 import { useLanguage } from "@/lib/language-context";
 import { getEvent, PROFESSIONS } from "@/lib/events";
 
@@ -93,6 +93,12 @@ export default function EventRegistration({ slug }: { slug: string }) {
           <p className="inline-block text-[10px] font-black uppercase tracking-widest bg-[#FFD600] text-black px-2 py-0.5 rounded-sm">{tr(event.show)}</p>
           <h2 className="text-xl font-black">{tr(event.title)}</h2>
           <p><span className="font-bold">{event.guest}</span> · <span className="text-white/70">{tr(event.guestRole)}</span></p>
+          {event.panelists.length > 0 && (
+            <p className="flex items-start gap-2 text-white/80">
+              <Users className="w-4 h-4 text-[#FFD600] shrink-0 mt-0.5" />
+              <span><span className="text-white/50">{t("Panelists:", "पैनलिस्ट:")}</span> {event.panelists.join(", ")}</span>
+            </p>
+          )}
           <p className="flex items-center gap-2 text-white/80"><CalendarClock className="w-4 h-4 text-[#FFD600]" /> {when}</p>
           {event.venue && <p className="flex items-center gap-2 text-white/80"><MapPin className="w-4 h-4 text-[#FFD600]" /> {tr(event.venue)}</p>}
           <p className="text-white/60 leading-relaxed pt-1">{tr(event.description)}</p>

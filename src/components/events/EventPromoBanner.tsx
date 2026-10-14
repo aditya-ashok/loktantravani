@@ -34,6 +34,11 @@ export default function EventPromoBanner() {
           <p className="text-xs md:text-sm text-white/80 truncate">
             {t("with", "अतिथि")} <span className="font-bold text-white">{event.guest}</span>, {tr(event.guestRole)}
           </p>
+          {event.panelists.length > 0 && (
+            <p className="hidden md:block text-xs text-white/70 truncate">
+              {t("Panelists:", "पैनलिस्ट:")} {event.panelists.join(", ")}
+            </p>
+          )}
           <p className="mt-1 flex items-center gap-1.5 text-[11px] md:text-xs text-[#FFD600]">
             <CalendarClock className="w-3.5 h-3.5" /> {when}
           </p>
