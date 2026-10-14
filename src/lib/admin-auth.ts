@@ -3,12 +3,14 @@
  *
  * Unlike verifyAuth, this never trusts Referer/Origin headers, and never trusts
  * users/{uid}.role (the REST client can't guarantee that field is tamper-proof).
- * Accepts either the x-admin-key header or a Firebase ID token for a verified
- * email listed in ADMIN_EMAILS (comma-separated).
+ * Accepts either the x-admin-key header or a Firebase ID token (Google or
+ * email/password sign-in) for an email listed in ADMIN_EMAILS (comma-separated).
+ * Firebase allows one account per email, so an existing admin's email can't be
+ * claimed by someone else.
  */
 import { NextRequest } from "next/server";
 
-const DEFAULT_ADMIN_EMAILS = "mail.adityaashok@gmail.com";
+const DEFAULT_ADMIN_EMAILS = "mail.adityaashok@gmail.com,adityaashok.india@gmail.com,seema.ktr@gmail.com,ashoke.bms@gmail.com";
 
 function adminEmails(): string[] {
   return (process.env.ADMIN_EMAILS || DEFAULT_ADMIN_EMAILS)
@@ -36,7 +38,7 @@ export async function verifyAdmin(req: NextRequest): Promise<boolean> {
     if (!res.ok) return false;
     const user = (await res.json())?.users?.[0];
     const email = String(user?.email || "").toLowerCase();
-    return !!email && user?.emailVerified === true && adminEmails().includes(email);
+    return !!email && adminEmails().includes(email);
   } catch {
     return false;
   }
