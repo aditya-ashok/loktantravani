@@ -36,7 +36,7 @@ export default function EventPromoBanner() {
           </p>
           {event.panelists.length > 0 && (
             <p className="hidden md:block text-xs text-white/70 truncate">
-              {t("Panelists:", "पैनलिस्ट:")} {event.panelists.join(", ")}
+              {t("Panelists:", "पैनलिस्ट:")} {event.panelists.map((p) => p.name).join(", ")}
             </p>
           )}
           <p className="mt-1 flex items-center gap-1.5 text-[11px] md:text-xs text-[#FFD600]">

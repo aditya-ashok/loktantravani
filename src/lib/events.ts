@@ -13,7 +13,7 @@ export type LvEvent = {
   guestRole: { en: string; hi: string };
   guestNote: { en: string; hi: string };
   /** Hosts / panelists in conversation with the guest. */
-  panelists: string[];
+  panelists: { name: string; bio: { en: string; hi: string } }[];
   description: { en: string; hi: string };
   /** ISO date-time once announced; null = "To be informed". */
   date: string | null;
@@ -35,7 +35,20 @@ export const EVENTS: LvEvent[] = [
       en: "Son of Former CM of Kerala and Ex-Defence Minister of India",
       hi: "केरल के पूर्व मुख्यमंत्री व पूर्व रक्षा मंत्री के पुत्र",
     },
-    panelists: ["Bhavya Razshree", "Aditya Ashok", "Adarsh Ashok"],
+    panelists: [
+      {
+        name: "Bhavya Razshree",
+        bio: { en: "Co-Founder, Law Sarathi · Advocate, Delhi High Court", hi: "सह-संस्थापक, लॉ सारथी · अधिवक्ता, दिल्ली उच्च न्यायालय" },
+      },
+      {
+        name: "Aditya Ashok",
+        bio: { en: "AI Expert, Government Advisory · IIM Mumbai, Public Policy", hi: "AI विशेषज्ञ, सरकारी सलाहकार · IIM मुंबई, सार्वजनिक नीति" },
+      },
+      {
+        name: "Adarsh Ashok",
+        bio: { en: "Co-Founder, LoktantraVani", hi: "सह-संस्थापक, लोकतंत्रवाणी" },
+      },
+    ],
     description: {
       en: "An AI-powered conversation on how artificial intelligence will shape governance, jobs, defence and democracy in India. Register now, send your question, and our AI will help shortlist the best audience questions for the show.",
       hi: "AI आधारित संवाद — कृत्रिम बुद्धिमत्ता भारत में शासन, रोज़गार, रक्षा और लोकतंत्र को कैसे बदलेगी। अभी पंजीकरण करें, अपना प्रश्न भेजें, और हमारा AI शो के लिए सर्वश्रेष्ठ प्रश्न चुनने में मदद करेगा।",

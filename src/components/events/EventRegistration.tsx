@@ -94,10 +94,20 @@ export default function EventRegistration({ slug }: { slug: string }) {
           <h2 className="text-xl font-black">{tr(event.title)}</h2>
           <p><span className="font-bold">{event.guest}</span> · <span className="text-white/70">{tr(event.guestRole)}</span></p>
           {event.panelists.length > 0 && (
-            <p className="flex items-start gap-2 text-white/80">
+            <div className="flex items-start gap-2 text-white/80">
               <Users className="w-4 h-4 text-[#FFD600] shrink-0 mt-0.5" />
-              <span><span className="text-white/50">{t("Panelists:", "पैनलिस्ट:")}</span> {event.panelists.join(", ")}</span>
-            </p>
+              <div>
+                <p className="text-white/50">{t("Panelists", "पैनलिस्ट")}</p>
+                <ul className="space-y-1 mt-0.5">
+                  {event.panelists.map((p) => (
+                    <li key={p.name}>
+                      <span className="font-bold text-white">{p.name}</span>
+                      <span className="block text-xs text-white/60">{tr(p.bio)}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
           )}
           <p className="flex items-center gap-2 text-white/80"><CalendarClock className="w-4 h-4 text-[#FFD600]" /> {when}</p>
           {event.venue && <p className="flex items-center gap-2 text-white/80"><MapPin className="w-4 h-4 text-[#FFD600]" /> {tr(event.venue)}</p>}
